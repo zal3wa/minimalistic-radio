@@ -1,0 +1,11 @@
+#!@PYTHON@
+import sys
+
+sys.path.insert(0, "@pythondir@")
+
+from minimalistic_radio import main  # noqa: E402
+
+main.LOCALEDIR = "@localedir@"
+main.PKGDATADIR = "@pkgdatadir@"
+
+sys.exit(main.main(sys.argv))
