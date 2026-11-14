@@ -542,7 +542,19 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 
 - [ ] **Step 1: Write the failing tests** [Linux]. Each builds a window over a controller with fixture stations and iterates the main context.
   - `test_header_buttons`: there are buttons with the tooltips "Add a station", "Song history", "Settings", and the window's close button.
-  - `test_station_rows`: two rows with the station names; the playing one has the CSS class `playing`; each row has a menu button with "Edit", "Move up", "Move down", "Remove". The first row's "Move up" and the last row's "Move down" are insensitive.
+  - `test_station_rows`: two rows with the station names; the playing one has the CSS class `playing`; each row has a menu button with exactly "Edit" and "Remove" (no "Move up"/"Move down", owner decision).
+  - Drag to reorder, per `docs/superpowers/specs/2026-11-14-drag-to-reorder-design.md` (binding, Linux notes included):
+    - `test_hold_lifts`: a 250 ms press without moving lifts the row (CSS class `dragging`).
+    - `test_quick_click_plays`: a press released before 250 ms without moving selects and plays the station.
+    - `test_drag_drop_reorders`: with stations A,B,C,D, dragging B below D calls `move_station`; the order is A,C,D,B; the current station is kept by identity; nothing starts or stops playing.
+    - `test_escape_cancels`: Escape while lifted restores the order and saves nothing.
+    - `test_alt_arrows_move`: Alt+Down / Alt+Up on a focused row move it one place, and focus stays on it.
+    - `test_lift_does_not_play`: releasing a lifted row without moving doesn't play.
+  - Volume row like Windows 11 (owner decision):
+    - `test_volume_icon_levels`: the speaker icon button left of the slider shows `audio-volume-muted-symbolic` at 0, `-low-` for 1–33, `-medium-` for 34–66, and `-high-` for 67–100.
+    - `test_volume_icon_mutes`: clicking it mutes (0) and clicking again restores the last non-zero level (default 30); the tooltip reads "Mute"/"Unmute".
+    - `test_volume_bubble`: while the scale changes (drag, scroll or keys), a small bubble above the slider shows the number, updated live, and hides about 1 s after the last change.
+    - There is no "Volume N%" label.
   - `test_footer`: the play button label follows the status ("Play" ⇄ "Stop"); the now-playing card shows "Now playing" and the track, or "The station doesn't send song titles" when playing without a title; the volume scale moves the controller's volume; the moon button opens a popover with 15/30/45/60/90 min and Off.
   - `test_copy_button`: clicking copy puts the track on the window's clipboard and shows the toast "Copied".
   - `test_long_names_ellipsize`: a 300-character station name gives a label with `ellipsize == END` and a window width that stays ≤ 420.
@@ -552,7 +564,9 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - [ ] **Step 3: Implement.**
   - The layout follows the spec's feature map and the sketch the owner approved: `Adw.HeaderBar` with "+" on the start and history + settings on the end; an `Adw.PreferencesGroup`-style boxed list of `Adw.ActionRow` with a 40 px logo prefix; the footer card; and a `pill suggested-action` Play/Stop button.
   - Logos load off the main thread. A failed logo shows the generic radio icon.
-  - Keyboard: Escape on the stations page closes the window.
+  - Keyboard: Escape on the stations page closes the window (unless a row is lifted, then it cancels the drag).
+  - Drag: `Gtk.GestureDrag` plus a 250 ms hold timer on each row (not on its menu button). The lifted row is drawn translated with a shadow (CSS class `dragging`). Other rows slide apart with `Adw.TimedAnimation`, or jump when `gtk-enable-animations` is off. The list auto-scrolls near its top and bottom edges. A drop calls `controller.move_station(index, delta)`. Factor the target-index arithmetic into a pure `drop_index(...)` in `ui/reorder.py`, with unit tests in `tests/unit/test_reorder.py`.
+  - Volume row: `Gtk.Button` with the symbolic speaker icon, then `Gtk.Scale` (expanding), then the moon (sleep timer) button. The value bubble is a `Gtk.Popover` with autohide off, pointing at the slider's value position, or an `Gtk.Overlay` label; it shows on `value-changed`.
 - [ ] **Step 4 [Linux]: Run the tests again.** Expected: PASS.
 - [ ] **Step 5: Commit.** `git commit -m "Linux UI: window, stations, footer"`
 
@@ -620,14 +634,26 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 
 **Files:**
 - Create: `linux/minimalistic_radio/ui/search_page.py`, `ui/station_dialog.py`
-- Modify: `ui/stations_page.py` (row menu → dialog / move / remove)
+- Modify: `ui/stations_page.py` (row menu → dialog / remove), `core/directory.py` (suggestions)
 - Test: `linux/tests/integration/test_ui_search.py`
 
 **Interfaces:**
 - Consumes: `directory.search` (Task 3, run in a thread), `RadioController.add_station`/`update_station`/`move_station`/`remove_station`.
 - Produces: `StationDialog(parent, station: Station | None, on_save: Callable[[Station], AddResult])`.
 
+- Also implements station suggestions per `docs/superpowers/specs/2026-11-14-station-suggestions-design.md` (binding; the Recommended stationuuids, clean-up rules, spam rule and strings are there). On Linux nothing is filtered by codec.
+  - Core additions in `core/directory.py`, pure, with tests in `tests/unit/test_directory.py`: `RECOMMENDED_IDS`, `recommended_url(server)`, `popular_url(server, country: str | None)`, `looks_like_spam(name) -> bool`, `name_key(name) -> str` (lower case, whole word "radio" removed, letters and digits only), `clean_popular(items, recommended, limit=15)`, `country_from_locale(env) -> str | None` (from `LC_ALL`/`LC_MESSAGES`/`LANG`: `pl_PL.UTF-8` → `PL`; `C`/`POSIX`/missing → `None`), and `suggestions(country, fetch) -> tuple[list[DirectoryStation], list[DirectoryStation]]`.
+  - Unit tests use the Windows self-test cases:
+    - spam: "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "*Chill", "Lofi || Chill", "Hits #1", "Top ***", "a, b, c, d, e"
+    - not spam: "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli", "Rock, Pop, Jazz, Blues"
+    - `clean_popular` on ["RMF FM", "Radio RMF FM", "Radio ZET", "Radio ZET Chilli"] → ["RMF FM", "Radio ZET", "Radio ZET Chilli"]
+    - two stations both named "Radio" both stay
+    - dedupe by stream
+    - recommended ones removed
+    - capped at 15
+  - Behaviour: with the search box empty, the page shows "Recommended" and "Popular in your country" (or "Popular worldwide"); typing replaces them with results, and clearing brings them back. They load once per run on the first open, showing "Loading suggestions…". If the popular request fails, Recommended still shows. Two empty lists count as a failure and are retried on the next open. The failure text is the same as for search. Re-entering the page clears the box.
 - [ ] **Step 1: Write the failing tests** [Linux], with `directory.search` monkeypatched.
+  - `test_suggestions_shown_when_empty`, `test_suggestions_hidden_while_searching`, `test_popular_failure_keeps_recommended`, with `directory.suggestions` monkeypatched.
   - `test_search_shows_results`: typing "jazz" + Enter shows "Searching…", then rows with the name and the `subtitle()` text. A station already in the list shows a check icon and the tooltip "Already on your list"; others show "+" and "Add to your stations".
   - `test_add_from_results`: "+" adds it, and the icon turns into the check.
   - `test_search_errors`: `DirectoryUnavailable` → "Couldn't reach the station directory. Try again."; no results → "No results."
