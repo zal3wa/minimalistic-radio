@@ -6,6 +6,12 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 
+// The station itself refuses (403, 404, a format that can't be played…): trying again won't help.
+internal sealed class StationRefusedException : InvalidOperationException
+{
+    internal StationRefusedException(string message) : base(message) { }
+}
+
 // Opens an internet radio stream over plain HTTP/1.0 (which also accepts the "ICY 200 OK"
 // answer of old Shoutcast servers) and strips the in-band ICY metadata, reporting song titles.
 internal sealed class RadioStream : Stream
@@ -70,8 +76,10 @@ internal sealed class RadioStream : Stream
                     client.Close();
                     continue;
                 }
-                if (code == 403) throw new InvalidOperationException(Lang.T(
+                if (code == 403) throw new StationRefusedException(Lang.T(
                     "Serwer stacji odmówił dostępu (403).", "The station's server refused access (403)."));
+                if (code >= 400 && code < 500) throw new StationRefusedException(Lang.T(
+                    "Serwer stacji zwrócił błąd ", "The station's server returned error ") + code + ".");
                 if (code != 200) throw new InvalidOperationException(Lang.T(
                     "Serwer stacji zwrócił błąd ", "The station's server returned error ") + code + ".");
 

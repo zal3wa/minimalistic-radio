@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,21 +17,24 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using Forms = System.Windows.Forms;
 using static Lang;
 
-// Tray icon, tray menu, playback and the Windows media controls. The player panel is in Panel.cs.
+// Tray icon, tray menu, playback, the Windows media controls (Win+A), history, sleep timer and updates.
+// The player panel is in RadioPanel.cs.
 internal sealed partial class Radio
 {
     internal const string AppName = "Minimalistic Radio";
     private static string NoTrack => T("Stacja nie podaje tytułu", "The station doesn't send song titles");
     private static string Ready => T("Gotowe do odtwarzania", "Ready to play");
+    private static string Connecting => T("Łączenie ze stacją…", "Connecting to the station…");
     private static readonly List<SavedStation> Stations = new List<SavedStation>();
-    private static readonly HttpClient metadataClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+    private static readonly HttpClient metadataClient = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
 
     private readonly Application app;
     private readonly EventWaitHandle panelRequest;
-    private readonly bool testMenu;
+    private readonly bool testMenu, autostart, updated;
     private readonly bool preview = Environment.GetCommandLineArgs().Contains("--preview");
     private Window playerPanel;
     private RegisteredWaitHandle panelListener;
@@ -45,7 +49,9 @@ internal sealed partial class Radio
     private int station = -1;
     private string lastPlayed;
     private string artworkUrl;
+    private string shownThumbnail;
     private int volume = 30;
+    private bool playing;
     private string decoder = "auto";   // "auto": Windows, FFmpeg when needed; "windows"; "ffmpeg"
     private string status = Ready;
     private CancellationTokenSource session;
@@ -55,14 +61,38 @@ internal sealed partial class Radio
     private Window anchor;
     private ContextMenu popup;
 
-    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu)
+    // Sleep timer: the last 30 seconds fade out.
+    private DateTime? sleepAt;
+    private int sleepMinutes;
+    private int fade = 100;
+    private readonly DispatcherTimer sleepTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+
+    // Songs played, newest first.
+    private readonly List<HistoryEntry> history = new List<HistoryEntry>();
+    private int historyVersion;
+
+    // Updates (see Updater.cs).
+    private bool checkUpdates = true;
+    private DateTime? lastUpdateCheck, remindAfter;
+    private string skippedVersion, notifiedVersion;
+    private Release availableUpdate;
+    private bool installing;
+    private string updateStatus;
+    private int updateVersion;
+    private readonly DispatcherTimer updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+
+    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
     {
         this.app = app;
         this.panelRequest = panelRequest;
         this.testMenu = testMenu;
+        this.autostart = autostart;
+        this.updated = updated;
     }
 
     private void Post(Action action) => app.Dispatcher.BeginInvoke(action);
+
+    private static string Exe => System.Reflection.Assembly.GetEntryAssembly().Location;
 
     internal void Start()
     {
@@ -71,18 +101,38 @@ internal sealed partial class Radio
         tray = new Forms.NotifyIcon { Icon = icon, Text = AppName, Visible = true };
         tray.MouseUp += (_, e) => { if (e.Button == Forms.MouseButtons.Right) Post(ShowMenu); };
         tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Post(ShowPlayer); };
+        tray.BalloonTipClicked += (_, _) => Post(() => OpenPlayer());
         if (!testMenu)
         {
             LoadStations();
             LoadPreferences();
-            StartMenu.Register(System.Reflection.Assembly.GetEntryAssembly().Location);
+            LoadHistory();
+            StartMenu.Register(Exe);
+            Autostart.Refresh(Exe);
+            Updater.CleanUp();
             AttachMediaSession();
+            SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            // Updates: first look 20 s after start, then hourly; CheckForUpdates itself keeps it to once a day.
+            updateTimer.Tick += (_, _) => CheckForUpdates(false);
+            updateTimer.Start();
+            var firstCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+            firstCheck.Tick += (_, _) => { firstCheck.Stop(); CheckForUpdates(false); };
+            firstCheck.Start();
+            if (updated)
+                tray.ShowBalloonTip(4000, AppName, T("Zaktualizowano do wersji ", "Updated to version ") + Updater.Current.ToString(3), Forms.ToolTipIcon.Info);
         }
         panelListener = ThreadPool.RegisterWaitForSingleObject(panelRequest,
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
         trackTimer.Tick += (_, _) => ScrollTrack();
+        sleepTimer.Tick += (_, _) => SleepTick();
         if (testMenu) Post(VerifyMenu);
-        else if (station >= 0) Post(StartPlayback);
+        else if (station >= 0 && !autostart) Post(StartPlayback);
+    }
+
+    // After sleep or hibernation the old connection is dead: start the station again.
+    private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume) Post(() => { if (session != null) StartPlayback(); });
     }
 
     // "--test-menu": builds the menu and the panel without playing anything, exit code 0 = OK.
@@ -99,6 +149,11 @@ internal sealed partial class Radio
                 ParseTrack("Promo - text=\"Reklama\" song_spot=\"A\"", 0) != null ||
                 ParseTrack("- text=\"Spot Block End\" amgTrackId=\"9876543\" length=\"00:00:00\"", 0) != null)
                 throw new InvalidOperationException("Błędne metadane.");
+            Covers.Split("Leonard Cohen - Everybody Knows", out string artist, out string song);
+            Covers.Split("Dżingiel", out string noArtist, out string onlyTitle);
+            if (artist != "Leonard Cohen" || song != "Everybody Knows" || noArtist != null || onlyTitle != "Dżingiel" ||
+                Updater.ParseVersion("v2.10.0") <= Updater.ParseVersion("v2.9.1") || Updater.ParseVersion("v2.1") != new Version(2, 1, 0))
+                throw new InvalidOperationException("Błędny podział tytułu lub numer wersji.");
             using (var testSession = new CancellationTokenSource())
             {
                 session = testSession;
@@ -119,7 +174,8 @@ internal sealed partial class Radio
                     throw new InvalidOperationException("Brak tytułu powinien wyłączyć kopiowanie.");
                 var stations = (MenuItem)popup.Items[1];
                 var levels = (MenuItem)popup.Items[2];
-                if (!popup.IsOpen || stations.Items.Count != 1 || levels.Items.Count != 8)
+                var sleep = (MenuItem)popup.Items[3];
+                if (!popup.IsOpen || stations.Items.Count != 1 || levels.Items.Count != 8 || sleep.Items.Count != 7)
                     throw new InvalidOperationException("Nie udało się otworzyć menu radia.");
                 if (preview)
                 {
@@ -138,6 +194,10 @@ internal sealed partial class Radio
                     station = 17;
                     session = testSession;
                     status = StationName;
+                    sleepAt = DateTime.Now.AddMinutes(30);
+                    availableUpdate = new Release { Version = new Version(9, 9, 9), Tag = "v9.9.9", Notes = "Podgląd banera aktualizacji." };
+                    foreach (string played in new[] { "Leonard Cohen - Everybody Knows", "Queen - A Kind Of Magic", "Daughtry - What About Now" })
+                        AddToHistory(played);
                 }
                 ShowPlayer();
                 if (playerPanel?.IsVisible != true || !Storage.IsWebUrl("https://example.com/live") || Storage.IsWebUrl("file:///tmp/test"))
@@ -151,21 +211,22 @@ internal sealed partial class Radio
                     double top = row?.TranslatePoint(new Point(0, 0), viewer).Y ?? -1;
                     if (row == null || top < 0 || top + row.ActualHeight > viewer.ActualHeight + 0.5)
                         throw new InvalidOperationException($"Aktywna stacja poza widokiem (top={top}, wysokość listy={viewer.ActualHeight}).");
-                    File.WriteAllText(Path.Combine(Path.GetTempPath(), "MinimalisticRadio-scroll.txt"),
-                        $"aktywna stacja {station + 1}/{Stations.Count}: od {top:F0} do {top + row.ActualHeight:F0} px, lista ma {viewer.ActualHeight:F0} px");
                     await SavePreview((Visual)playerPanel.Content, "panel");
                     session = null;
                 }
-                playerPanel.Close();
-                OpenPlayer(true);
-                if (playerPanel?.IsVisible != true)
-                    throw new InvalidOperationException("Nie udało się otworzyć ustawień.");
-                if (preview)
+                foreach (string page in new[] { "settings", "history" })
                 {
-                    await Task.Delay(1000);
-                    await SavePreview((Visual)playerPanel.Content, "settings");
-                    var scroller = Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel);
-                    await SavePreview((Visual)scroller.Content, "settings-all");
+                    playerPanel.Close();
+                    OpenPlayer(page);
+                    if (playerPanel?.IsVisible != true)
+                        throw new InvalidOperationException("Nie udało się otworzyć strony: " + page);
+                    if (preview)
+                    {
+                        await Task.Delay(1000);
+                        await SavePreview((Visual)playerPanel.Content, page);
+                        var scroller = Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel);
+                        await SavePreview((Visual)scroller.Content, page + "-all");
+                    }
                 }
                 playerPanel.Close();
                 AttachMediaSession();
@@ -218,6 +279,8 @@ internal sealed partial class Radio
         Theme.Apply(app);
     }
 
+    // ---- Tray menu ----
+
     private void ShowMenu()
     {
         if (anchor != null)
@@ -269,8 +332,12 @@ internal sealed partial class Radio
             levels.Items.Add(Item(preset == 0 ? T("Wycisz", "Mute") : $"{preset}%",
                 volume == preset ? Theme.CheckIcon : null, () => ChangeVolume(preset)));
 
+        var sleep = Item(sleepAt == null ? T("Wyłącznik czasowy", "Sleep timer") : SleepLabel, Theme.MoonIcon);
+        FillSleepMenu(sleep);
+
         menu.Items.Add(stations);
         menu.Items.Add(levels);
+        menu.Items.Add(sleep);
         menu.Items.Add(new Separator());
         statusItem = Item(status, null, null, false);
         menu.Items.Add(statusItem);
@@ -289,10 +356,12 @@ internal sealed partial class Radio
             menu.Items.Add(trackItem);
         }
         menu.Items.Add(new Separator());
+        if (UpdateBannerVisible)
+            menu.Items.Add(Item(T("Zaktualizuj do ", "Update to ") + availableUpdate.Version.ToString(3), Theme.DownloadIcon, () => OpenPlayer()));
         menu.Items.Add(Item(T("Ustawienia", "Settings"), Theme.SettingsIcon, () =>
         {
             playerPanel?.Close();
-            OpenPlayer(true);
+            OpenPlayer("settings");
         }));
         menu.Items.Add(Item(T("Zakończ", "Quit"), Theme.QuitIcon, Shutdown));
         return menu;
@@ -339,13 +408,56 @@ internal sealed partial class Radio
     private void SetTrayText(string text) =>
         tray.Text = text.Length <= 63 ? text : text.Substring(0, 62) + "…";
 
+    // ---- Sleep timer ----
+
+    private string SleepLabel => T("Wyłączy się o ", "Stops at ") + sleepAt?.ToString("HH:mm");
+
+    private void FillSleepMenu(ItemsControl target)
+    {
+        foreach (int minutes in new[] { 15, 30, 45, 60, 90 })
+            target.Items.Add(Item(minutes + " min", sleepAt != null && sleepMinutes == minutes ? Theme.CheckIcon : null,
+                () => SetSleepTimer(minutes)));
+        target.Items.Add(new Separator());
+        target.Items.Add(Item(T("Wyłączony", "Off"), sleepAt == null ? Theme.CheckIcon : null, () => SetSleepTimer(null)));
+    }
+
+    private void SetSleepTimer(int? minutes)
+    {
+        sleepMinutes = minutes ?? 0;
+        sleepAt = minutes == null ? (DateTime?)null : DateTime.Now.AddMinutes(minutes.Value);
+        Volatile.Write(ref fade, 100);
+        if (sleepAt == null) sleepTimer.Stop();
+        else sleepTimer.Start();
+    }
+
+    private void SleepTick()
+    {
+        if (sleepAt == null) { sleepTimer.Stop(); return; }
+        double left = (sleepAt.Value - DateTime.Now).TotalSeconds;
+        if (left <= 0)
+        {
+            SetSleepTimer(null);
+            if (session != null) StopPlayback(T("Wyłączono wyłącznikiem czasowym", "Stopped by the sleep timer"));
+        }
+        else Volatile.Write(ref fade, left >= 30 ? 100 : (int)(left * 100 / 30));
+    }
+
+    // What the players use: the chosen volume, lowered while the sleep timer fades out.
+    private int EffectiveVolume() => Volatile.Read(ref volume) * Volatile.Read(ref fade) / 100;
+
+    // ---- Playback ----
+
     private void SelectStation(int index)
     {
         if (station == index || index < 0 || index >= Stations.Count) return;
         station = index;
         SetTrayText(AppName + " · " + Stations[index].Name);
         if (session != null) StartPlayback();
-        else SetStatus(Ready);
+        else
+        {
+            SetStatus(Ready);
+            UpdateMediaSession();
+        }
     }
 
     private void ChangeVolume(int value)
@@ -371,6 +483,7 @@ internal sealed partial class Radio
         using (var request = new CancellationTokenSource())
         {
             session = request;
+            CancellationToken token = request.Token;
             string stream = Stations[station].Url;
             int playingStation = new Uri(stream).Host switch
             {
@@ -380,49 +493,69 @@ internal sealed partial class Radio
             };
             SetStatus(Connecting);
             string mode = decoder;
+            bool everPlayed = false, polling = false;
             Task previous = audio;
             audio = Task.Run(async () =>
             {
                 try { await previous.ConfigureAwait(false); }
                 catch (Exception) { /* The previous request reports its own error. */ }
-                Action started = () => Post(() =>
+                Action started = () =>
                 {
-                    if (session != request) return;
-                    lastPlayed = stream;
-                    SavePreferences();
-                    SetStatus(StationName);
-                    if (playingStation == 3) _ = PollRadio357(request);
-                });
+                    everPlayed = true;
+                    Post(() =>
+                    {
+                        if (session != request) return;
+                        playing = true;
+                        lastPlayed = stream;
+                        SavePreferences();
+                        SetStatus(StationName);
+                        if (playingStation == 3 && !polling)
+                        {
+                            polling = true;
+                            _ = PollRadio357(request);
+                        }
+                    });
+                };
                 Action<string> titleChanged = value =>
                 {
                     if (playingStation != 3) UpdateTrack(request, value, playingStation);
                 };
-                if (mode != "ffmpeg")
+                // Internet radio drops now and then (Wi-Fi, sleep, server restarts): connect again, waiting
+                // a bit longer each time. A station that never started gets only two retries.
+                int attempt = 0;
+                while (true)
                 {
+                    var clock = Stopwatch.StartNew();
+                    ExceptionDispatchInfo failure = null;
                     try
                     {
-                        // MP3 and AAC: Windows' own decoders, nothing to download.
-                        StreamPlayer.Play(stream, request.Token, () => Volatile.Read(ref volume), started, titleChanged);
-                        return;
+                        await PlayOnce(stream, mode, token, started, titleChanged,
+                            () => Post(() => { if (session == request) SetStatus(Connecting); })).ConfigureAwait(false);
                     }
-                    catch (UnsupportedFormatException) when (mode == "windows")
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                    catch (StationRefusedException) { throw; }
+                    catch (Exception error) { failure = ExceptionDispatchInfo.Capture(error); }
+                    token.ThrowIfCancellationRequested();
+                    if (clock.Elapsed > TimeSpan.FromMinutes(1)) attempt = 0;
+                    if (attempt >= (everPlayed ? 10 : 2))
                     {
-                        throw new InvalidOperationException(T(
-                            "Ta stacja nadaje w formacie, którego Windows nie obsługuje. Włącz FFmpeg w ustawieniach.",
-                            "This station uses a format Windows can't play. Turn on FFmpeg in the settings."));
+                        failure?.Throw();
+                        return;   // the station keeps ending its broadcast
                     }
-                    catch (UnsupportedFormatException) { }
-                }
-                // Anything else (Ogg/Opus, FLAC, HLS…) or FFmpeg chosen in the settings:
-                // FFmpeg, downloaded the first time it is needed.
-                Task<string> ffmpeg = EnsureFFmpeg(request.Token);
-                if (!ffmpeg.IsCompleted)
-                {
-                    await ffmpeg.ConfigureAwait(false);
+                    int delay = new[] { 2, 3, 5, 10, 15, 30 }[Math.Min(attempt, 5)];
+                    attempt++;
+                    Post(() =>
+                    {
+                        if (session != request) return;
+                        playing = false;
+                        track = null;
+                        artworkUrl = null;
+                        RefreshTrack();
+                        SetStatus(T("Brak połączenia. Ponawiam za ", "Connection lost. Retrying in ") + delay + " s…");
+                    });
+                    await Task.Delay(TimeSpan.FromSeconds(delay), token).ConfigureAwait(false);
                     Post(() => { if (session == request) SetStatus(Connecting); });
                 }
-                FfmpegPlayer.Play(await ffmpeg.ConfigureAwait(false), stream, request.Token,
-                    () => Volatile.Read(ref volume), started, titleChanged);
             });
             try
             {
@@ -436,7 +569,35 @@ internal sealed partial class Radio
         }
     }
 
-    private static string Connecting => T("Łączenie ze stacją…", "Connecting to the station…");
+    private async Task PlayOnce(string stream, string mode, CancellationToken token, Action started,
+        Action<string> titleChanged, Action downloaded)
+    {
+        if (mode != "ffmpeg")
+        {
+            try
+            {
+                // MP3 and AAC: Windows' own decoders, nothing to download.
+                StreamPlayer.Play(stream, token, EffectiveVolume, started, titleChanged);
+                return;
+            }
+            catch (UnsupportedFormatException) when (mode == "windows")
+            {
+                throw new StationRefusedException(T(
+                    "Ta stacja nadaje w formacie, którego Windows nie obsługuje. Włącz FFmpeg w ustawieniach.",
+                    "This station uses a format Windows can't play. Turn on FFmpeg in the settings."));
+            }
+            catch (UnsupportedFormatException) { }
+        }
+        // Anything else (Ogg/Opus, FLAC, HLS…) or FFmpeg chosen in the settings:
+        // FFmpeg, downloaded the first time it is needed.
+        Task<string> ffmpeg = EnsureFFmpeg(token);
+        if (!ffmpeg.IsCompleted)
+        {
+            await ffmpeg.ConfigureAwait(false);
+            downloaded();
+        }
+        FfmpegPlayer.Play(await ffmpeg.ConfigureAwait(false), stream, token, EffectiveVolume, started, titleChanged);
+    }
 
     private Task<string> EnsureFFmpeg(CancellationToken cancel) =>
         FFmpeg.EnsureAsync(percent => Post(() => SetStatus(percent < 100
@@ -447,6 +608,7 @@ internal sealed partial class Radio
     {
         CancellationTokenSource current = session;
         session = null;
+        playing = false;
         current?.Cancel();
         track = null;
         artworkUrl = null;
@@ -491,16 +653,26 @@ internal sealed partial class Radio
     {
         string title = ParseTrack(raw, playingStation);
         Match match = Regex.Match(raw ?? "", "amgArtworkURL=\"([^\"]+)\"");
-        string cover = title != null && match.Success ? match.Groups[1].Value : null;
+        string cover = title != null && match.Success && Storage.IsWebUrl(match.Groups[1].Value) ? match.Groups[1].Value : null;
         Post(() =>
         {
-            if (session != request) return;
-            if (track == title && artworkUrl == cover) return;
+            if (session != request || track == title) return;
             track = title;
             artworkUrl = cover;
             RefreshTrack();
             UpdateMediaSession();
+            if (title == null) return;
+            AddToHistory(title);
+            if (cover == null) FindCover(request, title);
         });
+    }
+
+    private async void FindCover(CancellationTokenSource request, string title)
+    {
+        string found = await Covers.Find(metadataClient, title);
+        if (found == null || session != request || track != title) return;
+        artworkUrl = found;
+        UpdateMediaSession();
     }
 
     private static bool Has(string text, string part) => text.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0;
@@ -565,6 +737,8 @@ internal sealed partial class Radio
         }
     }
 
+    // ---- Windows media controls (Win+A, media keys, lock screen) ----
+
     // A muted, looping silent clip keeps "Minimalistic Radio" in the Windows media controls
     // (and the Windhawk taskbar player) even while the radio is stopped.
     private void AttachMediaSession()
@@ -572,6 +746,7 @@ internal sealed partial class Radio
         try
         {
             mediaSession?.Dispose();
+            shownThumbnail = null;
             mediaSession = new Windows.Media.Playback.MediaPlayer();
             mediaSession.CommandManager.IsEnabled = false;
             mediaSession.IsMuted = true;
@@ -635,21 +810,161 @@ internal sealed partial class Radio
         return stream;
     }
 
+    // The song's cover when known, otherwise the station's logo.
+    private string CoverUrl => artworkUrl ??
+        (station >= 0 && station < Stations.Count && Storage.IsWebUrl(Stations[station].Logo) ? Stations[station].Logo : null);
+
     private void UpdateMediaSession()
     {
         if (mediaSession == null) return;
         try
         {
             var controls = mediaSession.SystemMediaTransportControls;
-            controls.PlaybackStatus = session == null ? Windows.Media.MediaPlaybackStatus.Paused : Windows.Media.MediaPlaybackStatus.Playing;
+            controls.PlaybackStatus = session == null ? Windows.Media.MediaPlaybackStatus.Paused
+                : playing ? Windows.Media.MediaPlaybackStatus.Playing : Windows.Media.MediaPlaybackStatus.Changing;
             var display = controls.DisplayUpdater;
             display.Type = Windows.Media.MediaPlaybackType.Music;
-            display.MusicProperties.Title = track ?? StationName;
-            display.MusicProperties.Artist = track == null ? AppName : StationName;
+            Covers.Split(track, out string artist, out string song);
+            display.MusicProperties.Title = track == null ? StationName : song;
+            display.MusicProperties.Artist = track == null ? AppName : artist ?? StationName;
+            display.MusicProperties.AlbumTitle = StationName;
+            string picture = CoverUrl;
+            if (picture != shownThumbnail)
+            {
+                shownThumbnail = picture;
+                display.Thumbnail = picture == null ? null
+                    : Windows.Storage.Streams.RandomAccessStreamReference.CreateFromUri(new Uri(picture));
+            }
             display.Update();
         }
         catch (Exception error) { Debug.WriteLine(error); }
     }
+
+    // ---- History ----
+
+    private void AddToHistory(string title)
+    {
+        if (history.Count > 0 && history[0].Title == title && history[0].Station == StationName) return;
+        history.Insert(0, new HistoryEntry { Title = title, Station = StationName, Time = DateTime.Now });
+        if (history.Count > 100) history.RemoveRange(100, history.Count - 100);
+        historyVersion++;
+        SaveHistory();
+    }
+
+    private void ClearHistory()
+    {
+        history.Clear();
+        historyVersion++;
+        SaveHistory();
+    }
+
+    private void SaveHistory()
+    {
+        if (testMenu) return;
+        try { Storage.Write(Storage.HistoryFile, history); }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
+    }
+
+    private void LoadHistory()
+    {
+        var saved = Storage.Read<List<HistoryEntry>>(Storage.HistoryFile);
+        if (saved != null) history.AddRange(saved.Where(entry => !string.IsNullOrEmpty(entry?.Title)).Take(100));
+    }
+
+    // ---- Updates ----
+
+    private bool UpdateBannerVisible => installing || (availableUpdate != null && availableUpdate.Tag != skippedVersion &&
+        (remindAfter == null || DateTime.UtcNow >= remindAfter.Value.ToUniversalTime()));
+
+    private async void CheckForUpdates(bool manual)
+    {
+        if (testMenu || installing) return;
+        if (!manual && (!checkUpdates || (lastUpdateCheck != null &&
+            DateTime.UtcNow - lastUpdateCheck.Value.ToUniversalTime() < TimeSpan.FromHours(24))))
+            return;
+        lastUpdateCheck = DateTime.UtcNow;
+        SavePreferences();
+        if (manual)
+        {
+            updateStatus = T("Sprawdzam…", "Checking…");
+            updateVersion++;
+        }
+        try
+        {
+            Release latest = await Updater.Latest(metadataClient);
+            availableUpdate = latest != null && latest.Version > Updater.Current ? latest : null;
+            updateStatus = availableUpdate == null && manual ? T("Masz najnowszą wersję.", "You have the latest version.") : null;
+            if (availableUpdate != null && manual)
+            {
+                // Asked for explicitly: show it again even if it was postponed or skipped.
+                remindAfter = null;
+                skippedVersion = null;
+                SavePreferences();
+            }
+            else if (availableUpdate != null && availableUpdate.Tag != skippedVersion && availableUpdate.Tag != notifiedVersion)
+            {
+                // Each new version is announced once; after that only the panel shows it.
+                notifiedVersion = availableUpdate.Tag;
+                SavePreferences();
+                tray.ShowBalloonTip(6000, AppName, string.Format(T(
+                    "Jest nowa wersja {0}. Kliknij, aby zobaczyć.", "Version {0} is available. Click to see it."),
+                    availableUpdate.Version.ToString(3)), Forms.ToolTipIcon.Info);
+            }
+        }
+        catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException ||
+            error is ArgumentException || error is InvalidOperationException)
+        {
+            Debug.WriteLine(error);
+            if (manual) updateStatus = T("Nie udało się sprawdzić aktualizacji.", "Couldn't check for updates.");
+        }
+        updateVersion++;
+    }
+
+    private void PostponeUpdate()
+    {
+        remindAfter = DateTime.UtcNow.AddDays(3);
+        SavePreferences();
+        updateVersion++;
+    }
+
+    private void SkipUpdate()
+    {
+        skippedVersion = availableUpdate?.Tag;
+        SavePreferences();
+        updateVersion++;
+    }
+
+    private async void InstallUpdate()
+    {
+        Release release = availableUpdate;
+        if (release == null || installing) return;
+        installing = true;
+        updateStatus = T("Pobieranie aktualizacji…", "Downloading the update…");
+        updateVersion++;
+        try
+        {
+            string file = await Updater.Download(release, percent => Post(() =>
+            {
+                updateStatus = T("Pobieranie aktualizacji… ", "Downloading the update… ") + percent + "%";
+                updateVersion++;
+            }));
+            Updater.Install(file);
+            Shutdown();
+        }
+        catch (Exception error) when (error is HttpRequestException || error is IOException || error is InvalidDataException ||
+            error is UnauthorizedAccessException || error is InvalidOperationException || error is OperationCanceledException ||
+            error is System.ComponentModel.Win32Exception)
+        {
+            Debug.WriteLine(error);
+            installing = false;
+            updateStatus = T("Nie udało się zainstalować. Otwieram stronę z nową wersją.",
+                "Couldn't install it. Opening the page with the new version.");
+            updateVersion++;
+            OpenWebPage(release.Page ?? Updater.Page + "/releases/latest");
+        }
+    }
+
+    // ---- Stored settings ----
 
     private string StationName => station >= 0 && station < Stations.Count ? Stations[station].Name : AppName;
 
@@ -661,6 +976,11 @@ internal sealed partial class Radio
         lastPlayed = saved.LastPlayed;
         decoder = saved.Decoder == "windows" || saved.Decoder == "ffmpeg" ? saved.Decoder : "auto";
         Lang.Setting = saved.Language == "pl" || saved.Language == "en" ? saved.Language : "auto";
+        checkUpdates = saved.CheckUpdates ?? true;
+        lastUpdateCheck = saved.LastUpdateCheck;
+        remindAfter = saved.RemindAfter;
+        skippedVersion = saved.SkippedVersion;
+        notifiedVersion = saved.NotifiedVersion;
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
     }
@@ -671,7 +991,11 @@ internal sealed partial class Radio
         try
         {
             Storage.Write(Storage.PreferencesFile, new Preferences
-                { Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting, Decoder = decoder });
+            {
+                Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting, Decoder = decoder,
+                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, RemindAfter = remindAfter,
+                SkippedVersion = skippedVersion, NotifiedVersion = notifiedVersion
+            });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         { Debug.WriteLine(error); }
@@ -689,6 +1013,9 @@ internal sealed partial class Radio
 
     private void Shutdown()
     {
+        SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        updateTimer.Stop();
+        sleepTimer.Stop();
         StopPlayback();
         CloseMenu();
         panelListener?.Unregister(null);

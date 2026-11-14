@@ -91,4 +91,10 @@ internal static class Theme
     internal const string TaskbarIcon = "M3 5 A2 2 0 0 1 5 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 Z M3 15 H21 M15 18 H18";
     internal const string ExternalIcon = "M15 3 H21 V9 M10 14 L21 3 M18 13 V19 A2 2 0 0 1 16 21 H5 A2 2 0 0 1 3 19 V8 A2 2 0 0 1 5 6 H11";
     internal const string CheckSmallIcon = "M20 6 L9 17 L4 12";
+    internal const string HistoryIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 6 V12 L16 14";
+    internal const string MoonIcon = "M12 3 A6 6 0 0 0 21 12 A9 9 0 1 1 12 3 Z";
+    internal const string UpdateIcon = "M21 12 A9 9 0 1 1 18.36 5.64 M21 3 V9 H15";
+    internal const string DownloadIcon = "M21 15 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V15 M7 10 L12 15 L17 10 M12 15 V3";
+    internal const string PowerIcon = "M12 2 V12 M18.4 6.6 A9 9 0 1 1 5.63 6.64";
+    internal const string ListIcon = "M8 6 H21 M8 12 H21 M8 18 H21 M3 6 H3.01 M3 12 H3.01 M3 18 H3.01";
 }

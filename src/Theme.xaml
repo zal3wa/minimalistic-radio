@@ -166,6 +166,39 @@
     <Setter Property="FontSize" Value="13"/>
   </Style>
 
+  <!-- On/off switch, Windows 11 look; the label ("On"/"Off") is the content, shown on the left. -->
+  <Style x:Key="ToggleSwitch" TargetType="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <ContentPresenter VerticalAlignment="Center" Margin="0,0,10,0" RecognizesAccessKey="False"/>
+            <Grid Width="40" Height="20" VerticalAlignment="Center">
+              <Border x:Name="Track" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource Subtle}" Background="Transparent"/>
+              <Ellipse x:Name="Knob" Width="12" Height="12" Fill="{DynamicResource Subtle}" HorizontalAlignment="Left" Margin="4,0,0,0"/>
+            </Grid>
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Track" Property="Background" Value="{DynamicResource Accent}"/>
+              <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+              <Setter TargetName="Knob" Property="Fill" Value="{DynamicResource AccentFg}"/>
+              <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+              <Setter TargetName="Knob" Property="Margin" Value="0,0,4,0"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Knob" Property="Width" Value="14"/>
+              <Setter TargetName="Knob" Property="Height" Value="14"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- Slider: thin track, accent fill, round thumb. -->
   <Style x:Key="SliderPart" TargetType="RepeatButton">
     <Setter Property="Focusable" Value="False"/>

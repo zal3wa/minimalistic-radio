@@ -22,6 +22,18 @@ public sealed class Preferences
     public string LastPlayed { get; set; }
     public string Language { get; set; }   // "auto", "pl", "en"
     public string Decoder { get; set; }    // "auto", "windows", "ffmpeg"
+    public bool? CheckUpdates { get; set; }
+    public DateTime? LastUpdateCheck { get; set; }
+    public DateTime? RemindAfter { get; set; }
+    public string SkippedVersion { get; set; }
+    public string NotifiedVersion { get; set; }
+}
+
+public sealed class HistoryEntry
+{
+    public string Title { get; set; }
+    public string Station { get; set; }
+    public DateTime Time { get; set; }
 }
 
 internal sealed class DirectoryStation
@@ -35,6 +47,7 @@ internal static class Storage
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Minimalistic Radio");
     internal static readonly string StationFile = Path.Combine(Folder, "stations.json");
     internal static readonly string PreferencesFile = Path.Combine(Folder, "preferences.json");
+    internal static readonly string HistoryFile = Path.Combine(Folder, "history.json");
 
     internal static T Read<T>(string file) where T : class
     {
@@ -50,7 +63,7 @@ internal static class Storage
     // Throws IOException/UnauthorizedAccessException; the old file stays intact if writing fails.
     internal static void Write(string file, object data)
     {
-        Directory.CreateDirectory(Folder);
+        Directory.CreateDirectory(Path.GetDirectoryName(file));
         string temporary = file + ".tmp";
         File.WriteAllText(temporary, new JavaScriptSerializer().Serialize(data));
         File.Copy(temporary, file, true);

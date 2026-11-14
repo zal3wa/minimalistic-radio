@@ -62,7 +62,7 @@ internal static class FfmpegPlayer
                     throw new InvalidOperationException(Lang.T("Odtwarzacz przestał odpowiadać.", "The player stopped responding."));
                 if (decoder.ExitCode == 0 && count == 0) return;
                 if (denied.GetAwaiter().GetResult())
-                    throw new InvalidOperationException(Lang.T("Serwer stacji odmówił dostępu (403).", "The station's server refused access (403)."));
+                    throw new StationRefusedException(Lang.T("Serwer stacji odmówił dostępu (403).", "The station's server refused access (403)."));
                 throw new InvalidOperationException(Lang.T("Nie udało się odtworzyć stacji. Spróbuj ponownie.", "Couldn't play the station. Try again."));
             }
             finally { Kill(decoder); }

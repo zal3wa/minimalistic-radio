@@ -98,3 +98,41 @@ internal static class StartMenu
         public IntPtr Padding;
     }
 }
+
+// "Start with Windows": the current user's Run key, so no administrator rights are needed and the entry
+// also shows in Settings → Apps → Startup. "--autostart" starts the radio quietly next to the clock.
+internal static class Autostart
+{
+    private const string Key = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    internal static bool Enabled
+    {
+        get
+        {
+            using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Key))
+                return key?.GetValue(Radio.AppName) != null;
+        }
+    }
+
+    internal static void Set(bool enabled, string exe)
+    {
+        try
+        {
+            using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(Key))
+            {
+                if (enabled) key.SetValue(Radio.AppName, "\"" + exe + "\" --autostart");
+                else key.DeleteValue(Radio.AppName, false);
+            }
+        }
+        catch (Exception error) when (error is UnauthorizedAccessException || error is System.Security.SecurityException || error is IOException)
+        {
+            Debug.WriteLine(error);
+        }
+    }
+
+    // Keeps the entry pointing at this exe if it was moved.
+    internal static void Refresh(string exe)
+    {
+        if (Enabled) Set(true, exe);
+    }
+}
