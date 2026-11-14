@@ -20,6 +20,7 @@
 - Nothing outside `linux/`, `.github/workflows/linux.yml`, `.github/workflows/build.yml` (a path filter only), `README.md`, `docs/BUILDING.md` and new files under `docs/` changes. `src/` is never touched.
 - Linux tags are `linux-vX.Y.Z` (pre-releases `linux-vX.Y.Z-beta.N`). The first release is **1.0.0**. Every Linux GitHub release is created with `--latest=false`.
 - Use only libadwaita ≥ 1.5 and GTK ≥ 4.14 APIs, because the Snap's GNOME platform may be that old.
+- Icons inside the window and in menus are standard symbolic names from the system icon theme (e.g. `media-playback-start-symbolic`, `media-playback-stop-symbolic`, `emblem-system-symbolic` or `preferences-system-symbolic`, `document-open-recent-symbolic`, `list-add-symbolic`, `weather-clear-night-symbolic`, `edit-copy-symbolic`). No Lucide icons on Linux. Only the app icon and the symbolic tray icon are the radio's own.
 - No pip runtime dependencies: only the standard library plus what the GNOME runtime ships (PyGObject, GTK, libadwaita, GStreamer). pytest is a development dependency only.
 - `core/` and `controller.py` never import `gi`.
 - User-visible strings are English in code, wrapped in `_()`, with a Polish translation in `linux/po/pl.po`. Reuse the Windows wording: the `T("polski", "English")` pairs in `src/Radio/*.cs`.
@@ -836,11 +837,12 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - Create: `docs/LINUX-PUBLISHING.md`, `docs/LINUX-TEST-CHECKLIST.md`
 
 - [ ] **Step 1: Update `README.md`.**
-  - A short line under the Windows download: "Also for Linux: see below".
+  - At the top, next to the existing "Download for Windows" button, a "Download for Linux" button: a new `docs/download-linux.svg` drawn in the same style and size as `docs/download-windows.svg` (Tux or a generic penguin-free "Linux" label, no third-party logo copied), linking to `#linux`.
   - A `## Linux` section:
     - one line on what it is
-    - install buttons (Snap Store badge and Flathub badge as links, hidden until each is live; until then, the GitHub release `.flatpak`)
-    - the four light screenshots, using the README's existing `<picture>` light/dark pattern
+    - install buttons: the official Flathub badge and the official Snap Store badge (from flathub.org and snapcraft.io), each shown once that store is live; until then, the GitHub release `.flatpak`
+    - the four screenshots, using the README's existing `<picture>` light/dark pattern
+    - a tray-menu screenshot only once a beta tester has sent one from a real desktop (the desktop draws that menu, so the screenshot mode can't)
   - Privacy: say the Linux version contacts the same servers except GitHub, and that updates come from Flathub or the Snap Store.
   - Uninstall: one line each, "remove it in GNOME Software, Discover or App Center", with Flatpak's "delete data" option noted.
 - [ ] **Step 2: Update `docs/BUILDING.md`.** A `## Linux` section: run the unit tests anywhere; build with Meson; build the Flatpak and the Snap; release with a `linux-v*` annotated tag (the version in `__init__.py` and the metainfo first).
