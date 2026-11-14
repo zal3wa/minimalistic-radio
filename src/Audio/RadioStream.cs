@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 
 // The station itself refuses (403, 404, a format that can't be played…): trying again won't help.
-internal sealed class StationRefusedException : InvalidOperationException
+internal class StationRefusedException : InvalidOperationException
 {
     internal StationRefusedException(string message) : base(message) { }
 }

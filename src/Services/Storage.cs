@@ -16,12 +16,12 @@ public sealed class SavedStation
     public string Logo { get; set; }
 }
 
+// Files from before 2.3.0 also have "Decoder" (the FFmpeg setting); JavaScriptSerializer skips unknown keys.
 public sealed class Preferences
 {
     public int Volume { get; set; }
     public string LastPlayed { get; set; }
     public string Language { get; set; }   // "auto", "pl", "en"
-    public string Decoder { get; set; }    // "auto", "windows", "ffmpeg"
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
@@ -85,10 +85,31 @@ internal static class Storage
 
     internal static bool SameStream(string first, string second) => StreamKey(first) == StreamKey(second);
 
+    // Versions before 2.3.0 could download FFmpeg (about 100 MB) into a subfolder; nothing uses it any more.
+    // It may be missing or still in use: then it's left for the next start.
+    internal static void RemoveOldFFmpeg()
+    {
+        string folder = Path.Combine(Folder, "ffmpeg");
+        try { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
+    }
+
+    // Windows plays MP3 and AAC (also HE-AAC, "AAC+"), not HLS playlists or other formats (Ogg, FLAC…).
+    // An unknown codec is often MP3 or AAC after all; if not, playing it says so.
+    internal static bool Playable(string codec, bool hls)
+    {
+        if (hls) return false;
+        switch ((codec ?? "").Trim().ToUpperInvariant())
+        {
+            case "MP3": case "AAC": case "AAC+": case "UNKNOWN": case "": return true;
+            default: return false;
+        }
+    }
+
     // radio-browser.info: free community directory of internet radio stations.
     internal static async Task<DirectoryStation[]> Search(HttpClient client, string query, CancellationToken token)
     {
-        string route = "/json/stations/search?hidebroken=true&limit=30&order=clickcount&reverse=true&name=" + Uri.EscapeDataString(query);
+        string route = "/json/stations/search?hidebroken=true&limit=40&order=clickcount&reverse=true&name=" + Uri.EscapeDataString(query);
         foreach (string server in new[] { "de1.api.radio-browser.info", "nl1.api.radio-browser.info" })
         {
             try
@@ -114,10 +135,11 @@ internal static class Storage
                                 Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0
                             };
                             string address = IsWebUrl(entry.ResolvedUrl) ? entry.ResolvedUrl : entry.Url;
-                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(address) && seen.Add(address))
+                            bool hls = item.TryGetValue("hls", out object flag) && flag is int on && on == 1;
+                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(address) && Playable(entry.Codec, hls) && seen.Add(address))
                                 found.Add(entry);
                         }
-                        return found.ToArray();
+                        return found.Take(30).ToArray();   // asked for 40: some are filtered out
                     }
                 }
             }

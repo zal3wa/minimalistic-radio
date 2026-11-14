@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 205 KB</h1>
+<h1 align="center">Minimalistic Radio - only 184 KB</h1>
 
 <p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
@@ -64,6 +64,14 @@
   </tr>
 </table>
 
+## Taskbar player (optional)
+
+On Windows 11 the song title and the radio's buttons can also sit on the taskbar:
+
+1. Install the free [Windhawk](https://windhawk.net).
+2. In it, install the [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod.
+3. Right-click the player → *Settings* → set the click action to *Open media app*. A click on the player then opens the radio's panel.
+
 ## Privacy
 
 The radio collects no personal data: no accounts, no telemetry, no ads. It only connects to:
@@ -72,12 +80,12 @@ The radio collects no personal data: no accounts, no telemetry, no ads. It only 
 - `radio-browser.info`: when you search for stations, it gets what you typed,
 - `itunes.apple.com`: the artist and title of the song that's playing, to find its cover art ([Apple's privacy policy](https://www.apple.com/legal/privacy/)),
 - `api.github.com`: to check for updates, every few hours; can be turned off in Settings → Updates ([GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)),
-- `github.com`: to download FFmpeg or a new version, only when needed,
+- `github.com`: to download a new version, only when there is one,
 - `stream.radio357.pl`: song titles, only while Radio 357 is playing.
 
 Nothing else is sent. Like any internet connection, these servers see your IP address.
 
-Settings, the station list, the history and a downloaded FFmpeg are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
+Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
 
 ## Uninstall
 

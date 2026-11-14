@@ -127,10 +127,7 @@ internal static class Theme
     internal const string BackIcon = "M19 12 H5 M12 19 L5 12 L12 5";
     internal const string CloseIcon = "M18 6 L6 18 M6 6 L18 18";
     internal const string GlobeIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 2 A14.5 14.5 0 0 0 12 22 A14.5 14.5 0 0 0 12 2 M2 12 H22";
-    internal const string WaveIcon = "M2 10 V13 M6 6 V17 M10 3 V21 M14 8 V15 M18 5 V18 M22 10 V13";
-    internal const string TaskbarIcon = "M3 5 A2 2 0 0 1 5 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 Z M3 15 H21 M15 18 H18";
     internal const string ExternalIcon = "M15 3 H21 V9 M10 14 L21 3 M18 13 V19 A2 2 0 0 1 16 21 H5 A2 2 0 0 1 3 19 V8 A2 2 0 0 1 5 6 H11";
-    internal const string CheckSmallIcon = "M20 6 L9 17 L4 12";
     internal const string PopupIcon = "M3 5 A2 2 0 0 1 5 3 H19 A2 2 0 0 1 21 5 V13 A2 2 0 0 1 19 15 H5 A2 2 0 0 1 3 13 Z M8 19 H16 M12 15 V19";
     internal const string UpdateReadyIcon ="M12 3 V15 M6 9 L12 15 L18 9 M5 20 H19";   // arrow down to a line, like Discord's
     internal const string HistoryIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 6 V12 L16 14";

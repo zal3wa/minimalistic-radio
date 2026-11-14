@@ -1,10 +1,12 @@
 using System;
 using System.IO;
 
-// The stream is not MP3/AAC (Ogg/Opus, FLAC, HLS playlist…), so FFmpeg has to play it.
-internal sealed class UnsupportedFormatException : Exception
+// The stream is not MP3/AAC (Ogg/Opus, FLAC, HLS playlist…): Windows can't play it, so trying again won't help.
+internal sealed class UnsupportedFormatException : StationRefusedException
 {
-    internal UnsupportedFormatException() : base("Ten format strumienia wymaga FFmpeg.") { }
+    internal UnsupportedFormatException() : base(Lang.T(
+        "Ta stacja nadaje w formacie, którego Windows nie odtwarza (tylko MP3 i AAC).",
+        "This station uses a format Windows can't play (only MP3 and AAC).")) { }
 }
 
 internal sealed class Frame

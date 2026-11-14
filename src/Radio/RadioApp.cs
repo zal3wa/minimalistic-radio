@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -52,7 +53,6 @@ internal sealed partial class Radio
     private string shownThumbnail;
     private int volume = 30;
     private bool playing;
-    private string decoder = "auto";   // "auto": Windows, FFmpeg when needed; "windows"; "ffmpeg"
     private string status = Ready;
     private CancellationTokenSource session;
     private Task audio = Task.CompletedTask;
@@ -67,6 +67,14 @@ internal sealed partial class Radio
     private int sleepMinutes;
     private int fade = 100;
     private readonly DispatcherTimer sleepTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+
+    // Network changes (see OnNetworkChanged).
+    // Playback stopped after running out of retries: start again if the network is back within 10 minutes,
+    // not hours later somewhere else (a laptop opened in a meeting).
+    private DateTime? lostConnectionAt;
+    private static readonly TimeSpan LostConnectionWindow = TimeSpan.FromMinutes(10);
+    private bool networkWasDown;
+    private readonly DispatcherTimer networkSettle = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
 
     // Songs played, newest first.
     private readonly List<HistoryEntry> history = new List<HistoryEntry>();
@@ -111,8 +119,12 @@ internal sealed partial class Radio
             StartMenu.Register(Exe);
             Autostart.Refresh(Exe);
             Updater.CleanUp();
+            Storage.RemoveOldFFmpeg();
             AttachMediaSession();
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            NetworkChange.NetworkAvailabilityChanged += OnNetworkChanged;
+            NetworkChange.NetworkAddressChanged += OnNetworkChanged;
+            networkSettle.Tick += (_, _) => NetworkSettled();
             // Updates: first look 20 s after start, then hourly; CheckForUpdates itself keeps it to every 6 hours.
             updateTimer.Tick += (_, _) => CheckForUpdates(false);
             updateTimer.Start();
@@ -136,6 +148,31 @@ internal sealed partial class Radio
         if (e.Mode == PowerModes.Resume) Post(() => { if (session != null) StartPlayback(); });
     }
 
+    // When the network comes back, connect at once instead of waiting out the retry delays (up to 30 s),
+    // or start again if the retries ran out meanwhile. Switching Wi-Fi often changes only the address, not
+    // "available", so address changes count too. They come in bursts, so act once they settle.
+    private void OnNetworkChanged(object sender, EventArgs e) => Post(() =>
+    {
+        if ((e as NetworkAvailabilityEventArgs)?.IsAvailable == false) networkWasDown = true;
+        networkSettle.Stop();
+        networkSettle.Start();
+    });
+
+    private void NetworkSettled()
+    {
+        networkSettle.Stop();
+        if (!NetworkInterface.GetIsNetworkAvailable())
+        {
+            networkWasDown = true;
+            return;
+        }
+        // A station that is still playing kept its connection, unless the network was down in between.
+        bool restart = session != null ? !playing || networkWasDown
+            : lostConnectionAt != null && DateTime.UtcNow - lostConnectionAt.Value < LostConnectionWindow;
+        networkWasDown = false;
+        if (restart) StartPlayback();
+    }
+
     // "--test-menu": builds the menu and the panel without playing anything, exit code 0 = OK.
     // With "--preview" it also saves pictures of them (light and dark) to %TEMP%\MinimalisticRadio-*.png.
     private async void VerifyMenu()
@@ -157,6 +194,10 @@ internal sealed partial class Radio
             if (artist != "Leonard Cohen" || song != "Everybody Knows" || noArtist != null || onlyTitle != "Dżingiel" ||
                 Updater.ParseVersion("v2.10.0") <= Updater.ParseVersion("v2.9.1") || Updater.ParseVersion("v2.1") != new Version(2, 1, 0))
                 throw new InvalidOperationException("Błędny podział tytułu lub numer wersji.");
+            // Search shows only what Windows can play: MP3, AAC, AAC+ and unknown codecs, no HLS.
+            if (!Storage.Playable("MP3", false) || !Storage.Playable("aac+", false) || !Storage.Playable("UNKNOWN", false) ||
+                Storage.Playable("AAC", true) || Storage.Playable("OGG", false) || Storage.Playable("FLAC", false))
+                throw new InvalidOperationException("Błędny filtr formatów stacji.");
             using (var testSession = new CancellationTokenSource())
             {
                 session = testSession;
@@ -517,6 +558,7 @@ internal sealed partial class Radio
         if (session != null) StartPlayback();
         else
         {
+            lostConnectionAt = null;   // another station chosen: don't bring back the lost one
             SetStatus(Ready);
             UpdateMediaSession();
         }
@@ -554,7 +596,6 @@ internal sealed partial class Radio
                 _ => -1
             };
             SetStatus(Connecting);
-            string mode = decoder;
             bool everPlayed = false, polling = false;
             Task previous = audio;
             audio = Task.Run(async () =>
@@ -591,11 +632,11 @@ internal sealed partial class Radio
                     ExceptionDispatchInfo failure = null;
                     try
                     {
-                        await PlayOnce(stream, mode, token, started, titleChanged,
-                            () => Post(() => { if (session == request) SetStatus(Connecting); })).ConfigureAwait(false);
+                        // MP3 and AAC, decoded by Windows itself.
+                        StreamPlayer.Play(stream, token, EffectiveVolume, started, titleChanged);
                     }
                     catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-                    catch (StationRefusedException) { throw; }
+                    catch (StationRefusedException) { throw; }   // also a format Windows can't play
                     catch (Exception error) { failure = ExceptionDispatchInfo.Capture(error); }
                     token.ThrowIfCancellationRequested();
                     if (clock.Elapsed > TimeSpan.FromMinutes(1)) attempt = 0;
@@ -626,51 +667,22 @@ internal sealed partial class Radio
             }
             catch (Exception error)
             {
-                if (session == request) StopPlayback(error.Message);
+                if (session == request)
+                {
+                    StopPlayback(error.Message);
+                    // Not refused by the station: the connection was lost and the retries ran out.
+                    if (!(error is StationRefusedException)) lostConnectionAt = DateTime.UtcNow;
+                }
             }
         }
     }
-
-    private async Task PlayOnce(string stream, string mode, CancellationToken token, Action started,
-        Action<string> titleChanged, Action downloaded)
-    {
-        if (mode != "ffmpeg")
-        {
-            try
-            {
-                // MP3 and AAC: Windows' own decoders, nothing to download.
-                StreamPlayer.Play(stream, token, EffectiveVolume, started, titleChanged);
-                return;
-            }
-            catch (UnsupportedFormatException) when (mode == "windows")
-            {
-                throw new StationRefusedException(T(
-                    "Ta stacja nadaje w formacie, którego Windows nie obsługuje. Włącz FFmpeg w ustawieniach.",
-                    "This station uses a format Windows can't play. Turn on FFmpeg in the settings."));
-            }
-            catch (UnsupportedFormatException) { }
-        }
-        // Anything else (Ogg/Opus, FLAC, HLS…) or FFmpeg chosen in the settings:
-        // FFmpeg, downloaded the first time it is needed.
-        Task<string> ffmpeg = EnsureFFmpeg(token);
-        if (!ffmpeg.IsCompleted)
-        {
-            await ffmpeg.ConfigureAwait(false);
-            downloaded();
-        }
-        FfmpegPlayer.Play(await ffmpeg.ConfigureAwait(false), stream, token, EffectiveVolume, started, titleChanged);
-    }
-
-    private Task<string> EnsureFFmpeg(CancellationToken cancel) =>
-        FFmpeg.EnsureAsync(percent => Post(() => SetStatus(percent < 100
-            ? T("Pobieranie FFmpeg (jednorazowo)… ", "Downloading FFmpeg (one time)… ") + percent + "%"
-            : T("Instalowanie FFmpeg…", "Installing FFmpeg…"))), cancel);
 
     private void StopPlayback(string message = null)
     {
         CancellationTokenSource current = session;
         session = null;
         playing = false;
+        lostConnectionAt = null;
         current?.Cancel();
         track = null;
         artworkUrl = null;
@@ -1036,7 +1048,6 @@ internal sealed partial class Radio
         if (saved == null) return;
         volume = Clamp(saved.Volume, 0, 100);
         lastPlayed = saved.LastPlayed;
-        decoder = saved.Decoder == "windows" || saved.Decoder == "ffmpeg" ? saved.Decoder : "auto";
         Lang.Setting = saved.Language == "pl" || saved.Language == "en" ? saved.Language : "auto";
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
@@ -1052,7 +1063,7 @@ internal sealed partial class Radio
         {
             Storage.Write(Storage.PreferencesFile, new Preferences
             {
-                Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting, Decoder = decoder,
+                Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting,
                 CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup
             });
         }
@@ -1073,6 +1084,9 @@ internal sealed partial class Radio
     private void Shutdown()
     {
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        NetworkChange.NetworkAvailabilityChanged -= OnNetworkChanged;
+        NetworkChange.NetworkAddressChanged -= OnNetworkChanged;
+        networkSettle.Stop();
         updateTimer.Stop();
         sleepTimer.Stop();
         StopPlayback();

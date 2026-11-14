@@ -7,7 +7,7 @@ using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage.Streams;
 
-// Plays an MP3/AAC radio stream with the decoders built into Windows (no FFmpeg):
+// Plays an MP3/AAC radio stream with the decoders built into Windows:
 // frames from FrameReader are handed one by one to a MediaStreamSource.
 internal static class StreamPlayer
 {
@@ -40,7 +40,7 @@ internal static class StreamPlayer
                 int level = volume();
                 player.Volume = level / 100.0;
                 bool playing = false;
-                // A decoder failure before the first sound means Windows can't play this format: FFmpeg takes over.
+                // A decoder failure before the first sound means Windows can't play this format.
                 player.MediaFailed += (_, e) => done.TrySetResult(playing
                     ? new InvalidOperationException(Lang.T("Nie udało się odtworzyć stacji. Spróbuj ponownie.",
                         "Couldn't play the station. Try again."))
