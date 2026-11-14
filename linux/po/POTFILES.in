@@ -1,5 +1,6 @@
 minimalistic_radio/app.py
 minimalistic_radio/controller.py
+minimalistic_radio/platform/menu_model.py
 minimalistic_radio/audio/player.py
 data/io.github.zal3wa.MinimalisticRadio.desktop.in
 data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in

@@ -26,3 +26,9 @@ python.install_sources(
   'core/titles.py',
   subdir: 'minimalistic_radio/core',
 )
+
+python.install_sources(
+  'platform/__init__.py',
+  'platform/menu_model.py',
+  subdir: 'minimalistic_radio/platform',
+)

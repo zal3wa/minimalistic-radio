@@ -88,3 +88,48 @@ msgstr "Połączenie ze stacją zostało przerwane."
 #: minimalistic_radio/audio/player.py
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Nie udało się połączyć ze stacją. Sprawdź internet."
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Stop"
+msgstr "Zatrzymaj"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Station"
+msgstr "Stacja"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Volume"
+msgstr "Głośność"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Up 5%"
+msgstr "Zwiększ o 5%"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Down 5%"
+msgstr "Zmniejsz o 5%"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Mute"
+msgstr "Wycisz"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Sleep timer"
+msgstr "Wyłącznik czasowy"
+
+#: minimalistic_radio/platform/menu_model.py
+#, python-brace-format
+msgid "Stops at {time}"
+msgstr "Wyłączy się o {time}"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Off"
+msgstr "Wyłączony"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Settings"
+msgstr "Ustawienia"
+
+#: minimalistic_radio/platform/menu_model.py
+msgid "Quit"
+msgstr "Zakończ"

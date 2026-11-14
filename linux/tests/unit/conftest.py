@@ -35,3 +35,29 @@ def ctl(ctl_factory):
     controller = ctl_factory()
     controller.start(autostart=True)
     return controller
+
+
+@pytest.fixture
+def ctl_playing(ctl_factory):
+    """Two stations, the first playing at volume 30 with a song on."""
+    from minimalistic_radio.core.models import Preferences, Station
+    controller = ctl_factory(stations=(Station("Radio A", "http://a.example/live"),
+                                       Station("Radio B", "http://b.example/live")),
+                             prefs=Preferences(volume=30))
+    controller.start(autostart=True)
+    controller.select(0)
+    controller.play()
+    controller.on_player_started()
+    controller.track = "Leonard Cohen - Everybody Knows"
+    return controller
+
+
+@pytest.fixture
+def empty_ctl(ctl_factory):
+    controller = ctl_factory(stations=())
+    controller.start(autostart=True)
+    return controller
+
+
+def item(items, id):
+    return next(i for i in items if i.id == id)
