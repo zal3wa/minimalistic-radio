@@ -365,7 +365,10 @@ internal sealed partial class Radio
         // Header: title with History and Settings, the update banner, and the page title with a back arrow.
         var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), T("Historia utworów", "Song history"));
         var settingsButton = NewButton("GhostButton", Theme.Glyph(Theme.SettingsIcon), T("Ustawienia", "Settings"));
-        foreach (Button button in new[] { historyButton, settingsButton })
+        // Hides the panel (like the X of Windows 11 flyouts); the radio keeps playing next to the clock.
+        var closeButton = NewButton("GhostButton", Theme.Glyph(Theme.CloseIcon), T("Ukryj panel (radio gra dalej)", "Hide the panel (the radio keeps playing)"));
+        closeButton.Click += (_, _) => panel.Close();
+        foreach (Button button in new[] { historyButton, settingsButton, closeButton })
         {
             button.Padding = new Thickness(8, 6, 8, 6);
             button.VerticalAlignment = VerticalAlignment.Center;
@@ -979,6 +982,11 @@ internal sealed partial class Radio
             settings.Children.Add(Card(Theme.Glyph(Theme.UpdateIcon, 20), T("Aktualizacje", "Updates"), updateDescription,
                 Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); }),
                 Columns((updateNote, Star), (checkNow, Auto))));
+            // Quitting is rare and stops the music, so it lives here and in the tray menu, not next to Play.
+            var quit = SmallButton(null, T("Zakończ", "Quit"));
+            quit.Click += (_, _) => Shutdown();
+            settings.Children.Add(Card(Theme.Glyph(Theme.QuitIcon, 20), T("Zakończ Minimalistic Radio", "Quit Minimalistic Radio"),
+                T("Wyłącza radio i usuwa ikonę obok zegara", "Stops the radio and removes it from next to the clock"), quit));
             return settings;
         }
         settingsPane.Content = BuildSettings();
@@ -993,9 +1001,6 @@ internal sealed partial class Radio
         {
             if (track != null && !CopyText(track)) message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
         };
-        var quit = NewButton("GhostButton", T("Zakończ", "Quit"));
-        quit.Margin = new Thickness(12, 0, 0, 0);
-        quit.Click += (_, _) => Shutdown();
 
         var sleepButton = NewButton("GhostButton", null, T("Wyłącznik czasowy", "Sleep timer"));
         sleepButton.Padding = new Thickness(8, 6, 8, 6);
@@ -1035,13 +1040,12 @@ internal sealed partial class Radio
             (Spaced(Orientation.Horizontal, 10,
                 new Image { Source = titleIcon, Width = 20, Height = 20 },
                 new TextBlock { Text = AppName, FontSize = 16, VerticalAlignment = VerticalAlignment.Center }), Star),
-            (historyButton, Auto), (settingsButton, Auto));
+            (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
         var header = Spaced(Orientation.Vertical, 12, titleRow, banner, add, manual, fields, sectionRow);
         header.Margin = new Thickness(0, 0, 0, 8);
         var volumeRow = Columns((volumeText, Auto), (volumeSlider, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
-        var transport = Columns((play, Star), (quit, Auto));
-        var footer = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, transport);
+        var footer = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
         footer.Margin = new Thickness(0, 10, 0, 0);
 
         var middle = new Grid();
