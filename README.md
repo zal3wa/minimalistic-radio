@@ -13,17 +13,17 @@
 <table align="center">
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#right-click-the-menu"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tray-menu-dark.png">
         <img src="docs/screenshots/tray-menu-light.png" width="454" alt="Right click on the tray icon opens the menu">
-      </picture>
+      </picture></a>
       <br><b>Right click</b> on the icon: the menu
     </td>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#left-click-the-player"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tray-panel-dark.png">
         <img src="docs/screenshots/tray-panel-light.png" width="346" alt="Left click on the tray icon opens the player">
-      </picture>
+      </picture></a>
       <br><b>Left click</b>: the player
     </td>
   </tr>
@@ -32,33 +32,33 @@
 <table align="center">
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#station-search"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
         <img src="docs/screenshots/search-light.png" width="400" alt="Station search with logos, country, codec and bitrate">
-      </picture>
+      </picture></a>
       <br>Station search: thousands of stations from radio-browser.info
     </td>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#song-history"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
         <img src="docs/screenshots/history-light.png" width="400" alt="Song history">
-      </picture>
+      </picture></a>
       <br>Song history
     </td>
   </tr>
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#settings"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
         <img src="docs/screenshots/settings-light.png" width="400" alt="Settings">
-      </picture>
+      </picture></a>
       <br>Settings
     </td>
     <td align="center" valign="middle">
-      <picture>
+      <a href="docs/screenshots/README.md#station-change-card"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-dark.png">
         <img src="docs/screenshots/card-light.png" width="400" alt="Station change card">
-      </picture>
+      </picture></a>
       <br>Station change card (media keys)
     </td>
   </tr>
