@@ -47,3 +47,19 @@ jobs:
           if [ -z "$found" ]; then
             echo "AAC: stage gst-libav in the snap" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  # Pure-Python unit tests (core/, controller.py): no GTK needed.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run the unit tests
+        run: cd linux && python -m pytest -q
