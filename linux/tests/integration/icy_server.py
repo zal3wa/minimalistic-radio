@@ -44,18 +44,13 @@ FORMATS = {
         "avenc_aac bitrate=128000 ! aacparse ! audio/mpeg,mpegversion=4,stream-format=adts",
         "avenc_aac bitrate=128000 ! avmux_adts",
     ]),
-    # fdkaacenc picks the profile asked for first, but in ADTS (implicit SBR signalling) its output caps
-    # say "lc", so the filter must accept that too.
+    # fdkaacenc (GStreamer 1.24) picks HE-AAC from the profile asked for downstream, but in ADTS its output
+    # caps say "lc" (implicit SBR signalling), so asking for he-aac-v1 alone can't negotiate; with lc
+    # allowed too it has made plain AAC-LC so far, and the check below then skips the HE-AAC case.
     "heaac": ("audio/aacp", _he_aac, [
         "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000 ! capsfilter"
         ' caps="audio/mpeg,mpegversion=4,stream-format=adts,profile=he-aac-v1;'
         'audio/mpeg,mpegversion=4,stream-format=adts,profile=lc"',
-        # Raw HE-AAC (explicit SBR signalling) put into ADTS by FFmpeg's muxer or by aacparse.
-        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000"
-        " ! audio/mpeg,mpegversion=4,stream-format=raw,profile=he-aac-v1 ! avmux_adts",
-        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000"
-        " ! audio/mpeg,mpegversion=4,stream-format=raw,profile=he-aac-v1 ! aacparse"
-        " ! audio/mpeg,mpegversion=4,stream-format=adts",
     ]),
     "opus": ("audio/ogg", _ogg, ["opusenc bitrate=64000 ! oggmux"]),
 }
@@ -100,7 +95,7 @@ class IcyServer:
                     if reason is None and check(data):
                         self.streams[name] = (data, content_type)
                         break
-                    reasons.append(f"{chain}: {reason or 'wrong output, starts ' + data[:8].hex(' ')}")
+                    reasons.append(f"{chain}: {reason or f'the output is not {name}, it starts ' + data[:8].hex(' ')}")
                 else:
                     self.missing[name] = "; ".join(reasons)
         self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)

@@ -114,7 +114,7 @@ def _closed_port() -> int:
 def test_plays_and_reads_titles(drv, icy, fmt):
     if fmt in icy.missing:
         if fmt == "heaac":
-            pytest.skip(f"no HE-AAC encoder: {icy.missing[fmt]}")
+            pytest.skip(f"no HE-AAC test stream: {icy.missing[fmt]}")
         pytest.fail(f"couldn't make the {fmt} test stream: {icy.missing[fmt]}")
     drv.call("play", icy.url(f"/{fmt}"))
     assert drv.run(drv.playing_with_title), (drv.rec.started, drv.rec.titles, drv.rec.errors)
