@@ -506,7 +506,8 @@ internal sealed partial class Radio
             sectionLabel.Text = target == "settings" ? T("Ustawienia", "Settings")
                 : target == "history" ? T("Historia", "History") : T("Stacje", "Stations");
             backButton.Visibility = stations ? Visibility.Collapsed : Visibility.Visible;
-            historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Hidden;
+            // Off the stations page these two go away entirely, so the rest moves up to the X on the right.
+            historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
             if (target == "settings") settingsPane.ScrollToTop();
             if (target == "history")
             {
