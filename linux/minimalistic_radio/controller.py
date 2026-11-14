@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, Flag, auto
@@ -32,6 +33,7 @@ LONG_CONNECTION = timedelta(seconds=60)      # a connection that lasted longer r
 NETWORK_RETURN_WINDOW = timedelta(minutes=10)
 FADE_SECONDS = 30                            # the sleep timer fades out over its last 30 seconds
 RADIO357_POLL_SECONDS = 10
+COVERS_KEPT = 200                            # pictures kept in the cover cache
 LANGUAGES = ("auto", "pl", "en")
 
 
@@ -183,11 +185,32 @@ class RadioController:
         except OSError:
             self.history = []
         self.volume = self.prefs.volume
+        self._prune_covers()
         self.current = next((i for i, s in enumerate(self.stations) if s.url == self.prefs.last_played), -1)
         self.player.set_volume(self.effective_volume)
         self._emit(Change.STATE | Change.STATIONS | Change.VOLUME | Change.HISTORY | Change.PREFERENCES)
         if self.current >= 0 and not autostart:
             self.play()
+
+    def _prune_covers(self) -> None:
+        """Keeps only the newest cover pictures, so the cache doesn't grow with every song."""
+        try:
+            entries = list(os.scandir(self.paths.cache / "covers"))
+        except OSError:
+            return
+        files = []
+        for entry in entries:
+            try:
+                if entry.is_file():
+                    files.append((entry.stat().st_mtime, entry.path))
+            except OSError:
+                continue
+        files.sort(reverse=True)
+        for _mtime, path in files[COVERS_KEPT:]:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
     # Saving never stops the radio. Only a station list that couldn't be saved is worth telling (as Windows).
     def _stations_changed(self, extra: Change = Change(0)) -> None:

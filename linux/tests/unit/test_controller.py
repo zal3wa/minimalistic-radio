@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 
 from fakes import A, B, C
 from minimalistic_radio.controller import AddResult, Change, ErrorKind, ImportResult, Status
@@ -322,3 +323,10 @@ def test_start_loads_files_and_reports_a_corrupt_station_list(ctl_factory):
     c.start(autostart=False)
     assert c.corrupt_stations and c.stations == [] and c.current == -1 and c.status is Status.READY
     assert c.volume == 55 and c.player.calls == [("set_volume", 55)]
+def test_start_keeps_the_200_newest_covers(ctl_factory):
+    c = ctl_factory()
+    covers = c.paths.cache / "covers"; covers.mkdir(parents=True)
+    for n in range(205):
+        f = covers / f"{n:03}.jpg"; f.write_bytes(b"cover"); os.utime(f, (1_700_000_000 + n, 1_700_000_000 + n))
+    c.start(autostart=True)
+    assert sorted(p.name for p in covers.iterdir()) == [f"{n:03}.jpg" for n in range(5, 205)]
