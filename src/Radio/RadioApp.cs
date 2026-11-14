@@ -36,8 +36,12 @@ internal sealed partial class Radio
 
     private readonly Application app;
     private readonly EventWaitHandle panelRequest;
-    private readonly bool testMenu, autostart, updated;
+    private readonly bool autostart, updated;
+#if SELFTEST
+    // The self-test and the README pictures are only in a build made with -p:SelfTest=true (docs/BUILDING.md).
+    private readonly bool testMenu;   // --test-menu: VerifyMenu, or TakeScreenshots with --screenshot
     private readonly bool preview = Environment.GetCommandLineArgs().Contains("--preview");
+#endif
     private Window playerPanel;
     private RegisteredWaitHandle panelListener;
     private Windows.Media.Playback.MediaPlayer mediaSession;
@@ -93,14 +97,18 @@ internal sealed partial class Radio
     private int updateVersion;
     private readonly DispatcherTimer updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
 
-    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
+    internal Radio(Application app, EventWaitHandle panelRequest, bool autostart, bool updated)
     {
         this.app = app;
         this.panelRequest = panelRequest;
-        this.testMenu = testMenu;
         this.autostart = autostart;
         this.updated = updated;
     }
+
+#if SELFTEST
+    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
+        : this(app, panelRequest, autostart, updated) => this.testMenu = testMenu;
+#endif
 
     private void Post(Action action) => app.Dispatcher.BeginInvoke(action);
 
@@ -114,7 +122,9 @@ internal sealed partial class Radio
         tray.MouseUp += (_, e) => { if (e.Button == Forms.MouseButtons.Right) Post(ShowMenu); };
         tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Post(ShowPlayer); };
         tray.BalloonTipClicked += (_, _) => Post(() => OpenPlayer());
+#if SELFTEST
         if (!testMenu)
+#endif
         {
             LoadStations();
             LoadPreferences();
@@ -141,8 +151,11 @@ internal sealed partial class Radio
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
         trackTimer.Tick += (_, _) => ScrollTrack();
         sleepTimer.Tick += (_, _) => SleepTick();
+#if SELFTEST
         if (testMenu) Post(Environment.GetCommandLineArgs().Contains("--screenshot") ? (Action)TakeScreenshots : VerifyMenu);
-        else if (station >= 0 && !autostart) Post(StartPlayback);
+        else
+#endif
+        if (station >= 0 && !autostart) Post(StartPlayback);
     }
 
     // After sleep or hibernation the old connection is dead: start the station again.
@@ -176,6 +189,7 @@ internal sealed partial class Radio
         if (restart) StartPlayback();
     }
 
+#if SELFTEST
     // "--test-menu": builds the menu and the panel without playing anything, exit code 0 = OK.
     // With "--preview" it also saves pictures of them (light and dark) to %TEMP%\MinimalisticRadio-*.png.
     private async void VerifyMenu()
@@ -406,6 +420,7 @@ internal sealed partial class Radio
             Shutdown();
         }
     }
+#endif
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
     {
@@ -996,7 +1011,9 @@ internal sealed partial class Radio
 
     private void SaveHistory()
     {
+#if SELFTEST
         if (testMenu) return;
+#endif
         try { Storage.Write(Storage.HistoryFile, history); }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
     }
@@ -1016,7 +1033,10 @@ internal sealed partial class Radio
 
     private async void CheckForUpdates(bool manual)
     {
-        if (testMenu || installing || checking) return;
+#if SELFTEST
+        if (testMenu) return;
+#endif
+        if (installing || checking) return;
         if (!manual && (!checkUpdates || (lastUpdateCheck != null &&
             DateTime.UtcNow - lastUpdateCheck.Value.ToUniversalTime() < UpdateInterval)))
             return;
@@ -1116,7 +1136,9 @@ internal sealed partial class Radio
 
     private void SavePreferences()
     {
+#if SELFTEST
         if (testMenu) return;
+#endif
         try
         {
             Storage.Write(Storage.PreferencesFile, new Preferences

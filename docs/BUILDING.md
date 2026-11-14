@@ -11,13 +11,19 @@
 dotnet build src/MinimalisticRadio.csproj -c Release -o out
 ```
 
-- `out\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`).
+That is the exe people get (GitHub Actions builds it the same way). The self-test and the README screenshots aren't in it: it ignores `--preview` and `--screenshot`, and exits with code 3 on `--test-menu`. They are in a separate test build:
+
+```
+dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out\selftest
+```
+
+- `out\selftest\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
 - `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
 
 ## Releases
 
-Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release with `Minimalistic-Radio.exe`; the release notes come from the annotated tag's message. Bump `<Version>` in `src/MinimalisticRadio.csproj` first and update the size in the README title (Explorer's KB, rounded up). Installed copies find the new release within a few hours and show the green update arrow.
+Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release with `Minimalistic-Radio.exe`; the release notes come from the annotated tag's message. Bump `<Version>` in `src/MinimalisticRadio.csproj` first and update the size in the README title (Explorer's KB, rounded up, of the normal build, not the test build). Installed copies find the new release within a few hours and show the green update arrow.
 
 ## How it works
 
@@ -34,7 +40,7 @@ Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release wi
 ```
 src/
   Program.cs     startup, single instance
-  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), dragging stations (StationDrag), station card (RadioOsd), README pictures (RadioShots)
+  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), dragging stations (StationDrag), station card (RadioOsd), README pictures (RadioShots, test build only)
   Audio/         station connection, decoding by Windows
   Services/      cover art, updates, storage, Windows integration, language
   Theme/         colours and Windows 11 style controls

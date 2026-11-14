@@ -260,10 +260,13 @@ internal sealed partial class Radio
         playerPanel = panel;
         // Menus and file dialogs opened from the panel keep it open while they are shown.
         int holdOpen = 0;
+#if SELFTEST
+        if (testMenu) holdOpen = 1;   // the self-test keeps the panel open, as if a menu were shown
+#endif
         panel.Closed += (_, _) => { if (playerPanel == panel) playerPanel = null; };
         panel.Deactivated += (_, _) => Post(() =>
         {
-            if (playerPanel == panel && !panel.IsActive && holdOpen == 0 && !testMenu) panel.Close();
+            if (playerPanel == panel && !panel.IsActive && holdOpen == 0) panel.Close();
         });
         void Hold(ContextMenu menu)
         {
@@ -395,7 +398,9 @@ internal sealed partial class Radio
 
         bool SaveStations(List<SavedStation> updated)
         {
+#if SELFTEST
             if (testMenu) return true;   // the self-test changes stations in memory only: the saved list stays as it was
+#endif
             try
             {
                 Storage.Write(Storage.StationFile, updated);
@@ -775,7 +780,9 @@ internal sealed partial class Radio
             options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
+#if SELFTEST
             actions.Tag = options;   // the self-test reads the menu from here
+#endif
             var row = (Grid)Columns((stationButton, Star), (actions, Auto));
             row.MinHeight = 47;
             row.Tag = item;
@@ -1250,7 +1257,7 @@ internal sealed partial class Radio
         dismiss.Tick += (_, _) =>
         {
             bool down = GetAsyncKeyState(1) < 0 || GetAsyncKeyState(2) < 0;
-            if (down && !pointerDown && holdOpen == 0 && !testMenu)
+            if (down && !pointerDown && holdOpen == 0)
             {
                 IntPtr handle = new WindowInteropHelper(panel).Handle;
                 System.Drawing.Point point = Forms.Cursor.Position;
@@ -1354,6 +1361,7 @@ internal sealed partial class Radio
         }
     }
 
+#if SELFTEST
     // Self-test of the volume row (--test-menu, from VerifyMenu): the speaker for 0, 20, 50 and 90%, mute and unmute,
     // and the number in the bubble on a wheel turn.
     private async Task VerifyVolumeRow()
@@ -1380,4 +1388,5 @@ internal sealed partial class Radio
             throw new InvalidOperationException("Dymek głośności nie pokazuje wartości.");
         playerPanel.Close();
     }
+#endif
 }

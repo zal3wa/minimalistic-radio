@@ -35,16 +35,17 @@ internal sealed partial class Radio
 
     private sealed class StationDrag
     {
+#if SELFTEST
         // The self-test's synthetic mouse events carry no position (WPF asks the real mouse), so the test puts
         // a pretend pointer here, in the panel's coordinates.
         internal static Point? TestPointer;
+#endif
 
         private const double EdgeZone = 32;   // this close to the list's top or bottom edge it scrolls by itself
 
         // Moves a station to a place on the list and saves the order; false if nothing changed.
         internal Func<SavedStation, int, bool> Move;
 
-        private readonly Window panel;
         private readonly ListBox list;
         private readonly DispatcherTimer hold = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         private readonly DispatcherTimer scroll = new DispatcherTimer();
@@ -68,7 +69,6 @@ internal sealed partial class Radio
 
         internal StationDrag(Window panel, ListBox list)
         {
-            this.panel = panel;
             this.list = list;
             card.SetResourceReference(Border.BackgroundProperty, "Card");
             card.SetResourceReference(Border.BorderBrushProperty, "Line");
@@ -440,11 +440,21 @@ internal sealed partial class Radio
             Descendants(moved).OfType<Button>().ElementAtOrDefault(part)?.Focus();
         }
 
-        // The self-test's synthetic presses leave the real button up, so it's only asked outside the test.
-        private static bool ButtonUp() => TestPointer == null && Mouse.LeftButton != MouseButtonState.Pressed;
+        private static bool ButtonUp()
+        {
+#if SELFTEST
+            if (TestPointer != null) return false;   // the self-test's synthetic presses leave the real button up
+#endif
+            return Mouse.LeftButton != MouseButtonState.Pressed;
+        }
 
-        private Point Pointer(MouseEventArgs e, UIElement relativeTo) =>
-            TestPointer is Point fake ? panel.TranslatePoint(fake, relativeTo) : e.GetPosition(relativeTo);
+        private static Point Pointer(MouseEventArgs e, UIElement relativeTo)
+        {
+#if SELFTEST
+            if (TestPointer is Point fake) return Window.GetWindow(relativeTo).TranslatePoint(fake, relativeTo);
+#endif
+            return e.GetPosition(relativeTo);
+        }
 
         // A row's place in the list's visible area (the top of its spacing), not counting its slide.
         private double SlotTop(ListBoxItem place) => VisualTreeHelper.GetParent(place) is UIElement host
@@ -464,6 +474,7 @@ internal sealed partial class Radio
         }
     }
 
+#if SELFTEST
     // Self-test (--test-menu, from VerifyMenu), on a list in memory: nothing is saved and nothing plays. The ⋯ menu
     // without Move up / Move down, logos from the cache, a quick press that stays a press, a hold that lifts, the gap
     // and the drop (moving only the station's row: the other rows and their logos stay), Escape, Alt+↓ / Alt+↑ with
@@ -686,4 +697,5 @@ internal sealed partial class Radio
         }
         finally { StationDrag.TestPointer = null; }
     }
+#endif
 }

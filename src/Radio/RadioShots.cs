@@ -1,3 +1,5 @@
+#if SELFTEST
+// Only in a build made with -p:SelfTest=true (docs/BUILDING.md): the README pictures and the --preview ones.
 using System;
 using System.Globalization;
 using System.IO;
@@ -157,3 +159,4 @@ internal sealed partial class Radio
         return scene;
     }
 }
+#endif

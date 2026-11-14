@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 227 KB</h1>
+<h1 align="center">Minimalistic Radio - only 191 KB</h1>
 
 <p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
