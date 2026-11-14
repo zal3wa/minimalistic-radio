@@ -383,41 +383,39 @@ internal sealed partial class Radio
             name.Focus();
         }
 
-        void FillList(bool keepScroll = false)
+        void FillList()
         {
-            ScrollViewer viewer = keepScroll ? Descendants(list).OfType<ScrollViewer>().FirstOrDefault() : null;
-            double offset = viewer?.VerticalOffset ?? 0;
+            drag.Abandon();   // a press or a drag on the old rows ends here
             list.Items.Clear();
             foreach (SavedStation item in Stations) list.Items.Add(StationRow(item));
             list.SelectedIndex = station;
             shownStation = station;
-            // A moved station stays where it was put: the list keeps its place instead of jumping to the playing one.
-            if (viewer != null)
-            {
-                list.UpdateLayout();
-                viewer.ScrollToVerticalOffset(offset);
-                list.UpdateLayout();
-            }
-            else ShowActiveStationAfterLayout(false);
+            ShowActiveStationAfterLayout(false);
         }
 
-        bool ApplyStations(List<SavedStation> updated, bool keepScroll = false)
+        bool SaveStations(List<SavedStation> updated)
         {
-            // The self-test changes stations in memory only: the saved list stays as it was.
-            if (!testMenu)
+            if (testMenu) return true;   // the self-test changes stations in memory only: the saved list stays as it was
+            try
             {
-                try { Storage.Write(Storage.StationFile, updated); }
-                catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
-                {
-                    Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
-                    return false;
-                }
+                Storage.Write(Storage.StationFile, updated);
+                return true;
             }
+            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+            {
+                Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
+                return false;
+            }
+        }
+
+        bool ApplyStations(List<SavedStation> updated)
+        {
+            if (!SaveStations(updated)) return false;
             SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
             Stations.Clear();
             Stations.AddRange(updated);
             if (active != null) station = Stations.IndexOf(active);
-            FillList(keepScroll);
+            FillList();
             return true;
         }
 
@@ -663,15 +661,32 @@ internal sealed partial class Radio
         }
 
         // Puts a station in another place on the list (dragged there, or Alt+↑/↓) and saves the order like any other
-        // change; the current station follows by identity and keeps playing.
+        // change; the current station follows by identity and keeps playing. Only its row moves: the list isn't built
+        // again, so the other rows keep their logos and nothing flickers.
         bool MoveStation(SavedStation item, int target)
         {
             int index = Stations.IndexOf(item);
-            if (index < 0 || target < 0 || target >= Stations.Count || target == index) return false;
+            var row = list.Items.OfType<FrameworkElement>().FirstOrDefault(entry => entry.Tag == item);
+            if (index < 0 || target < 0 || target >= Stations.Count || target == index || row == null) return false;
             var updated = Stations.ToList();
             updated.RemoveAt(index);
             updated.Insert(target, item);
-            return ApplyStations(updated, true);
+            if (!SaveStations(updated)) return false;
+            SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
+            Stations.RemoveAt(index);
+            Stations.Insert(target, item);
+            if (active != null) station = Stations.IndexOf(active);
+            // The list scrolls by whole stations; it keeps the same offset, so the rows stay where the drop showed them.
+            ScrollViewer viewer = Descendants(list).OfType<ScrollViewer>().FirstOrDefault();
+            double offset = viewer?.VerticalOffset ?? 0;
+            list.Items.Remove(row);
+            list.Items.Insert(target, row);
+            list.SelectedIndex = station;
+            shownStation = station;
+            list.UpdateLayout();
+            viewer?.ScrollToVerticalOffset(offset);
+            list.UpdateLayout();
+            return true;
         }
         drag.Move = MoveStation;
 
@@ -686,7 +701,7 @@ internal sealed partial class Radio
             image.Loaded += async (_, _) =>
             {
                 if (image.Source != null) return;
-                ImageSource source = await LoadImage(item.Logo);
+                ImageSource source = await LoadLogo(item.Logo);
                 if (source == null) return;
                 image.Source = source;
                 placeholder.Visibility = Visibility.Hidden;
@@ -728,7 +743,7 @@ internal sealed partial class Radio
             image.Loaded += async (_, _) =>
             {
                 if (image.Source != null) return;
-                ImageSource source = await LoadImage(item.Logo);
+                ImageSource source = await LoadLogo(item.Logo);
                 if (source == null) return;
                 image.Source = source;
                 placeholder.Visibility = Visibility.Hidden;
@@ -760,6 +775,7 @@ internal sealed partial class Radio
             options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
+            actions.Tag = options;   // the self-test reads the menu from here
             var row = (Grid)Columns((stationButton, Star), (actions, Auto));
             row.MinHeight = 47;
             row.Tag = item;
@@ -1195,6 +1211,28 @@ internal sealed partial class Radio
         Post(PositionPanel);
         timer.Start();
         dismiss.Start();
+    }
+
+    // Station logos (the list's and the search's), decoded, for the whole run: a list built again (language, add,
+    // edit, remove, suggestions) shows them at once instead of fetching them again. A logo that didn't load stays
+    // the radio icon until the next start. Kept as tasks, so rows asking for one still loading share the download.
+    private const int LogoCacheSize = 200;
+    private static readonly Dictionary<string, Task<ImageSource>> logos = new Dictionary<string, Task<ImageSource>>();
+    private static readonly Queue<string> logoOrder = new Queue<string>();
+
+    private static Task<ImageSource> LoadLogo(string address)
+    {
+        if (!Storage.IsWebUrl(address)) return Task.FromResult<ImageSource>(null);
+        if (!logos.TryGetValue(address, out Task<ImageSource> logo)) CacheLogo(address, logo = LoadImage(address));
+        return logo;
+    }
+
+    // Beyond the limit the oldest logos go first.
+    private static void CacheLogo(string address, Task<ImageSource> logo)
+    {
+        if (!logos.ContainsKey(address)) logoOrder.Enqueue(address);
+        logos[address] = logo;
+        while (logos.Count > LogoCacheSize) logos.Remove(logoOrder.Dequeue());
     }
 
     private static async Task<ImageSource> LoadImage(string address)
