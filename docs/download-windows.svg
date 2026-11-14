@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="168" height="56" viewBox="0 0 168 56">
+  <!-- "Download for Windows" button in the style of the App Store / Google Play badges. -->
+  <rect x="0.5" y="0.5" width="167" height="55" rx="9" fill="#000" stroke="#a6a6a6"/>
+  <g fill="#fff">
+    <rect x="16" y="16" width="11" height="11"/>
+    <rect x="29" y="16" width="11" height="11"/>
+    <rect x="16" y="29" width="11" height="11"/>
+    <rect x="29" y="29" width="11" height="11"/>
+  </g>
+  <g fill="#fff" font-family="Segoe UI, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif">
+    <text x="53" y="24" font-size="11">Download for</text>
+    <text x="52" y="43" font-size="21" font-weight="600">Windows</text>
+  </g>
+</svg>

@@ -4,6 +4,12 @@
 
 <p align="center">A tiny internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
+<p align="center">
+  <a href="https://github.com/zal3wa/minimalistic-radio/releases/latest/download/Minimalistic-Radio.exe"><img src="docs/download-windows.svg" height="56" alt="Download for Windows"></a>
+</p>
+
+<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.</sub></p>
+
 <table align="center">
   <tr>
     <td align="center" valign="top">
@@ -39,29 +45,6 @@
   </tr>
 </table>
 
-## Features
-
-- **Next to the clock**: a click opens the panel in the corner of the screen, like the Windows 11 flyouts; right-click for a quick menu.
-- **Your stations** with their logos. Search the [radio-browser.info](https://www.radio-browser.info) directory or add a stream by its address; reorder the list, export it and import someone else's (duplicates are skipped).
-- **Win+A, media keys and the lock screen** show the song title, the artist and the cover art (or the station logo); previous/next switches stations.
-- **Station change card**: switch stations with a media key, Win+A or the tray menu and a small card at the bottom of the screen shows the station and what's playing (Windows doesn't let apps show its own media flyout).
-- **Song history** with copy and search on Spotify or YouTube.
-- **Sleep timer** (15–90 min) with a gentle fade-out.
-- **Reconnects by itself** after the internet drops and after the computer wakes up.
-- **Start with Windows** (optional), **English and Polish** (follows Windows or your choice), light and dark theme.
-- **Updates like Discord**: every few hours the radio quietly downloads a new version; a green arrow then shows *Update Ready!* and one click restarts into it. No pop-ups.
-
-## Download
-
-Get the latest version from **[Releases → Minimalistic-Radio.exe](https://github.com/zal3wa/minimalistic-radio/releases/latest)** and run it.
-The file isn't digitally signed, so Windows SmartScreen may ask first: *More info → Run anyway*.
-
-## How it works
-
-- The UI is WPF on **.NET Framework 4.8**, which is part of every Windows 10 and 11. That's why the file is so small.
-- MP3 and AAC (including HE-AAC/AAC+) are decoded by **Windows itself** (Media Foundation). For other formats (Ogg/Opus, FLAC, HLS) the radio downloads [FFmpeg](https://ffmpeg.org) once (a [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) build, checked against its SHA-256). The settings let you choose: automatic, Windows only, or always FFmpeg.
-- A player on the Windows 11 taskbar is possible with the free [Windhawk](https://windhawk.net) and its [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod, and the radio's settings walk you through it. The radio itself doesn't modify Windows.
-
 ## Privacy
 
 The radio collects no data. It only connects to:
@@ -74,31 +57,6 @@ The radio collects no data. It only connects to:
 
 Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
 
-## Building
-
-You need the [.NET SDK](https://dotnet.microsoft.com/download) 8 or newer and the Windows 10/11 SDK (from the Visual Studio Installer or [standalone](https://developer.microsoft.com/windows/downloads/windows-sdk/)).
-
-```
-dotnet build src/MinimalisticRadio.csproj -c Release -o out
-```
-
-`out\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK), and `--test-menu --screenshot` renders the screenshots for this page into `%TEMP%\MinimalisticRadio-shot-*.png`.
-Pushing a `v*` tag builds and publishes a release with GitHub Actions; the release notes come from the annotated tag's message.
-
-## Project structure
-
-```
-src/
-  Program.cs     startup, single instance
-  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel)
-  Audio/         station connection, decoding by Windows, FFmpeg fallback
-  Services/      cover art, updates, storage, Windows integration, language
-  Theme/         colours and Windows 11 style controls
-  Assets/        app icon (radio.ico) and the Lucide icons' licence
-docs/            icon.svg (the icon's source), README screenshots
-tools/IconMaker  draws radio.ico in all sizes: dotnet run --project tools/IconMaker -- <folder>
-```
-
 ## License
 
-[MIT](LICENSE). Icons: [Lucide](https://lucide.dev) (ISC, see `src/Assets/Lucide_Icons_license.txt`).
+[MIT](LICENSE). Icons: [Lucide](https://lucide.dev) (ISC). Building from source: [docs/BUILDING.md](docs/BUILDING.md).
