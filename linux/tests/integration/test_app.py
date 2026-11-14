@@ -97,10 +97,14 @@ def test_close_hides_not_quits(app_id):
     app.window.close()
     assert pump(lambda: not app.window.is_visible())
     assert app.get_is_registered()
-    # Another instance finds this one on the bus.
-    other = Gio.Application(application_id=app_id)
-    assert other.register()
-    assert other.get_is_remote()
+    # Another process finds this instance on the bus.
+    probe = subprocess.Popen(
+        [sys.executable, "-c",
+         "import sys; from gi.repository import Gio; a = Gio.Application(application_id=sys.argv[1]);"
+         "a.register(); sys.exit(0 if a.get_is_remote() else 3)", app_id],
+        env=os.environ)
+    assert pump(lambda: probe.poll() is not None)
+    assert probe.returncode == 0
     app.quit()
 
 
