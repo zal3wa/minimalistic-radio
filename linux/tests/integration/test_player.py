@@ -216,6 +216,17 @@ def test_nothing_after_stop(drv, icy):
     assert drv.rec.events == seen
 
 
+def test_switching_stations_quickly(drv, icy):
+    # Each playbin is dropped at a different moment of its start (up to about 0.2 s in).
+    for i in range(20):
+        drv.call("play", icy.url("/mp3" if i % 2 else "/aac"))
+        time.sleep(i * 0.01)
+    drv.call("stop")
+    drv.call("play", icy.url("/mp3"))
+    assert drv.run(drv.playing_with_title), (drv.rec.titles, drv.rec.errors)
+    assert drv.rec.errors == []
+
+
 def test_volume_persists_across_play(drv, icy):
     drv.call("set_volume", 50)
     drv.call("play", icy.url("/mp3"))

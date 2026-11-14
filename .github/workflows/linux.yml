@@ -87,3 +87,13 @@ jobs:
 
       - name: Run the integration tests
         run: cd linux && dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q -rs
+
+      # Temporary: a native backtrace of the crash when a starting playbin is stopped.
+      - name: Backtrace of a crash
+        if: failure()
+        timeout-minutes: 20
+        env:
+          DEBUGINFOD_URLS: https://debuginfod.ubuntu.com
+        run: |
+          sudo apt-get install -y gdb
+          cd linux && dbus-run-session -- xvfb-run -a gdb -q -batch -ex "set debuginfod enabled on" -ex "set pagination off" -ex run -ex "info threads" -ex "thread apply all bt 40" --args python3 -m pytest tests/integration -q -rs -x -k "quickly or volume_persists"
