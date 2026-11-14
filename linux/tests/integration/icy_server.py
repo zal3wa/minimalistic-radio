@@ -50,6 +50,12 @@ FORMATS = {
         "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000 ! capsfilter"
         ' caps="audio/mpeg,mpegversion=4,stream-format=adts,profile=he-aac-v1;'
         'audio/mpeg,mpegversion=4,stream-format=adts,profile=lc"',
+        # Raw HE-AAC (explicit SBR signalling) put into ADTS by FFmpeg's muxer or by aacparse.
+        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000"
+        " ! audio/mpeg,mpegversion=4,stream-format=raw,profile=he-aac-v1 ! avmux_adts",
+        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000"
+        " ! audio/mpeg,mpegversion=4,stream-format=raw,profile=he-aac-v1 ! aacparse"
+        " ! audio/mpeg,mpegversion=4,stream-format=adts",
     ]),
     "opus": ("audio/ogg", _ogg, ["opusenc bitrate=64000 ! oggmux"]),
 }
@@ -94,7 +100,7 @@ class IcyServer:
                     if reason is None and check(data):
                         self.streams[name] = (data, content_type)
                         break
-                    reasons.append(f"{chain}: {reason or 'wrong output'}")
+                    reasons.append(f"{chain}: {reason or 'wrong output, starts ' + data[:8].hex(' ')}")
                 else:
                     self.missing[name] = "; ".join(reasons)
         self._httpd = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)

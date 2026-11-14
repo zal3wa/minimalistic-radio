@@ -99,8 +99,8 @@ jobs:
           sudo sysctl -w kernel.core_pattern=/tmp/core.%p
           ulimit -c unlimited
           cd linux
-          for i in $(seq 1 20); do
-            if ! dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q -x -p no:cacheprovider > round.log 2>&1; then
+          for i in $(seq 1 8); do
+            if ! python3 tests/integration/stress_player.py $i 400 > round.log 2>&1; then
               echo "failed in round $i"; cat round.log
               core=$(ls /tmp/core.* 2>/dev/null | head -1)
               if [ -n "$core" ]; then
@@ -108,5 +108,6 @@ jobs:
               fi
               exit 1
             fi
+            tail -1 round.log
           done
-          echo "no failure in 20 rounds"
+          echo "no failure in 8 rounds"
