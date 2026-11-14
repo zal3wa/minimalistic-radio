@@ -4,6 +4,39 @@ Małe radio internetowe dla Windows 10 i 11, które mieszka obok zegara. Jeden p
 
 *A tiny internet radio for Windows 10/11 that lives in the notification area. One ~200 KB exe, no installer, nothing else to install. English UI included.*
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stations-dark.png">
+    <img src="docs/screenshots/stations-light.png" width="380" alt="Minimalistic Radio: station list, now playing with cover art, volume">
+  </picture>
+</p>
+
+<table>
+  <tr>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
+        <img src="docs/screenshots/history-light.png" width="270" alt="Song history">
+      </picture>
+      <br>Historia utworów · <i>Song history</i>
+    </td>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+        <img src="docs/screenshots/settings-light.png" width="270" alt="Settings">
+      </picture>
+      <br>Ustawienia · <i>Settings</i>
+    </td>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
+        <img src="docs/screenshots/menu-light.png" width="270" alt="Tray menu">
+      </picture>
+      <br>Menu obok zegara · <i>Tray menu</i>
+    </td>
+  </tr>
+</table>
+
 ## Co potrafi
 
 - **Ikona obok zegara**: kliknięcie otwiera panel w rogu ekranu (jak systemowe okienka Windows 11), prawy przycisk — szybkie menu.
@@ -46,7 +79,7 @@ Potrzebne: [.NET SDK](https://dotnet.microsoft.com/download) 8 lub nowszy i Wind
 dotnet build src/MinimalisticRadio.csproj -c Release -o out
 ```
 
-`out\Minimalistic Radio.exe --test-menu` uruchamia autotest (kod wyjścia 0 = OK). Wypchnięcie tagu `v*` buduje i publikuje wydanie przez GitHub Actions.
+`out\Minimalistic Radio.exe --test-menu` uruchamia autotest (kod wyjścia 0 = OK), a `--test-menu --screenshot` tworzy zrzuty do tego README w `%TEMP%\MinimalisticRadio-shot-*.png`. Wypchnięcie tagu `v*` buduje i publikuje wydanie przez GitHub Actions.
 
 ## Licencja
 

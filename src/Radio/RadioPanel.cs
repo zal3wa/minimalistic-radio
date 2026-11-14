@@ -589,7 +589,7 @@ internal sealed partial class Radio
         void AddSearchResult(DirectoryStation item)
         {
             string address = Storage.IsWebUrl(item.ResolvedUrl) ? item.ResolvedUrl : item.Url;
-            if (Stations.Any(entry => entry.Url == address))
+            if (Stations.Any(entry => Storage.SameStream(entry.Url, address)))
             {
                 searchStatus.Text = T("Ta stacja jest już na liście.", "This station is already on the list.");
                 return;
@@ -613,7 +613,7 @@ internal sealed partial class Radio
                     "Enter a name and a valid stream address. The logo is optional.");
                 return;
             }
-            if (Stations.Any(item => item != editing && item.Url == address))
+            if (Stations.Any(item => item != editing && Storage.SameStream(item.Url, address)))
             {
                 message.Text = T("Ten adres jest już na liście.", "This address is already on the list.");
                 return;
@@ -917,8 +917,8 @@ internal sealed partial class Radio
                     }
                     var fresh = loaded
                         .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Name) && Storage.IsWebUrl(item.Url) &&
-                            Stations.All(known => known.Url != item.Url))
-                        .GroupBy(item => item.Url).Select(same => same.First())
+                            !Stations.Any(known => Storage.SameStream(known.Url, item.Url)))
+                        .GroupBy(item => Storage.StreamKey(item.Url)).Select(same => same.First())
                         .Select(item => new SavedStation { Name = item.Name.Trim(), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
                         .ToList();
                     if (fresh.Count == 0) Report(T("Wszystkie stacje z tego pliku już są na liście.", "All stations from this file are already on the list."));

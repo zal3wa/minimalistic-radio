@@ -125,7 +125,7 @@ internal sealed partial class Radio
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
         trackTimer.Tick += (_, _) => ScrollTrack();
         sleepTimer.Tick += (_, _) => SleepTick();
-        if (testMenu) Post(VerifyMenu);
+        if (testMenu) Post(Environment.GetCommandLineArgs().Contains("--screenshot") ? (Action)TakeScreenshots : VerifyMenu);
         else if (station >= 0 && !autostart) Post(StartPlayback);
     }
 
@@ -211,7 +211,7 @@ internal sealed partial class Radio
                     double top = row?.TranslatePoint(new Point(0, 0), viewer).Y ?? -1;
                     if (row == null || top < 0 || top + row.ActualHeight > viewer.ActualHeight + 0.5)
                         throw new InvalidOperationException($"Aktywna stacja poza widokiem (top={top}, wysokość listy={viewer.ActualHeight}).");
-                    await SavePreview((Visual)playerPanel.Content, "panel");
+                    await SavePreview(playerPanel, "panel");
                     session = null;
                 }
                 foreach (string page in new[] { "settings", "history" })
@@ -223,7 +223,7 @@ internal sealed partial class Radio
                     if (preview)
                     {
                         await Task.Delay(1000);
-                        await SavePreview((Visual)playerPanel.Content, page);
+                        await SavePreview(playerPanel, page);
                         var scroller = Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel);
                         await SavePreview((Visual)scroller.Content, page + "-all");
                     }
@@ -233,6 +233,57 @@ internal sealed partial class Radio
                 if (mediaSession?.SystemMediaTransportControls.IsNextEnabled != true)
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
                 CloseMenu();
+            }
+        }
+        catch (Exception error)
+        {
+            Environment.ExitCode = 1;
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "MinimalisticRadio-test.log"), error.ToString()); }
+            catch (IOException) { }
+        }
+        finally
+        {
+            session = null;
+            Shutdown();
+        }
+    }
+
+    // "--test-menu --screenshot": pictures for the README (%TEMP%\MinimalisticRadio-shot-*.png), in English,
+    // with the saved station list, a real song and its cover, light and dark. Nothing is saved or played.
+    private async void TakeScreenshots()
+    {
+        try
+        {
+            Lang.Setting = "en";
+            LoadStations();
+            station = Math.Min(2, Stations.Count - 1);
+            using (var shot = new CancellationTokenSource())
+            {
+                session = shot;
+                playing = true;
+                status = StationName;
+                string[] played = { "Daughtry - What About Now", "Dawid Podsiadło - Małomiasteczkowy", "Queen - A Kind Of Magic",
+                    "Editors - Shadow", "Leonard Cohen - Everybody Knows" };
+                int chosen = station;
+                for (int i = 0; i < played.Length; i++)
+                {
+                    station = (chosen + played.Length - 1 - i) % Stations.Count;
+                    AddToHistory(played[i]);
+                }
+                station = chosen;
+                track = played.Last();
+                artworkUrl = await Covers.Find(metadataClient, track);
+
+                ShowMenu();
+                await SavePreview(popup, "shot-menu");
+                CloseMenu();
+                foreach (string page in new[] { "stations", "history", "settings" })
+                {
+                    OpenPlayer(page);
+                    await Task.Delay(3000);   // station logos and the cover arrive over the network
+                    await SavePreview(playerPanel, "shot-" + page);
+                    playerPanel.Close();
+                }
             }
         }
         catch (Exception error)

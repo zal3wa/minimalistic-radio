@@ -75,6 +75,17 @@ internal static class Storage
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp) &&
         uri.UserInfo.Length == 0;
 
+    // The same stream written differently is still the same station: http/https, letter case of the
+    // server name, a default port and a trailing slash don't matter.
+    internal static string StreamKey(string url)
+    {
+        if (!Uri.TryCreate(url?.Trim(), UriKind.Absolute, out Uri uri)) return url?.Trim() ?? "";
+        string port = uri.IsDefaultPort ? "" : ":" + uri.Port;
+        return uri.Host.ToLowerInvariant() + port + uri.AbsolutePath.TrimEnd('/') + uri.Query;
+    }
+
+    internal static bool SameStream(string first, string second) => StreamKey(first) == StreamKey(second);
+
     // radio-browser.info: free community directory of internet radio stations.
     internal static async Task<DirectoryStation[]> Search(HttpClient client, string query, CancellationToken token)
     {
