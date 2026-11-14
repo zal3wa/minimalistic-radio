@@ -59,12 +59,12 @@ def stations():
             print(f"radio-browser query failed: {exc}", flush=True)
     seen, result = set(), []
     for s in found:
-        if s.get("codec", "").upper() not in ("AAC", "AAC+"):
+        if (s.get("codec") or "").upper() not in ("AAC", "AAC+"):
             continue
         url = s.get("url_resolved") or s.get("url")
         if url and url not in seen:
             seen.add(url)
-            result.append((s.get("name", "?").strip(), url))
+            result.append(((s.get("name") or "?").strip(), url))
     return result
 
 
@@ -138,7 +138,11 @@ def main():
     Gst.init(None)
     sbr = ps = fails = decoded = 0
     for name, url in stations():
-        r = probe(url)
+        try:
+            r = probe(url)
+        except Exception as exc:  # a bad URL or pipeline is not a codec failure
+            print(f"  error: {exc}", flush=True)
+            r = None
         if not r:
             print(f"{name}, -, -, -, -, NO AUDIO", flush=True)
             continue
@@ -167,5 +171,14 @@ def main():
     return 2
 
 
+def run():
+    # Exit 1 means "the decoder fails"; a script error must never look like that.
+    try:
+        return main()
+    except Exception as exc:
+        print(f"Inconclusive: script error: {exc!r}")
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run())
