@@ -44,9 +44,12 @@ FORMATS = {
         "avenc_aac bitrate=128000 ! aacparse ! audio/mpeg,mpegversion=4,stream-format=adts",
         "avenc_aac bitrate=128000 ! avmux_adts",
     ]),
+    # fdkaacenc picks the profile asked for first, but in ADTS (implicit SBR signalling) its output caps
+    # say "lc", so the filter must accept that too.
     "heaac": ("audio/aacp", _he_aac, [
-        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000"
-        " ! audio/mpeg,mpegversion=4,stream-format=adts,profile=he-aac-v1",
+        "audio/x-raw,rate=44100,channels=2 ! fdkaacenc bitrate=48000 ! capsfilter"
+        ' caps="audio/mpeg,mpegversion=4,stream-format=adts,profile=he-aac-v1;'
+        'audio/mpeg,mpegversion=4,stream-format=adts,profile=lc"',
     ]),
     "opus": ("audio/ogg", _ogg, ["opusenc bitrate=64000 ! oggmux"]),
 }

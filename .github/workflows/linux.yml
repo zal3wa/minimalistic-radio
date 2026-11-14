@@ -88,12 +88,25 @@ jobs:
       - name: Run the integration tests
         run: cd linux && dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q -rs
 
-      # Temporary: a native backtrace of the crash when a starting playbin is stopped.
-      - name: Backtrace of a crash
-        if: failure()
-        timeout-minutes: 20
+      # Temporary: hunt an intermittent crash (stopping a starting playbin) and backtrace it.
+      - name: Hunt a crash
+        if: always()
+        timeout-minutes: 25
         env:
           DEBUGINFOD_URLS: https://debuginfod.ubuntu.com
         run: |
           sudo apt-get install -y gdb
-          cd linux && dbus-run-session -- xvfb-run -a gdb -q -batch -ex "set debuginfod enabled on" -ex "set pagination off" -ex run -ex "info threads" -ex "thread apply all bt 40" --args python3 -m pytest tests/integration -q -rs -x -k "quickly or volume_persists"
+          sudo sysctl -w kernel.core_pattern=/tmp/core.%p
+          ulimit -c unlimited
+          cd linux
+          for i in $(seq 1 20); do
+            if ! dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q -x -p no:cacheprovider > round.log 2>&1; then
+              echo "failed in round $i"; cat round.log
+              core=$(ls /tmp/core.* 2>/dev/null | head -1)
+              if [ -n "$core" ]; then
+                gdb -q -batch -ex "set debuginfod enabled on" -ex "set pagination off" -ex "info threads" -ex "thread apply all bt 30" /usr/bin/python3 "$core" 2>&1 | grep -v "^Download"
+              fi
+              exit 1
+            fi
+          done
+          echo "no failure in 20 rounds"
