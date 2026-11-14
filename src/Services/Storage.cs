@@ -24,6 +24,7 @@ public sealed class Preferences
     public string Decoder { get; set; }    // "auto", "windows", "ffmpeg"
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
+    public bool? ShowStationPopup { get; set; }
 }
 
 public sealed class HistoryEntry

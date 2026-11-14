@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 191 KB</h1>
+<h1 align="center">Minimalistic Radio - only 197 KB</h1>
 
 <p align="center">A tiny internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
@@ -44,6 +44,7 @@
 - **Next to the clock**: a click opens the panel in the corner of the screen, like the Windows 11 flyouts; right-click for a quick menu.
 - **Your stations** with their logos. Search the [radio-browser.info](https://www.radio-browser.info) directory or add a stream by its address; reorder the list, export it and import someone else's (duplicates are skipped).
 - **Win+A, media keys and the lock screen** show the song title, the artist and the cover art (or the station logo); previous/next switches stations.
+- **Station change card**: switch stations with a media key, Win+A or the tray menu and a small card at the bottom of the screen shows the station and what's playing (Windows doesn't let apps show its own media flyout).
 - **Song history** with copy and search on Spotify or YouTube.
 - **Sleep timer** (15–90 min) with a gentle fade-out.
 - **Reconnects by itself** after the internet drops and after the computer wakes up.

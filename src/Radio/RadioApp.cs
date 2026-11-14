@@ -232,6 +232,15 @@ internal sealed partial class Radio
                     }
                 }
                 playerPanel.Close();
+                ShowStationPopup();
+                if (osd?.IsVisible != true || osdTitle.Text != StationName)
+                    throw new InvalidOperationException("Nie pokazała się karta zmiany stacji.");
+                if (preview)
+                {
+                    await Task.Delay(1000);
+                    await SavePreview(osd, "osd");
+                }
+                osd.Hide();
                 AttachMediaSession();
                 if (mediaSession?.SystemMediaTransportControls.IsNextEnabled != true)
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
@@ -375,7 +384,11 @@ internal sealed partial class Radio
         {
             int selected = index;
             stations.Items.Add(Item(Stations[index].Name,
-                index == station ? Theme.CheckIcon : null, () => SelectStation(selected)));
+                index == station ? Theme.CheckIcon : null, () =>
+                {
+                    SelectStation(selected);
+                    ShowStationPopup();
+                }));
         }
 
         var levels = Item(T("Głośność", "Volume") + $" ({volume}%)", Theme.VolumeIcon);
@@ -821,10 +834,14 @@ internal sealed partial class Radio
                         StopPlayback();
                         break;
                     case Windows.Media.SystemMediaTransportControlsButton.Next:
-                        if (Stations.Count > 0) SelectStation((station + 1) % Stations.Count);
+                        if (Stations.Count == 0) break;
+                        SelectStation((station + 1) % Stations.Count);
+                        ShowStationPopup();
                         break;
                     case Windows.Media.SystemMediaTransportControlsButton.Previous:
-                        if (Stations.Count > 0) SelectStation((station + Stations.Count - 1) % Stations.Count);
+                        if (Stations.Count == 0) break;
+                        SelectStation((station + Stations.Count - 1) % Stations.Count);
+                        ShowStationPopup();
                         break;
                 }
             });
@@ -1028,6 +1045,7 @@ internal sealed partial class Radio
         Lang.Setting = saved.Language == "pl" || saved.Language == "en" ? saved.Language : "auto";
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
+        showStationPopup = saved.ShowStationPopup ?? true;
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
     }
@@ -1040,7 +1058,7 @@ internal sealed partial class Radio
             Storage.Write(Storage.PreferencesFile, new Preferences
             {
                 Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting, Decoder = decoder,
-                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck
+                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup
             });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
@@ -1066,6 +1084,8 @@ internal sealed partial class Radio
         CloseMenu();
         panelListener?.Unregister(null);
         playerPanel?.Close();
+        osdTimer.Stop();
+        osd?.Close();
         mediaSession?.Dispose();
         tray?.Dispose();
         icon?.Dispose();

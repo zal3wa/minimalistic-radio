@@ -765,6 +765,9 @@ internal sealed partial class Radio
             settings.Children.Add(Card(Theme.Glyph(Theme.PowerIcon, 20), T("Uruchamiaj z Windows", "Start with Windows"),
                 T("Czeka obok zegara, nie gra samo", "Waits by the clock, doesn't play by itself"),
                 Toggle(Autostart.Enabled, on => Autostart.Set(on, Exe))));
+            settings.Children.Add(Card(Theme.Glyph(Theme.PopupIcon, 20), T("Pokazuj zmianę stacji", "Show station changes"),
+                T("Karta na dole ekranu po zmianie klawiszem lub z menu", "A card at the bottom after a media key or menu switch"),
+                Toggle(showStationPopup, on => { showStationPopup = on; SavePreferences(); })));
 
             // Sound: decoder and FFmpeg
             string[] modes = { "auto", "windows", "ffmpeg" };
@@ -946,6 +949,35 @@ internal sealed partial class Radio
 
         // Footer: now playing, volume with the sleep timer, play/stop.
         volumeSlider.ValueChanged += (_, e) => ChangeVolume((int)Math.Round(e.NewValue));
+        // Like the Windows 11 volume slider: press anywhere on it and drag (WPF on its own only jumps
+        // there and drags just the knob), and the mouse wheel changes the volume by 2%.
+        void SlideTo(MouseEventArgs e)
+        {
+            if (volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track)
+                volumeSlider.Value = Math.Round(Math.Max(0, Math.Min(100, track.ValueFromPoint(e.GetPosition(track)))));
+        }
+        volumeSlider.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            volumeSlider.Focus();
+            SlideTo(e);
+            volumeSlider.CaptureMouse();
+            e.Handled = true;
+        };
+        volumeSlider.PreviewMouseMove += (_, e) =>
+        {
+            if (volumeSlider.IsMouseCaptured && e.LeftButton == MouseButtonState.Pressed) SlideTo(e);
+        };
+        volumeSlider.PreviewMouseLeftButtonUp += (_, e) =>
+        {
+            if (!volumeSlider.IsMouseCaptured) return;
+            volumeSlider.ReleaseMouseCapture();
+            e.Handled = true;
+        };
+        volumeSlider.MouseWheel += (_, e) =>
+        {
+            volumeSlider.Value = Clamp((int)volumeSlider.Value + (e.Delta > 0 ? 2 : -2), 0, 100);
+            e.Handled = true;
+        };
         play.Click += (_, _) => TogglePlayback();
         var copy = NewButton("GhostButton", Theme.Glyph(Theme.CopyIcon), T("Kopiuj tytuł", "Copy title"));
         copy.Padding = new Thickness(8);
