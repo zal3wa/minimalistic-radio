@@ -1,4 +1,5 @@
 """Small blocking HTTP helpers (standard library only)."""
+import http.client
 import json
 import urllib.error
 import urllib.request
@@ -22,7 +23,7 @@ def fetch_bytes(url: str, timeout: float = 10.0, limit: int = 2_000_000) -> byte
     try:
         with _open(url, timeout) as response:
             data = response.read(limit + 1)
-    except (urllib.error.URLError, OSError, ValueError) as error:
+    except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as error:
         raise NetworkError(str(error)) from error
     if len(data) > limit:
         raise NetworkError("response too large")
