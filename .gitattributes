@@ -1,0 +1,4 @@
+# Line endings: LF in the repository, native (CRLF on Windows) in the working copy.
+* text=auto
+*.ico binary
+*.png binary
