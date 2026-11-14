@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 184 KB</h1>
+<h1 align="center">Minimalistic Radio - only 214 KB</h1>
 
 <p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
@@ -77,7 +77,7 @@ On Windows 11 the song title and the radio's buttons can also sit on the taskbar
 The radio collects no personal data: no accounts, no telemetry, no ads. It only connects to:
 - the servers of the stations you listen to,
 - the websites the station logos come from, for your list and for search results,
-- `radio-browser.info`: when you search for stations, it gets what you typed,
+- `radio-browser.info`: when you open the station search or search for stations, it gets your country code and what you typed,
 - `itunes.apple.com`: the artist and title of the song that's playing, to find its cover art ([Apple's privacy policy](https://www.apple.com/legal/privacy/)),
 - `api.github.com`: to check for updates, every few hours; can be turned off in Settings → Updates ([GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)),
 - `github.com`: to download a new version, only when there is one,

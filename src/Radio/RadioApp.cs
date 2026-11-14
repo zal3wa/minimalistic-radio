@@ -31,6 +31,7 @@ internal sealed partial class Radio
     private static string Ready => T("Gotowe do odtwarzania", "Ready to play");
     private static string Connecting => T("Łączenie ze stacją…", "Connecting to the station…");
     private static readonly List<SavedStation> Stations = new List<SavedStation>();
+    private static Storage.SuggestionList suggestions;   // the station search's empty page, loaded once per run
     private static readonly HttpClient metadataClient = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
 
     private readonly Application app;
@@ -198,6 +199,40 @@ internal sealed partial class Radio
             if (!Storage.Playable("MP3", false) || !Storage.Playable("aac+", false) || !Storage.Playable("UNKNOWN", false) ||
                 Storage.Playable("AAC", true) || Storage.Playable("OGG", false) || Storage.Playable("FLAC", false))
                 throw new InvalidOperationException("Błędny filtr formatów stacji.");
+            if (!new[] { "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "a,b,c,d,e",
+                "*Chill", "Lofi || Chill", "Hits #1", "Top ***", "a, b, c, d, e" }.All(Storage.LooksLikeSpam) ||
+                new[] { "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli", "Rock, Pop, Jazz, Blues" }.Any(Storage.LooksLikeSpam))
+                throw new InvalidOperationException("Błędne rozpoznawanie śmieciowych nazw stacji.");
+            DirectoryStation Sample(string name, string url, string codec = "MP3", bool hls = false) =>
+                new DirectoryStation { Name = name, Url = url, Codec = codec, Hls = hls };
+            var picked = new[] { Sample("Polecana", "https://a.example/live") };
+            DirectoryStation[] popular = Storage.CleanPopular(new[]
+            {
+                Sample("Pierwsza", "https://one.example/stream"),
+                Sample(" pierwsza ", "https://other.example/stream"),    // same name
+                Sample("Druga", "http://ONE.example/stream/"),           // same stream
+                Sample("Polecana", "https://b.example/live"),            // recommended by name
+                Sample("Trzecia", "http://a.example/live"),              // recommended by stream
+                Sample("Ogg", "https://c.example/ogg", "OGG"),
+                Sample("Hls", "https://d.example/hls", "AAC", true),
+                Sample("Czwarta", "https://e.example/stream", "AAC+")
+            }, picked);
+            if (string.Join("|", popular.Select(item => item.Name)) != "Pierwsza|Czwarta")
+                throw new InvalidOperationException("Błędne czyszczenie listy popularnych stacji: " + string.Join("|", popular.Select(item => item.Name)));
+            if (string.Join("|", Storage.CleanPopular(new[] { "RMF FM", "Radio RMF FM", "Radio ZET", "Radio ZET Chilli" }
+                .Select(name => Sample(name, "https://" + name.Replace(' ', '-') + ".example/s")), new DirectoryStation[0]).Select(item => item.Name)) != "RMF FM|Radio ZET|Radio ZET Chilli")
+                throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
+            if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
+                throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
+            if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
+                throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
+            // Where a dragged station lands: after a row once its top edge passes that row's middle (49 px apart, as on the panel).
+            double[] rows = { 49, 49, 49, 49, 49 }, mixed = { 30, 60, 30 };
+            if (DropIndex(rows, 0, 0) != 0 || DropIndex(rows, 0, 24) != 0 || DropIndex(rows, 0, 25) != 1 || DropIndex(rows, 0, 49 * 2.2) != 2 ||
+                DropIndex(rows, 0, 1000) != 4 || DropIndex(rows, 4, 49 * 4) != 4 || DropIndex(rows, 4, 49 * 4 - 24) != 4 ||
+                DropIndex(rows, 4, 49 * 4 - 25) != 3 || DropIndex(rows, 4, -1000) != 0 || DropIndex(rows, 2, 49 * 2) != 2 ||
+                DropIndex(mixed, 0, 29) != 0 || DropIndex(mixed, 0, 31) != 1 || DropIndex(mixed, 2, 16) != 1 || DropIndex(mixed, 2, 14) != 0)
+                throw new InvalidOperationException("Błędne miejsce upuszczenia przeciąganej stacji.");
             using (var testSession = new CancellationTokenSource())
             {
                 session = testSession;
@@ -297,6 +332,7 @@ internal sealed partial class Radio
                 if (mediaSession?.SystemMediaTransportControls.IsNextEnabled != true)
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
                 CloseMenu();
+                await VerifyStationDrag();
             }
         }
         catch (Exception error)
@@ -541,6 +577,7 @@ internal sealed partial class Radio
         {
             SetSleepTimer(null);
             if (session != null) StopPlayback(T("Wyłączono wyłącznikiem czasowym", "Stopped by the sleep timer"));
+            else lostConnectionAt = null;   // the radio had already lost the station: don't bring it back later
         }
         else Volatile.Write(ref fade, left >= 30 ? 100 : (int)(left * 100 / 30));
     }

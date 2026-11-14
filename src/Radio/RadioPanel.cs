@@ -271,6 +271,8 @@ internal sealed partial class Radio
         }
 
         var list = new ListBox();
+        // Stations are dragged to a new place, or moved with Alt+↑/↓ (StationDrag.cs); MoveStation below makes the move.
+        var drag = new StationDrag(panel, list);
         var now = new TextBlock
         {
             TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 15,
@@ -317,7 +319,10 @@ internal sealed partial class Radio
         searchPane.Children.Add(searchHeader);
         searchPane.Children.Add(results);
         CancellationTokenSource activeSearch = null;
-        panel.Closed += (_, _) => activeSearch?.Cancel();
+        var loadingSuggestions = new CancellationTokenSource();
+        bool loadingNow = false, resetting = false;
+        string page = "stations";
+        panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
 
         // Header: title with Update (when ready), History, Settings and Hide; the page title with a back arrow.
         var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), T("Historia utworów", "Song history"));
@@ -378,28 +383,41 @@ internal sealed partial class Radio
             name.Focus();
         }
 
-        void FillList()
+        void FillList(bool keepScroll = false)
         {
+            ScrollViewer viewer = keepScroll ? Descendants(list).OfType<ScrollViewer>().FirstOrDefault() : null;
+            double offset = viewer?.VerticalOffset ?? 0;
             list.Items.Clear();
-            for (int index = 0; index < Stations.Count; index++) list.Items.Add(StationRow(Stations[index], index));
+            foreach (SavedStation item in Stations) list.Items.Add(StationRow(item));
             list.SelectedIndex = station;
             shownStation = station;
-            ShowActiveStationAfterLayout(false);
+            // A moved station stays where it was put: the list keeps its place instead of jumping to the playing one.
+            if (viewer != null)
+            {
+                list.UpdateLayout();
+                viewer.ScrollToVerticalOffset(offset);
+                list.UpdateLayout();
+            }
+            else ShowActiveStationAfterLayout(false);
         }
 
-        bool ApplyStations(List<SavedStation> updated)
+        bool ApplyStations(List<SavedStation> updated, bool keepScroll = false)
         {
-            try { Storage.Write(Storage.StationFile, updated); }
-            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+            // The self-test changes stations in memory only: the saved list stays as it was.
+            if (!testMenu)
             {
-                Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
-                return false;
+                try { Storage.Write(Storage.StationFile, updated); }
+                catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+                {
+                    Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
+                    return false;
+                }
             }
             SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
             Stations.Clear();
             Stations.AddRange(updated);
             if (active != null) station = Stations.IndexOf(active);
-            FillList();
+            FillList(keepScroll);
             return true;
         }
 
@@ -438,6 +456,63 @@ internal sealed partial class Radio
             }
         }
 
+        // A section title in the list (not selectable).
+        FrameworkElement Heading(string text)
+        {
+            var title = new TextBlock { Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(10, 8, 0, 2) };
+            title.SetResourceReference(TextBlock.ForegroundProperty, "Subtle");
+            return new ListBoxItem { Content = title, IsHitTestVisible = false, Focusable = false };
+        }
+
+        bool ShowingSuggestions() => page == "search" && activeSearch == null && string.IsNullOrWhiteSpace(searchBox.Text);
+
+        // With the search box empty: our recommended stations, then the popular ones. Loaded once per run, kept in memory.
+        async void ShowSuggestions()
+        {
+            if (!ShowingSuggestions()) return;
+            string loadingText = T("Wczytuję propozycje…", "Loading suggestions…");
+            string unavailable = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
+                "The station directory is unavailable right now. Try again.");
+            Storage.SuggestionList shown = suggestions;
+            if (shown == null)
+            {
+                results.Items.Clear();
+                searchStatus.Text = loadingText;
+                if (loadingNow) return;
+                loadingNow = true;
+                try
+                {
+                    shown = await Storage.Suggestions(metadataClient, loadingSuggestions.Token);
+                    if (shown.Complete) suggestions = shown;   // kept for the run only when nothing failed
+                }
+                catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
+                {
+                    if (!loadingSuggestions.IsCancellationRequested && ShowingSuggestions()) searchStatus.Text = unavailable;
+                }
+                finally { loadingNow = false; }
+                if (!ShowingSuggestions())
+                {
+                    // The user typed, searched or left meanwhile: do not leave the loading text behind.
+                    if (activeSearch == null && searchStatus.Text == loadingText) searchStatus.Text = searchHint;
+                    return;
+                }
+                if (shown == null) return;
+            }
+            results.Items.Clear();
+            searchStatus.Text = shown.Complete ? searchHint : unavailable;
+            if (shown.Recommended.Length > 0)
+            {
+                results.Items.Add(Heading(T("Polecane", "Recommended")));
+                foreach (DirectoryStation item in shown.Recommended) results.Items.Add(ResultRow(item));
+            }
+            if (shown.Popular.Length > 0)
+            {
+                results.Items.Add(Heading(shown.Country != null ? T("Popularne w Twoim kraju", "Popular in your country")
+                    : T("Popularne na świecie", "Popular worldwide")));
+                foreach (DirectoryStation item in shown.Popular) results.Items.Add(ResultRow(item));
+            }
+        }
+
         // Leaving the search page: no results kept, no request left running.
         void ResetSearch()
         {
@@ -446,9 +521,11 @@ internal sealed partial class Radio
             searchButton.IsEnabled = true;
             results.Items.Clear();
             searchStatus.Text = searchHint;
+            resetting = true;   // clearing the box must not start the suggestions again
+            searchBox.Text = "";
+            resetting = false;
         }
 
-        string page = "stations";
         void SetPage(string target)
         {
             if (target != "stations")
@@ -468,7 +545,10 @@ internal sealed partial class Radio
                 : target == "history" ? T("Historia", "History")
                 : target == "search" ? T("Dodaj stację", "Add a station") : T("Stacje", "Stations");
             if (target == "search")
+            {
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
+                ShowSuggestions();
+            }
             backButton.Visibility = stations ? Visibility.Collapsed : Visibility.Visible;
             // Off the stations page these two go away entirely, so the rest moves up to the X on the right.
             historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
@@ -484,6 +564,17 @@ internal sealed partial class Radio
         add.Click += (_, _) => SetPage("search");
         searchButton.Click += (_, _) => Search();
         searchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Search(); };
+        // Clearing the box drops the results (and a running search) and brings the suggestions back.
+        searchBox.TextChanged += (_, _) =>
+        {
+            if (resetting || page != "search" || !string.IsNullOrWhiteSpace(searchBox.Text)) return;
+            activeSearch?.Cancel();
+            activeSearch = null;
+            searchButton.IsEnabled = true;
+            results.Items.Clear();
+            searchStatus.Text = searchHint;
+            ShowSuggestions();
+        };
         manual.Click += (_, _) => { SetPage("stations"); Edit(null); };
         settingsButton.Click += (_, _) => SetPage("settings");
         historyButton.Click += (_, _) => SetPage("history");
@@ -571,15 +662,18 @@ internal sealed partial class Radio
             if (editing == item) fields.Visibility = Visibility.Collapsed;
         }
 
-        void Move(SavedStation item, int delta)
+        // Puts a station in another place on the list (dragged there, or Alt+↑/↓) and saves the order like any other
+        // change; the current station follows by identity and keeps playing.
+        bool MoveStation(SavedStation item, int target)
         {
-            int index = Stations.IndexOf(item), target = index + delta;
-            if (index < 0 || target < 0 || target >= Stations.Count) return;
+            int index = Stations.IndexOf(item);
+            if (index < 0 || target < 0 || target >= Stations.Count || target == index) return false;
             var updated = Stations.ToList();
             updated.RemoveAt(index);
             updated.Insert(target, item);
-            ApplyStations(updated);
+            return ApplyStations(updated, true);
         }
+        drag.Move = MoveStation;
 
         // A search result: logo, name, then country · format · genres, and + (or a tick when it's already on the list).
         FrameworkElement ResultRow(DirectoryStation item)
@@ -624,7 +718,7 @@ internal sealed partial class Radio
             return button;
         }
 
-        FrameworkElement StationRow(SavedStation item, int index)
+        FrameworkElement StationRow(SavedStation item)
         {
             var image = new Image { Width = 32, Height = 32, Stretch = Stretch.Uniform };
             var placeholder = Theme.Glyph(Theme.RadioIcon);
@@ -660,15 +754,16 @@ internal sealed partial class Radio
             actions.Padding = new Thickness(8, 6, 8, 6);
             actions.Margin = new Thickness(4, 0, 0, 0);
             var options = new ContextMenu { PlacementTarget = actions, Placement = PlacementMode.Bottom };
+            // No Move up / Move down: the station is dragged instead (or moved with Alt+↑/↓).
             options.Items.Add(Item(T("Edytuj", "Edit"), null, () => Edit(item)));
-            options.Items.Add(Item(T("Przesuń wyżej", "Move up"), null, () => Move(item, -1), index > 0));
-            options.Items.Add(Item(T("Przesuń niżej", "Move down"), null, () => Move(item, 1), index < Stations.Count - 1));
             options.Items.Add(new Separator());
             options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
-            var row = Columns((stationButton, Star), (actions, Auto));
+            var row = (Grid)Columns((stationButton, Star), (actions, Auto));
             row.MinHeight = 47;
+            row.Tag = item;
+            drag.Attach(row, actions);
             return row;
         }
 
@@ -980,9 +1075,9 @@ internal sealed partial class Radio
         SetPage(startPage);
         if (startSearch != null)
         {
-            SetPage("search");
             searchBox.Text = startSearch;
             searchBox.CaretIndex = startSearch.Length;
+            SetPage("search");
             Search();
         }
 
