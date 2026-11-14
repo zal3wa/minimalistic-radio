@@ -317,7 +317,10 @@ internal sealed partial class Radio
         searchPane.Children.Add(searchHeader);
         searchPane.Children.Add(results);
         CancellationTokenSource activeSearch = null;
-        panel.Closed += (_, _) => activeSearch?.Cancel();
+        var loadingSuggestions = new CancellationTokenSource();
+        bool loadingNow = false;
+        string page = "stations";
+        panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
 
         // Header: title with Update (when ready), History, Settings and Hide; the page title with a back arrow.
         var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), T("Historia utworów", "Song history"));
@@ -438,6 +441,52 @@ internal sealed partial class Radio
             }
         }
 
+        // A section title in the list (not selectable).
+        FrameworkElement Heading(string text)
+        {
+            var title = new TextBlock { Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold, Margin = new Thickness(10, 8, 0, 2) };
+            title.SetResourceReference(TextBlock.ForegroundProperty, "Subtle");
+            return new ListBoxItem { Content = title, IsHitTestVisible = false, Focusable = false };
+        }
+
+        bool ShowingSuggestions() => page == "search" && activeSearch == null && string.IsNullOrWhiteSpace(searchBox.Text);
+
+        // With the search box empty: our recommended stations, then the popular ones. Loaded once per run, kept in memory.
+        async void ShowSuggestions()
+        {
+            if (!ShowingSuggestions()) return;
+            if (suggestions == null)
+            {
+                if (loadingNow) return;
+                loadingNow = true;
+                results.Items.Clear();
+                searchStatus.Text = T("Wczytuję propozycje…", "Loading suggestions…");
+                try { suggestions = await Storage.Suggestions(metadataClient, loadingSuggestions.Token); }
+                catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
+                {
+                    if (!loadingSuggestions.IsCancellationRequested && ShowingSuggestions())
+                        searchStatus.Text = T("Nie udało się połączyć z katalogiem stacji. Spróbuj ponownie.",
+                            "Couldn't reach the station directory. Try again.");
+                }
+                finally { loadingNow = false; }
+                if (suggestions == null) return;
+            }
+            if (!ShowingSuggestions()) return;
+            results.Items.Clear();
+            searchStatus.Text = searchHint;
+            if (suggestions.Recommended.Length > 0)
+            {
+                results.Items.Add(Heading(T("Polecane", "Recommended")));
+                foreach (DirectoryStation item in suggestions.Recommended) results.Items.Add(ResultRow(item));
+            }
+            if (suggestions.Popular.Length > 0)
+            {
+                results.Items.Add(Heading(suggestions.Country != null ? T("Popularne w Twoim kraju", "Popular in your country")
+                    : T("Popularne na świecie", "Popular worldwide")));
+                foreach (DirectoryStation item in suggestions.Popular) results.Items.Add(ResultRow(item));
+            }
+        }
+
         // Leaving the search page: no results kept, no request left running.
         void ResetSearch()
         {
@@ -448,7 +497,6 @@ internal sealed partial class Radio
             searchStatus.Text = searchHint;
         }
 
-        string page = "stations";
         void SetPage(string target)
         {
             if (target != "stations")
@@ -468,7 +516,10 @@ internal sealed partial class Radio
                 : target == "history" ? T("Historia", "History")
                 : target == "search" ? T("Dodaj stację", "Add a station") : T("Stacje", "Stations");
             if (target == "search")
+            {
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
+                ShowSuggestions();
+            }
             backButton.Visibility = stations ? Visibility.Collapsed : Visibility.Visible;
             // Off the stations page these two go away entirely, so the rest moves up to the X on the right.
             historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
@@ -484,6 +535,17 @@ internal sealed partial class Radio
         add.Click += (_, _) => SetPage("search");
         searchButton.Click += (_, _) => Search();
         searchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Search(); };
+        // Clearing the box drops the results (and a running search) and brings the suggestions back.
+        searchBox.TextChanged += (_, _) =>
+        {
+            if (page != "search" || !string.IsNullOrWhiteSpace(searchBox.Text)) return;
+            activeSearch?.Cancel();
+            activeSearch = null;
+            searchButton.IsEnabled = true;
+            results.Items.Clear();
+            searchStatus.Text = searchHint;
+            ShowSuggestions();
+        };
         manual.Click += (_, _) => { SetPage("stations"); Edit(null); };
         settingsButton.Click += (_, _) => SetPage("settings");
         historyButton.Click += (_, _) => SetPage("history");
@@ -980,9 +1042,9 @@ internal sealed partial class Radio
         SetPage(startPage);
         if (startSearch != null)
         {
-            SetPage("search");
             searchBox.Text = startSearch;
             searchBox.CaretIndex = startSearch.Length;
+            SetPage("search");
             Search();
         }
 

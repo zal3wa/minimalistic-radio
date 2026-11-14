@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -36,8 +37,9 @@ public sealed class HistoryEntry
 
 internal sealed class DirectoryStation
 {
-    internal string Name, Country, Url, ResolvedUrl, Logo, Codec, Tags;
+    internal string Id, Name, Country, Url, ResolvedUrl, Logo, Codec, Tags;
     internal int Bitrate;
+    internal bool Hls, Working = true;
 }
 
 internal static class Storage
@@ -110,6 +112,80 @@ internal static class Storage
     internal static async Task<DirectoryStation[]> Search(HttpClient client, string query, CancellationToken token)
     {
         string route = "/json/stations/search?hidebroken=true&limit=40&order=clickcount&reverse=true&name=" + Uri.EscapeDataString(query);
+        var seen = new HashSet<string>();
+        return (await Fetch(client, route, token)).Where(entry => Playable(entry.Codec, entry.Hls) &&
+            seen.Add(AddressOf(entry))).Take(30).ToArray();   // asked for 40: some are filtered out
+    }
+
+    // Our hand-picked stations (music, MP3/AAC), by radio-browser stationuuid so addresses and logos stay current.
+    internal static readonly string[] RecommendedIds =
+    {
+        "2e6fabb2-9a10-4b2a-91ae-25a7d535e247",   // 102.7 KIIS FM Los Angeles
+        "9245e3a5-bf69-4a08-8fac-3903a55043bf",   // Antyradio Hard
+        "9617a958-0601-11e8-ae97-52543be04c81",   // Radio Paradise Main Mix
+        "a509502d-1ba7-4d51-9791-0be5a7d5ec34",   // KEXP 90.3 Seattle
+        "961e6cac-0601-11e8-ae97-52543be04c81",   // NTS Radio 1
+        "c454908c-eb81-11e9-a96c-52543be04c81",   // FIP Groove
+        "9625d631-0601-11e8-ae97-52543be04c81",   // Radio Swiss Jazz
+        "9aa33d22-a6ef-11e9-a787-52543be04c81",   // Radio Swiss Classic
+        "960cf833-0601-11e8-ae97-52543be04c81",   // SomaFM Groove Salad
+        "960e4940-0601-11e8-ae97-52543be04c81"    // Ibiza Global Radio
+    };
+
+    internal sealed class SuggestionList
+    {
+        internal DirectoryStation[] Recommended, Popular;
+        internal string Country;   // null: worldwide
+    }
+
+    // The country from the system settings ("Country or region"), never from the IP address; null when unknown.
+    internal static string CurrentCountry()
+    {
+        try
+        {
+            string code = RegionInfo.CurrentRegion.TwoLetterISORegionName;
+            if (code.Length == 2 && code.All(char.IsLetter) && !new[] { "IV", "XX", "ZZ" }.Contains(code.ToUpperInvariant()))
+                return code.ToUpperInvariant();
+        }
+        catch (Exception error) when (error is ArgumentException || error is CultureNotFoundException) { Debug.WriteLine(error); }
+        return null;
+    }
+
+    // Names like "-- # TOP 100 CHARTS ---" or "a,b,c,d,e": starts with a symbol, has "||", "#" or "***", or many commas.
+    internal static bool LooksLikeSpam(string name)
+    {
+        name = (name ?? "").Trim();
+        return name.Length == 0 || !char.IsLetterOrDigit(name[0]) || name.Contains("||") || name.Contains("#") ||
+            name.Contains("***") || name.Count(letter => letter == ',') > 3;
+    }
+
+    // The popular list as shown: playable, not already recommended, no duplicates, no spam, the first 15.
+    internal static DirectoryStation[] CleanPopular(IEnumerable<DirectoryStation> popular, IEnumerable<DirectoryStation> recommended)
+    {
+        var names = new HashSet<string>(recommended.Select(entry => entry.Name.Trim().ToLowerInvariant()));
+        var streams = new HashSet<string>(recommended.Select(entry => StreamKey(AddressOf(entry))));
+        return popular.Where(entry => Playable(entry.Codec, entry.Hls) && !LooksLikeSpam(entry.Name) &&
+            names.Add(entry.Name.Trim().ToLowerInvariant()) & streams.Add(StreamKey(AddressOf(entry)))).Take(15).ToArray();
+    }
+
+    internal static async Task<SuggestionList> Suggestions(HttpClient client, CancellationToken token)
+    {
+        string country = CurrentCountry();
+        List<DirectoryStation> fetched = await Fetch(client, "/json/stations/byuuid?uuids=" + string.Join(",", RecommendedIds), token);
+        // In our order; a missing, broken or unplayable station is skipped.
+        DirectoryStation[] recommended = RecommendedIds.Select(id => fetched.FirstOrDefault(entry => entry.Id == id))
+            .Where(entry => entry != null && entry.Working && Playable(entry.Codec, entry.Hls)).ToArray();
+        string route = "/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=40" +
+            (country == null ? "" : "&countrycode=" + country);
+        DirectoryStation[] popular = CleanPopular((await Fetch(client, route, token)).Where(entry => entry.Working), recommended);
+        return new SuggestionList { Recommended = recommended, Popular = popular, Country = country };
+    }
+
+    static string AddressOf(DirectoryStation entry) => IsWebUrl(entry.ResolvedUrl) ? entry.ResolvedUrl : entry.Url;
+
+    // One request to the first server that answers (then the second): every station with a name and a web address.
+    static async Task<List<DirectoryStation>> Fetch(HttpClient client, string route, CancellationToken token)
+    {
         foreach (string server in new[] { "de1.api.radio-browser.info", "nl1.api.radio-browser.info" })
         {
             try
@@ -122,24 +198,22 @@ internal static class Storage
                         response.EnsureSuccessStatusCode();
                         string json = await response.Content.ReadAsStringAsync();
                         var items = new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }.DeserializeObject(json) as object[];
-                        var seen = new HashSet<string>();
                         var found = new List<DirectoryStation>();
                         foreach (var item in (items ?? new object[0]).OfType<Dictionary<string, object>>())
                         {
                             string Text(string key) => item.TryGetValue(key, out object value) ? value as string : null;
                             var entry = new DirectoryStation
                             {
-                                Name = Text("name"), Country = Text("country"), Url = Text("url"),
+                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), Url = Text("url"),
                                 ResolvedUrl = Text("url_resolved"), Logo = Text("favicon"),
                                 Codec = Text("codec"), Tags = Text("tags"),
-                                Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0
+                                Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0,
+                                Hls = item.TryGetValue("hls", out object flag) && flag is int on && on == 1,
+                                Working = !(item.TryGetValue("lastcheckok", out object ok) && ok is int check && check == 0)
                             };
-                            string address = IsWebUrl(entry.ResolvedUrl) ? entry.ResolvedUrl : entry.Url;
-                            bool hls = item.TryGetValue("hls", out object flag) && flag is int on && on == 1;
-                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(address) && Playable(entry.Codec, hls) && seen.Add(address))
-                                found.Add(entry);
+                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(AddressOf(entry))) found.Add(entry);
                         }
-                        return found.Take(30).ToArray();   // asked for 40: some are filtered out
+                        return found;
                     }
                 }
             }

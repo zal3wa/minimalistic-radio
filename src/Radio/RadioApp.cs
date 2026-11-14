@@ -31,6 +31,7 @@ internal sealed partial class Radio
     private static string Ready => T("Gotowe do odtwarzania", "Ready to play");
     private static string Connecting => T("Łączenie ze stacją…", "Connecting to the station…");
     private static readonly List<SavedStation> Stations = new List<SavedStation>();
+    private static Storage.SuggestionList suggestions;   // the station search's empty page, loaded once per run
     private static readonly HttpClient metadataClient = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
 
     private readonly Application app;
@@ -198,6 +199,27 @@ internal sealed partial class Radio
             if (!Storage.Playable("MP3", false) || !Storage.Playable("aac+", false) || !Storage.Playable("UNKNOWN", false) ||
                 Storage.Playable("AAC", true) || Storage.Playable("OGG", false) || Storage.Playable("FLAC", false))
                 throw new InvalidOperationException("Błędny filtr formatów stacji.");
+            if (!new[] { "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "a,b,c,d,e" }.All(Storage.LooksLikeSpam) ||
+                new[] { "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli" }.Any(Storage.LooksLikeSpam))
+                throw new InvalidOperationException("Błędne rozpoznawanie śmieciowych nazw stacji.");
+            DirectoryStation Sample(string name, string url, string codec = "MP3", bool hls = false) =>
+                new DirectoryStation { Name = name, Url = url, Codec = codec, Hls = hls };
+            var picked = new[] { Sample("Polecana", "https://a.example/live") };
+            DirectoryStation[] popular = Storage.CleanPopular(new[]
+            {
+                Sample("Pierwsza", "https://one.example/stream"),
+                Sample(" pierwsza ", "https://other.example/stream"),    // same name
+                Sample("Druga", "http://ONE.example/stream/"),           // same stream
+                Sample("Polecana", "https://b.example/live"),            // recommended by name
+                Sample("Trzecia", "http://a.example/live"),              // recommended by stream
+                Sample("Ogg", "https://c.example/ogg", "OGG"),
+                Sample("Hls", "https://d.example/hls", "AAC", true),
+                Sample("Czwarta", "https://e.example/stream", "AAC+")
+            }, picked);
+            if (string.Join("|", popular.Select(item => item.Name)) != "Pierwsza|Czwarta")
+                throw new InvalidOperationException("Błędne czyszczenie listy popularnych stacji: " + string.Join("|", popular.Select(item => item.Name)));
+            if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
+                throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
             using (var testSession = new CancellationTokenSource())
             {
                 session = testSession;
