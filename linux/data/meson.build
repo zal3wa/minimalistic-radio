@@ -27,12 +27,9 @@ install_data(
   install_dir: get_option('datadir') / 'icons/hicolor/symbolic/apps',
 )
 
-desktop_validate = find_program('desktop-file-validate', required: false)
-if desktop_validate.found()
-  test('validate desktop file', desktop_validate, args: [desktop_file])
-endif
+# Required, so a missing validator fails the build instead of skipping its check.
+desktop_validate = find_program('desktop-file-validate')
+test('validate desktop file', desktop_validate, args: [desktop_file])
 
-appstreamcli = find_program('appstreamcli', required: false)
-if appstreamcli.found()
-  test('validate metainfo', appstreamcli, args: ['validate', '--no-net', metainfo_file])
-endif
+appstreamcli = find_program('appstreamcli')
+test('validate metainfo', appstreamcli, args: ['validate', '--no-net', metainfo_file])

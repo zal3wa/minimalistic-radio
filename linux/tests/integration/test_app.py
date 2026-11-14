@@ -45,6 +45,22 @@ def pump(condition, timeout=10.0):
     return True
 
 
+def once_after(ms, fired, name, callback):
+    """A one-shot timeout that records in `fired` that it ran; returns its source id."""
+    def run():
+        fired.add(name)
+        callback()
+        return GLib.SOURCE_REMOVE
+    return GLib.timeout_add(ms, run)
+
+
+def remove_unfired(fired, sources):
+    """Removes the timeouts that never ran, so they can't fire inside a later test's main loop."""
+    for name, source_id in sources.items():
+        if name not in fired:
+            GLib.source_remove(source_id)
+
+
 def seed_station(tmp_path):
     config = tmp_path / "config" / "minimalistic-radio"
     config.mkdir(parents=True)
@@ -73,8 +89,13 @@ def test_second_launch_opens_panel(app_id):
 def test_autostart_stays_hidden(app_id, tmp_path):
     seed_station(tmp_path)
     app = RadioApplication(application_id=app_id)
-    GLib.timeout_add(500, lambda: (app.quit(), GLib.SOURCE_REMOVE)[1])
-    assert app.run(["minimalistic-radio", "--autostart"]) == 0
+    fired = set()
+    sources = {"quit": once_after(500, fired, "quit", app.quit)}
+    try:
+        assert app.run(["minimalistic-radio", "--autostart"]) == 0
+    finally:
+        remove_unfired(fired, sources)
+    assert "quit" in fired, "with no window, the app quit at once instead of staying in the background"
     assert app.window is None
     assert app.controller.status in (Status.READY, Status.STOPPED)
     assert app.controller.current == 0   # the last station is chosen, but not played
@@ -91,21 +112,37 @@ def test_normal_launch_shows_the_window_and_plays(app_id, tmp_path):
 
 def test_close_hides_not_quits(app_id):
     app = RadioApplication(application_id=app_id)
-    assert app.register()
-    app.activate()
-    assert pump(lambda: app.window is not None and app.window.is_visible())
-    app.window.close()
-    assert pump(lambda: not app.window.is_visible())
-    assert app.get_is_registered()
-    # Another process finds this instance on the bus.
-    probe = subprocess.Popen(
-        [sys.executable, "-c",
-         "import sys; from gi.repository import Gio; a = Gio.Application(application_id=sys.argv[1]);"
-         "a.register(); sys.exit(0 if a.get_is_remote() else 3)", app_id],
-        env=os.environ)
-    assert pump(lambda: probe.poll() is not None)
-    assert probe.returncode == 0
-    app.quit()
+    fired, seen = set(), {}
+
+    def check():
+        # The window still belongs to the app (a destroyed one would have left the list) and is hidden.
+        seen["kept"] = app.window in app.get_windows()
+        seen["hidden"] = not app.window.is_visible()
+        seen["checked_at"] = time.monotonic()
+        # Another process finds this instance on the bus. It runs while this main loop keeps serving.
+        seen["probe"] = subprocess.Popen(
+            [sys.executable, "-c",
+             "import sys; from gi.repository import Gio; a = Gio.Application(application_id=sys.argv[1]);"
+             "a.register(); sys.exit(0 if a.get_is_remote() else 3)", app_id],
+            env=os.environ)
+        GLib.timeout_add(50, finish)
+
+    def finish():
+        if seen["probe"].poll() is None and time.monotonic() - seen["checked_at"] < 20:
+            return GLib.SOURCE_CONTINUE
+        app.quit()
+        return GLib.SOURCE_REMOVE
+
+    sources = {"close": once_after(300, fired, "close", lambda: app.window.close()),
+               "check": once_after(1500, fired, "check", check)}
+    try:
+        assert app.run(["minimalistic-radio"]) == 0
+    finally:
+        remove_unfired(fired, sources)
+    assert "close" in fired, "run() returned before the window was closed"
+    assert "check" in fired, "run() returned after the window was closed: closing quit the app"
+    assert seen["kept"] and seen["hidden"]
+    assert seen["probe"].returncode == 0
 
 
 def test_polish_strings(tmp_path, monkeypatch):

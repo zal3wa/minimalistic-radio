@@ -26,8 +26,13 @@ class MenuItem:
     children: list["MenuItem"] = field(default_factory=list)
 
 
-def _separator(n: int) -> MenuItem:
-    return MenuItem(f"sep:{n}", separator=True)
+def _separator(name: int | str) -> MenuItem:
+    return MenuItem(f"sep:{name}", separator=True)
+
+
+def _shorten(text: str) -> str:
+    """At most TOOLTIP_BODY_MAX characters, ending with "…" when cut (a song title can be very long)."""
+    return text if len(text) <= TOOLTIP_BODY_MAX else text[:TOOLTIP_BODY_MAX - 1] + "…"
 
 
 def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | None) -> list[MenuItem]:
@@ -45,7 +50,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
     levels = [
         MenuItem("volume:up", _("Up 5%"), enabled=volume < 100, icon="list-add-symbolic"),
         MenuItem("volume:down", _("Down 5%"), enabled=volume > 0, icon="list-remove-symbolic"),
-        _separator(1),
+        _separator("volume"),
     ]
     levels += [MenuItem(f"volume:{p}", _("Mute") if p == 0 else f"{p}%", toggle="radio", checked=volume == p)
                for p in VOLUME_PRESETS]
@@ -63,7 +68,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
     if name is not None:
         items.append(MenuItem("now:station", name, enabled=False))
         if c.track:
-            items.append(MenuItem("now:track", c.track, enabled=False))
+            items.append(MenuItem("now:track", _shorten(c.track), enabled=False))
     items.append(_separator(2))
     if update:
         items.append(MenuItem("update", update, icon="software-update-available-symbolic"))
@@ -75,10 +80,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
 def tooltip(c: RadioController) -> tuple[str, str]:
     name = c.station_name
     title = f"{APP_NAME} · {name}" if name else APP_NAME
-    body = c.track or ""
-    if len(body) > TOOLTIP_BODY_MAX:
-        body = body[:TOOLTIP_BODY_MAX - 1] + "…"
-    return title, body
+    return title, _shorten(c.track or "")
 
 
 def mpris_metadata(c: RadioController) -> dict[str, Any]:

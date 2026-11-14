@@ -34,9 +34,25 @@ msgstr ""
 "wyeksportować i zaimportować. Działają klawisze multimedialne i sterowanie "
 "multimediami pulpitu, a telemetrii nie ma."
 
-# Used by the window in a later task; kept here so the list stays complete.
+#: minimalistic_radio/platform/menu_model.py
 msgid "Play"
 msgstr "Odtwórz"
+
+#: minimalistic_radio/app.py
+msgid "Start hidden, as when the session starts"
+msgstr "Uruchom ukryte, jak przy starcie sesji"
+
+#: minimalistic_radio/app.py
+msgid "Started again after an update"
+msgstr "Uruchomione ponownie po aktualizacji"
+
+#: minimalistic_radio/app.py
+msgid "Start, check that the window opens, and exit"
+msgstr "Uruchom, sprawdź, czy okno się otwiera, i zakończ"
+
+#: minimalistic_radio/app.py
+msgid "Save screenshots of the pages in DIR and exit"
+msgstr "Zapisz zrzuty ekranu stron w katalogu DIR i zakończ"
 
 #: minimalistic_radio/controller.py
 msgid "Couldn't save the station list."

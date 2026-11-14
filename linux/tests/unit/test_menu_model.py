@@ -13,7 +13,10 @@ def test_menu_order_and_labels(ctl_playing):
 
 def test_volume_bounds(ctl):
     ctl.set_volume(100)
-    v = {m.id: m for m in item(build_tray_menu(ctl, str, None), "volume").children}
+    children = item(build_tray_menu(ctl, str, None), "volume").children
+    assert [m.id for m in children] == ["volume:up", "volume:down", "sep:volume",
+                                        "volume:0", "volume:25", "volume:50", "volume:75", "volume:100"]
+    v = {m.id: m for m in children}
     assert v["volume:up"].enabled is False and v["volume:down"].enabled and v["volume:0"].label == "Mute"
 
 
@@ -41,6 +44,12 @@ def test_tooltip_truncated(ctl_playing):
     ctl_playing.track = "X" * 400
     title, body = tooltip(ctl_playing)
     assert title == "Minimalistic Radio · Radio A" and len(body) <= 120 and body.endswith("…")
+
+
+def test_track_item_truncated(ctl_playing):
+    ctl_playing.track = "X" * 400
+    label = item(build_tray_menu(ctl_playing, str, None), "now:track").label
+    assert len(label) <= 120 and label.endswith("…")
 
 
 def test_mpris_metadata(ctl_playing):

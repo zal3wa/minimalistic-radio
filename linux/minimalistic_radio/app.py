@@ -83,14 +83,15 @@ class RadioApplication(Adw.Application):
         self.screenshot_dir: str | None = None
         self._started = False
 
+        _ = translate
         self.add_main_option("autostart", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
-                             "Start hidden, as when the session starts", None)
+                             _("Start hidden, as when the session starts"), None)
         self.add_main_option("updated", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
-                             "Started again after an update", None)
+                             _("Started again after an update"), None)
         self.add_main_option("self-test", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
-                             "Start, check that the window opens, and exit", None)
+                             _("Start, check that the window opens, and exit"), None)
         self.add_main_option("screenshot", 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING,
-                             "Save screenshots of the pages in DIR and exit", "DIR")
+                             _("Save screenshots of the pages in DIR and exit"), "DIR")
 
     # ---- Start-up ----
 
@@ -124,13 +125,20 @@ class RadioApplication(Adw.Application):
         self.controller = RadioController(player, GLibScheduler(), default_paths(), fetch, fetch_file, self._)
         self.controller.start(autostart=autostart)
 
+    def do_handle_local_options(self, options: GLib.VariantDict) -> int:
+        # A self-test or screenshot run is its own instance: never handed to (and quitting) a running radio.
+        if options.contains("self-test") or options.contains("screenshot"):
+            self.set_flags(self.get_flags() | Gio.ApplicationFlags.NON_UNIQUE)
+        return -1
+
     def do_command_line(self, command_line: Gio.ApplicationCommandLine) -> int:
         options = command_line.get_options_dict()
         autostart = options.contains("autostart")
         self.updated = options.contains("updated")
         shots = options.lookup_value("screenshot", GLib.VariantType("s"))
         self.screenshot_dir = shots.get_string() if shots is not None else None
-        self._start_radio(autostart)
+        checking = options.contains("self-test") or self.screenshot_dir is not None
+        self._start_radio(autostart or checking)   # a check never plays
         if options.contains("self-test"):
             self.show_window()
             print("self-test ok")
@@ -142,6 +150,12 @@ class RadioApplication(Adw.Application):
     def _quit_idle(self) -> bool:
         self.quit()
         return GLib.SOURCE_REMOVE
+
+    def do_shutdown(self) -> None:
+        # A clean exit, like Shutdown on Windows: the stream is closed before the process ends.
+        if self.controller is not None:
+            self.controller.player.stop()
+        Adw.Application.do_shutdown(self)
 
     def do_activate(self) -> None:
         # From the desktop (not the command line): the first launch behaves like a normal one.
