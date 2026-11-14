@@ -1,8 +1,6 @@
 # Minimalistic Radio — only 185 KB
 
-Małe radio internetowe dla Windows 10 i 11, które mieszka obok zegara. Jeden plik `.exe`, bez instalatora i bez dodatkowych bibliotek.
-
-*A tiny internet radio for Windows 10/11 that lives in the notification area. One exe, no installer, nothing else to install. English UI included.*
+A tiny internet radio for Windows 10 and 11 that lives next to the clock. One `.exe`, no installer, nothing else to install.
 
 <p align="center">
   <picture>
@@ -18,81 +16,82 @@ Małe radio internetowe dla Windows 10 i 11, które mieszka obok zegara. Jeden p
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
         <img src="docs/screenshots/history-light.png" width="270" alt="Song history">
       </picture>
-      <br>Historia utworów · <i>Song history</i>
+      <br>Song history
     </td>
     <td align="center">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
         <img src="docs/screenshots/settings-light.png" width="270" alt="Settings">
       </picture>
-      <br>Ustawienia · <i>Settings</i>
+      <br>Settings
     </td>
     <td align="center">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
         <img src="docs/screenshots/menu-light.png" width="270" alt="Tray menu">
       </picture>
-      <br>Menu obok zegara · <i>Tray menu</i>
+      <br>Tray menu
     </td>
   </tr>
 </table>
 
-## Co potrafi
+## Features
 
-- **Ikona obok zegara**: kliknięcie otwiera panel w rogu ekranu (jak systemowe okienka Windows 11), prawy przycisk — szybkie menu.
-- **Twoje stacje** z logo; wyszukiwarka w katalogu [radio-browser.info](https://www.radio-browser.info) albo dodawanie z adresu; zmiana kolejności, eksport i import listy (np. dla znajomych).
-- **Win+A, klawisze multimedialne, ekran blokady**: tytuł, wykonawca i okładka utworu (albo logo stacji), poprzednia/następna stacja.
-- **Historia utworów** z kopiowaniem i wyszukiwaniem w Spotify lub YouTube.
-- **Wyłącznik czasowy** (15–90 min, z łagodnym wyciszeniem na koniec).
-- **Samo się wznawia** po zerwaniu internetu i po wybudzeniu komputera.
-- **Uruchamianie z Windows** (opcjonalnie), **polski i angielski** (jak w Windows albo do wyboru), jasny i ciemny motyw.
-- **Aktualizacje** jak w ShareX: najwyżej raz dziennie sprawdza, czy jest nowa wersja, informuje o niej raz i instaluje dopiero na życzenie.
+- **Next to the clock**: a click opens the panel in the corner of the screen, like the Windows 11 flyouts; right-click for a quick menu.
+- **Your stations** with their logos. Search the [radio-browser.info](https://www.radio-browser.info) directory or add a stream by its address; reorder the list, export it and import someone else's (duplicates are skipped).
+- **Win+A, media keys and the lock screen** show the song title, the artist and the cover art (or the station logo); previous/next switches stations.
+- **Song history** with copy and search on Spotify or YouTube.
+- **Sleep timer** (15–90 min) with a gentle fade-out.
+- **Reconnects by itself** after the internet drops and after the computer wakes up.
+- **Start with Windows** (optional), **English and Polish** (follows Windows or your choice), light and dark theme.
+- **Updates the ShareX way**: checks for a new version at most once a day, tells you about it once and installs it only when you ask.
 
-## Pobieranie
+## Download
 
-Najnowsza wersja: **[Releases → Minimalistic-Radio.exe](https://github.com/zal3wa/minimalistic-radio/releases/latest)**. Wystarczy uruchomić.
-Plik nie jest podpisany cyfrowo, więc Windows SmartScreen może zapytać: *Więcej informacji → Uruchom mimo to*.
+Get the latest version from **[Releases → Minimalistic-Radio.exe](https://github.com/zal3wa/minimalistic-radio/releases/latest)** and run it.
+The file isn't digitally signed, so Windows SmartScreen may ask first: *More info → Run anyway*.
 
-## Jak to działa
+## How it works
 
-- Interfejs: WPF na **.NET Framework 4.8**, który jest częścią każdego Windows 10 i 11 — dlatego plik jest tak mały.
-- Dźwięk MP3 i AAC (w tym HE-AAC/AAC+) dekoduje **sam Windows** (Media Foundation). Dla innych formatów (Ogg/Opus, FLAC, HLS) radio jednorazowo pobiera [FFmpeg](https://ffmpeg.org) (kompilacja [gyan.dev](https://www.gyan.dev/ffmpeg/builds/), sprawdzana sumą SHA-256). W ustawieniach można wybrać: automatycznie / tylko Windows / zawsze FFmpeg.
-- Odtwarzacz na pasku zadań Windows 11 jest możliwy przez darmowy [Windhawk](https://windhawk.net) i mod [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) — szczegóły w ustawieniach radia. Samo radio niczego w systemie nie modyfikuje.
+- The UI is WPF on **.NET Framework 4.8**, which is part of every Windows 10 and 11 — that's why the file is so small.
+- MP3 and AAC (including HE-AAC/AAC+) are decoded by **Windows itself** (Media Foundation). For other formats (Ogg/Opus, FLAC, HLS) the radio downloads [FFmpeg](https://ffmpeg.org) once (a [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) build, checked against its SHA-256). The settings let you choose: automatic, Windows only, or always FFmpeg.
+- A player on the Windows 11 taskbar is possible with the free [Windhawk](https://windhawk.net) and its [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod — the radio's settings walk you through it. The radio itself doesn't modify Windows.
 
-## Prywatność
+## Privacy
 
-Radio nie zbiera żadnych danych. Łączy się tylko z:
-- serwerami stacji, których słuchasz,
-- `radio-browser.info` — gdy wyszukujesz stacje,
-- `itunes.apple.com` — wyszukiwanie okładki po wykonawcy i tytule granego utworu,
-- `api.github.com` — sprawdzanie aktualizacji (raz dziennie, można wyłączyć),
-- `github.com` — pobieranie FFmpeg lub nowej wersji, tylko gdy są potrzebne,
-- `stream.radio357.pl` — tytuły utworów Radia 357.
+The radio collects no data. It only connects to:
+- the servers of the stations you listen to,
+- `radio-browser.info` — when you search for stations,
+- `itunes.apple.com` — to find the cover art of the song that's playing, by artist and title,
+- `api.github.com` — to check for updates (once a day, can be turned off),
+- `github.com` — to download FFmpeg or a new version, only when needed,
+- `stream.radio357.pl` — song titles of Radio 357.
 
-Ustawienia, lista stacji i historia są w `%LOCALAPPDATA%\Minimalistic Radio`.
+Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
 
-## Budowanie
+## Building
 
-Potrzebne: [.NET SDK](https://dotnet.microsoft.com/download) 8 lub nowszy i Windows 10/11 SDK (instalowany z Visual Studio albo [osobno](https://developer.microsoft.com/windows/downloads/windows-sdk/)).
+You need the [.NET SDK](https://dotnet.microsoft.com/download) 8 or newer and the Windows 10/11 SDK (from the Visual Studio Installer or [standalone](https://developer.microsoft.com/windows/downloads/windows-sdk/)).
 
 ```
 dotnet build src/MinimalisticRadio.csproj -c Release -o out
 ```
 
-`out\Minimalistic Radio.exe --test-menu` uruchamia autotest (kod wyjścia 0 = OK), a `--test-menu --screenshot` tworzy zrzuty do tego README w `%TEMP%\MinimalisticRadio-shot-*.png`. Wypchnięcie tagu `v*` buduje i publikuje wydanie przez GitHub Actions.
+`out\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK), and `--test-menu --screenshot` renders the screenshots for this page into `%TEMP%\MinimalisticRadio-shot-*.png`.
+Pushing a `v*` tag builds and publishes a release with GitHub Actions; the release notes come from the annotated tag's message.
 
-## Licencja
-
-[MIT](LICENSE). Ikony: [Lucide](https://lucide.dev) (ISC, zob. `src/Assets/Lucide_Icons_license.txt`).
-
-## Struktura
+## Project structure
 
 ```
 src/
-  Program.cs            start, jedna kopia programu
-  Radio/                ikona obok zegara, menu, odtwarzanie (RadioApp) i panel (RadioPanel)
-  Audio/                połączenie ze stacją, dekodowanie przez Windows, FFmpeg jako zapas
-  Services/             okładki, aktualizacje, zapis ustawień, integracja z Windows, język
-  Theme/                kolory i wygląd kontrolek (Windows 11)
-  Assets/               ikona i licencja ikon
+  Program.cs     startup, single instance
+  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel)
+  Audio/         station connection, decoding by Windows, FFmpeg fallback
+  Services/      cover art, updates, storage, Windows integration, language
+  Theme/         colours and Windows 11 style controls
+  Assets/        icon and the icons' licence
 ```
+
+## License
+
+[MIT](LICENSE). Icons: [Lucide](https://lucide.dev) (ISC, see `src/Assets/Lucide_Icons_license.txt`).
