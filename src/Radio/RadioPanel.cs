@@ -211,23 +211,19 @@ internal sealed partial class Radio
         return CardFrame(body, new Thickness(14, 12, 14, 12));
     }
 
+    // Shows or hides one of a Card's extra rows together with the divider above it.
+    private static void ShowRow(FrameworkElement row, bool show)
+    {
+        Visibility visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        row.Visibility = visibility;
+        if (row.Parent is Panel body && body.Children.IndexOf(row) is int index && index > 0)
+            body.Children[index - 1].Visibility = visibility;
+    }
+
     private static TextBlock Group(string text, bool first = false) => new TextBlock
     {
         Text = text, FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(2, first ? 0 : 18, 0, 8)
     };
-
-    // Status badge: a coloured dot and a short label.
-    private static FrameworkElement Pill(string text, bool ok)
-    {
-        var dot = new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
-        dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, ok ? "Success" : "Subtle");
-        var row = new StackPanel { Orientation = Orientation.Horizontal };
-        row.Children.Add(dot);
-        row.Children.Add(new TextBlock { Text = text, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
-        var pill = new Border { CornerRadius = new CornerRadius(11), Padding = new Thickness(8, 3, 10, 4), Child = row };
-        pill.SetResourceReference(Border.BackgroundProperty, "Selected");
-        return pill;
-    }
 
     // A numbered step; a finished one shows a green tick instead of its number.
     private static FrameworkElement Step(int number, string text, FrameworkElement action = null, bool done = false)
@@ -824,11 +820,12 @@ internal sealed partial class Radio
             {
                 string path = FFmpeg.Locate();
                 bool downloaded = File.Exists(Path.Combine(FFmpeg.Folder, "ffmpeg.exe"));
-                ffmpegState.Text = path == null ? T("Nie pobrano", "Not downloaded")
-                    : downloaded && path.StartsWith(FFmpeg.Folder, StringComparison.OrdinalIgnoreCase)
-                        ? T("Pobrany przez radio · 100 MB", "Downloaded by the radio · 100 MB")
-                        : path;
+                ffmpegState.Text = downloaded && path != null && path.StartsWith(FFmpeg.Folder, StringComparison.OrdinalIgnoreCase)
+                    ? T("Pobrany przez radio · 100 MB", "Downloaded by the radio · 100 MB")
+                    : path;
                 removeFfmpeg.Visibility = downloaded ? Visibility.Visible : Visibility.Collapsed;
+                // Worth a row only when there's an FFmpeg the radio may use, or one it downloaded and can remove.
+                ShowRow(ffmpegRow, downloaded || (path != null && decoder != "windows"));
             }
             removeFfmpeg.Click += (_, _) =>
             {
@@ -840,7 +837,6 @@ internal sealed partial class Radio
                 }
                 RefreshFfmpeg();
             };
-            RefreshFfmpeg();
             decoding.SelectionChanged += (_, _) =>
             {
                 string value = modes[decoding.SelectedIndex];
@@ -854,6 +850,7 @@ internal sealed partial class Radio
             settings.Children.Add(Group(T("Dźwięk", "Sound")));
             settings.Children.Add(Card(Theme.Glyph(Theme.WaveIcon, 20), T("Dekodowanie", "Decoding"),
                 T("Czym odtwarzane są stacje", "What plays the stations"), decoding, explanation, ffmpegRow));
+            RefreshFfmpeg();   // after the card exists, so a hidden FFmpeg row takes its divider with it
 
             // Stations: export / import (e.g. to give someone your list)
             var stationsNote = Note("");
@@ -917,23 +914,32 @@ internal sealed partial class Radio
                 T("Kopia w pliku, np. dla znajomych", "A copy in a file, e.g. for friends"), null,
                 Spaced(Orientation.Vertical, 8, Spaced(Orientation.Horizontal, 8, export, import), stationsNote)));
 
-            // Taskbar: the Windhawk player
-            bool windows11 = Environment.OSVersion.Version.Build >= 22000;
-            bool windhawk = windows11 && WindhawkInstalled();
-            FrameworkElement status = Pill(!windows11 ? T("Tylko Windows 11", "Windows 11 only")
-                : windhawk ? T("Windhawk jest", "Windhawk found") : T("Brak Windhawk", "No Windhawk"), windhawk);
-            var steps = !windows11 ? new FrameworkElement[0] : new[]
+            // Taskbar: the Windhawk player, Windows 11 only. One row; the set-up steps open on request.
+            if (Environment.OSVersion.Version.Build >= 22000)
             {
-                Step(1, windhawk ? T("Windhawk jest zainstalowany", "Windhawk is installed") : T("Zainstaluj darmowy Windhawk", "Install the free Windhawk"),
-                    windhawk ? null : Link(T("Pobierz", "Download"), "https://windhawk.net"), windhawk),
-                Step(2, T("Zainstaluj w nim mod Taskbar Fluent Media Player", "In it, install the Taskbar Fluent Media Player mod"),
-                    Link(T("Otwórz", "Open"), "https://windhawk.net/mods/taskbar-fluent-media-player")),
-                Step(3, T("Prawy klik na odtwarzaczu → Settings → kliknięcie: „Open media app”. Otworzy ten panel.",
-                          "Right-click the player → Settings → click action: “Open media app”. It opens this panel."))
-            };
-            settings.Children.Add(Group(T("Pasek zadań", "Taskbar")));
-            settings.Children.Add(Card(Theme.Glyph(Theme.TaskbarIcon, 20), T("Odtwarzacz na pasku zadań", "Taskbar player"),
-                T("Tytuł i przyciski radia na pasku", "Song title and buttons on the taskbar"), status, steps));
+                bool windhawk = WindhawkInstalled();
+                var steps = new[]
+                {
+                    Step(1, windhawk ? T("Windhawk jest zainstalowany", "Windhawk is installed") : T("Zainstaluj darmowy Windhawk", "Install the free Windhawk"),
+                        windhawk ? null : Link(T("Pobierz", "Download"), "https://windhawk.net"), windhawk),
+                    Step(2, T("Zainstaluj w nim mod Taskbar Fluent Media Player", "In it, install the Taskbar Fluent Media Player mod"),
+                        Link(T("Otwórz", "Open"), "https://windhawk.net/mods/taskbar-fluent-media-player")),
+                    Step(3, T("Prawy klik na odtwarzaczu → Settings → kliknięcie: „Open media app”. Otworzy ten panel.",
+                              "Right-click the player → Settings → click action: “Open media app”. It opens this panel."))
+                };
+                var howTo = SmallButton("LinkButton", "");
+                bool open = false;
+                void ShowSteps()
+                {
+                    foreach (FrameworkElement step in steps) ShowRow(step, open);
+                    howTo.Content = open ? T("Zwiń", "Hide") : T("Jak włączyć", "How to");
+                }
+                howTo.Click += (_, _) => { open = !open; ShowSteps(); };
+                settings.Children.Add(Group(T("Pasek zadań", "Taskbar")));
+                settings.Children.Add(Card(Theme.Glyph(Theme.TaskbarIcon, 20), T("Odtwarzacz na pasku zadań", "Taskbar player"),
+                    T("Tytuł i przyciski radia na pasku, przez Windhawk", "Song title and buttons on the taskbar, with Windhawk"), howTo, steps));
+                ShowSteps();
+            }
 
             // About and updates
             var updateNote = Note("");
