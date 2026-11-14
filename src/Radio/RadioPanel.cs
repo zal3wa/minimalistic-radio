@@ -271,6 +271,8 @@ internal sealed partial class Radio
         }
 
         var list = new ListBox();
+        // Stations are dragged to a new place, or moved with Alt+↑/↓ (StationDrag.cs); MoveStation below makes the move.
+        var drag = new StationDrag(panel, list);
         var now = new TextBlock
         {
             TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, FontSize = 15,
@@ -381,28 +383,41 @@ internal sealed partial class Radio
             name.Focus();
         }
 
-        void FillList()
+        void FillList(bool keepScroll = false)
         {
+            ScrollViewer viewer = keepScroll ? Descendants(list).OfType<ScrollViewer>().FirstOrDefault() : null;
+            double offset = viewer?.VerticalOffset ?? 0;
             list.Items.Clear();
-            for (int index = 0; index < Stations.Count; index++) list.Items.Add(StationRow(Stations[index], index));
+            foreach (SavedStation item in Stations) list.Items.Add(StationRow(item));
             list.SelectedIndex = station;
             shownStation = station;
-            ShowActiveStationAfterLayout(false);
+            // A moved station stays where it was put: the list keeps its place instead of jumping to the playing one.
+            if (viewer != null)
+            {
+                list.UpdateLayout();
+                viewer.ScrollToVerticalOffset(offset);
+                list.UpdateLayout();
+            }
+            else ShowActiveStationAfterLayout(false);
         }
 
-        bool ApplyStations(List<SavedStation> updated)
+        bool ApplyStations(List<SavedStation> updated, bool keepScroll = false)
         {
-            try { Storage.Write(Storage.StationFile, updated); }
-            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+            // The self-test changes stations in memory only: the saved list stays as it was.
+            if (!testMenu)
             {
-                Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
-                return false;
+                try { Storage.Write(Storage.StationFile, updated); }
+                catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+                {
+                    Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
+                    return false;
+                }
             }
             SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
             Stations.Clear();
             Stations.AddRange(updated);
             if (active != null) station = Stations.IndexOf(active);
-            FillList();
+            FillList(keepScroll);
             return true;
         }
 
@@ -647,15 +662,18 @@ internal sealed partial class Radio
             if (editing == item) fields.Visibility = Visibility.Collapsed;
         }
 
-        void Move(SavedStation item, int delta)
+        // Puts a station in another place on the list (dragged there, or Alt+↑/↓) and saves the order like any other
+        // change; the current station follows by identity and keeps playing.
+        bool MoveStation(SavedStation item, int target)
         {
-            int index = Stations.IndexOf(item), target = index + delta;
-            if (index < 0 || target < 0 || target >= Stations.Count) return;
+            int index = Stations.IndexOf(item);
+            if (index < 0 || target < 0 || target >= Stations.Count || target == index) return false;
             var updated = Stations.ToList();
             updated.RemoveAt(index);
             updated.Insert(target, item);
-            ApplyStations(updated);
+            return ApplyStations(updated, true);
         }
+        drag.Move = MoveStation;
 
         // A search result: logo, name, then country · format · genres, and + (or a tick when it's already on the list).
         FrameworkElement ResultRow(DirectoryStation item)
@@ -700,7 +718,7 @@ internal sealed partial class Radio
             return button;
         }
 
-        FrameworkElement StationRow(SavedStation item, int index)
+        FrameworkElement StationRow(SavedStation item)
         {
             var image = new Image { Width = 32, Height = 32, Stretch = Stretch.Uniform };
             var placeholder = Theme.Glyph(Theme.RadioIcon);
@@ -736,15 +754,16 @@ internal sealed partial class Radio
             actions.Padding = new Thickness(8, 6, 8, 6);
             actions.Margin = new Thickness(4, 0, 0, 0);
             var options = new ContextMenu { PlacementTarget = actions, Placement = PlacementMode.Bottom };
+            // No Move up / Move down: the station is dragged instead (or moved with Alt+↑/↓).
             options.Items.Add(Item(T("Edytuj", "Edit"), null, () => Edit(item)));
-            options.Items.Add(Item(T("Przesuń wyżej", "Move up"), null, () => Move(item, -1), index > 0));
-            options.Items.Add(Item(T("Przesuń niżej", "Move down"), null, () => Move(item, 1), index < Stations.Count - 1));
             options.Items.Add(new Separator());
             options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
-            var row = Columns((stationButton, Star), (actions, Auto));
+            var row = (Grid)Columns((stationButton, Star), (actions, Auto));
             row.MinHeight = 47;
+            row.Tag = item;
+            drag.Attach(row, actions);
             return row;
         }
 

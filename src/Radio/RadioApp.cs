@@ -226,6 +226,13 @@ internal sealed partial class Radio
                 throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
             if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
                 throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
+            // Where a dragged station lands: after a row once its top edge passes that row's middle (49 px apart, as on the panel).
+            double[] rows = { 49, 49, 49, 49, 49 }, mixed = { 30, 60, 30 };
+            if (DropIndex(rows, 0, 0) != 0 || DropIndex(rows, 0, 24) != 0 || DropIndex(rows, 0, 25) != 1 || DropIndex(rows, 0, 49 * 2.2) != 2 ||
+                DropIndex(rows, 0, 1000) != 4 || DropIndex(rows, 4, 49 * 4) != 4 || DropIndex(rows, 4, 49 * 4 - 24) != 4 ||
+                DropIndex(rows, 4, 49 * 4 - 25) != 3 || DropIndex(rows, 4, -1000) != 0 || DropIndex(rows, 2, 49 * 2) != 2 ||
+                DropIndex(mixed, 0, 29) != 0 || DropIndex(mixed, 0, 31) != 1 || DropIndex(mixed, 2, 16) != 1 || DropIndex(mixed, 2, 14) != 0)
+                throw new InvalidOperationException("Błędne miejsce upuszczenia przeciąganej stacji.");
             using (var testSession = new CancellationTokenSource())
             {
                 session = testSession;
@@ -325,6 +332,7 @@ internal sealed partial class Radio
                 if (mediaSession?.SystemMediaTransportControls.IsNextEnabled != true)
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
                 CloseMenu();
+                await VerifyStationDrag();
             }
         }
         catch (Exception error)
