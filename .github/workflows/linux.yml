@@ -1,0 +1,49 @@
+name: Linux
+
+on:
+  push:
+    branches: ['**']
+    tags: ['linux-v*']
+    paths: ['linux/**', '.github/workflows/linux.yml']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Does the GNOME Flatpak runtime decode HE-AAC (SBR and PS) from internet radio?
+  aac-gate:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the GNOME runtime
+        run: |
+          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --noninteractive --assumeyes flathub org.gnome.Platform//51
+          flatpak list --runtime --columns=ref
+
+      - name: Check HE-AAC decoding
+        run: >
+          flatpak run --share=network --filesystem=$PWD
+          --command=python3 org.gnome.Platform//51
+          linux/tools/check_aac.py
+
+  # Does the gnome content snap used by the snapcraft gnome extension ship gst-libav?
+  snap-gnome-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install the gnome content snap (core26)
+        run: sudo snap install gnome-core26
+
+      - name: Look for libgstlibav.so
+        run: |
+          found=$(find /snap/gnome-core26/current -name libgstlibav.so)
+          echo "libgstlibav.so: ${found:-none}"
+          if [ -z "$found" ]; then
+            echo "AAC: stage gst-libav in the snap" >> "$GITHUB_STEP_SUMMARY"
+          fi

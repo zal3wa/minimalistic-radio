@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
+    paths-ignore: ['linux/**', 'docs/superpowers/**', '.github/workflows/linux.yml']
     tags: ['v*']
   pull_request:
 
