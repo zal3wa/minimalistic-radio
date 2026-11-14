@@ -17,6 +17,7 @@ from icy_server import CHANGING_TITLES, CP1250_TITLE, TITLE  # noqa: E402
 from minimalistic_radio import APP_ID, APP_NAME  # noqa: E402
 from minimalistic_radio.audio.player import GstPlayer, make_audio_sink  # noqa: E402
 from minimalistic_radio.controller import ErrorKind  # noqa: E402
+from minimalistic_radio.core.net import USER_AGENT  # noqa: E402
 
 TIMEOUT = 10.0
 
@@ -163,6 +164,12 @@ def test_playlist_resolves_first_stream(drv, icy):
 def test_playlist_found_by_content_type(drv, icy):
     drv.call("play", icy.url("/playlist"))      # no .pls in the address, only audio/x-scpls
     assert drv.run(drv.playing_with_title), (drv.rec.started, drv.rec.titles, drv.rec.errors)
+
+
+def test_stream_request_names_the_app(drv, icy):
+    drv.call("play", icy.url("/mp3?user-agent"))
+    assert drv.run(lambda: drv.rec.started)
+    assert ("/mp3?user-agent", USER_AGENT) in icy.requests
 
 
 def test_stream_named_in_mixer():

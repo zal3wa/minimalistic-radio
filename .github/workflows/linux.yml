@@ -75,6 +75,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-gi python3-pytest gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-pulseaudio gstreamer1.0-tools xvfb dbus-x11 gettext meson
 
+      # fdkaacenc makes the HE-AAC test stream. Without it that one case is skipped.
+      - name: Install the HE-AAC encoder
+        run: sudo apt-get install -y gstreamer1.0-fdkaac || echo "gstreamer1.0-fdkaac is not available"
+
       - name: List the GStreamer elements the tests rely on
         run: |
           for element in playbin souphttpsrc icydemux pulsesink pipewiresink fakesink lamemp3enc avenc_aac aacparse fdkaacenc opusenc oggmux avdec_aac fdkaacdec; do

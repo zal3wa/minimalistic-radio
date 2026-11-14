@@ -78,6 +78,7 @@ class IcyServer:
     def __init__(self, folder: Path) -> None:
         self.streams: dict[str, tuple[bytes, str]] = {}   # name: (encoded audio, Content-Type)
         self.missing: dict[str, str] = {}                 # name: why it couldn't be made
+        self.requests: list[tuple[str, str]] = []         # (path with query, User-Agent)
         if shutil.which("gst-launch-1.0") is None:
             self.missing = {name: "gst-launch-1.0 is not installed" for name in FORMATS}
         else:
@@ -115,6 +116,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         icy: IcyServer = self.server.icy  # type: ignore[attr-defined]
+        icy.requests.append((self.path, self.headers.get("User-Agent", "")))
         path = urlsplit(self.path).path
         mp3 = icy.streams.get("mp3")
         if path == "/403":
