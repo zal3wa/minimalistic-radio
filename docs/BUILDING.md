@@ -13,7 +13,7 @@ dotnet build src/MinimalisticRadio.csproj -c Release -o out
 
 - `out\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`).
 - `--test-menu --preview` also renders the panel, menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
-- `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`.
+- `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
 
 ## Releases
 
@@ -32,7 +32,7 @@ Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release wi
 ```
 src/
   Program.cs     startup, single instance
-  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), station card (RadioOsd)
+  Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), station card (RadioOsd), README pictures (RadioShots)
   Audio/         station connection, decoding by Windows, FFmpeg fallback
   Services/      cover art, updates, storage, Windows integration, language
   Theme/         colours and Windows 11 style controls

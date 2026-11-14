@@ -287,13 +287,14 @@ internal sealed partial class Radio
                 artworkUrl = await Covers.Find(metadataClient, track);
 
                 ShowMenu();
-                await SavePreview(popup, "shot-menu");
+                await SaveTrayShot(popup, "shot-tray-menu", false);
                 CloseMenu();
-                foreach (var (page, name) in new[] { ("stations", "stations"), ("search:jazz", "search"), ("history", "history"), ("settings", "settings") })
+                foreach (var (page, name) in new[] { ("stations", "tray-panel"), ("search:jazz", "search"), ("history", "history"), ("settings", "settings") })
                 {
                     OpenPlayer(page);
                     await Task.Delay(page.StartsWith("search") ? 6000 : 3000);   // results, logos and the cover arrive over the network
-                    await SavePreview(playerPanel, "shot-" + name);
+                    if (page == "stations") await SaveTrayShot(playerPanel, "shot-" + name, true);
+                    else await SavePreview(playerPanel, "shot-" + name);
                     playerPanel.Close();
                 }
                 ShowStationPopup();
@@ -323,27 +324,6 @@ internal sealed partial class Radio
             yield return child;
             foreach (DependencyObject inner in Descendants(child)) yield return inner;
         }
-    }
-
-    private async Task SavePreview(Visual visual, string name)
-    {
-        foreach (bool dark in new[] { false, true })
-        {
-            Theme.Apply(app, dark);
-            await Task.Delay(400);
-            var element = (FrameworkElement)visual;
-            double scale = VisualTreeHelper.GetDpi(visual).DpiScaleX;
-            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
-                (int)Math.Ceiling(element.ActualWidth * scale), (int)Math.Ceiling(element.ActualHeight * scale),
-                96 * scale, 96 * scale, PixelFormats.Pbgra32);
-            bitmap.Render(visual);
-            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
-            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-            using (FileStream file = File.Create(Path.Combine(Path.GetTempPath(),
-                "MinimalisticRadio-" + name + (dark ? "-dark" : "-light") + ".png")))
-                encoder.Save(file);
-        }
-        Theme.Apply(app);
     }
 
     // ---- Tray menu ----

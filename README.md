@@ -14,11 +14,23 @@
   <tr>
     <td align="center" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stations-dark.png">
-        <img src="docs/screenshots/stations-light.png" width="400" alt="Station list, now playing with cover art, volume">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tray-menu-dark.png">
+        <img src="docs/screenshots/tray-menu-light.png" width="454" alt="Right click on the tray icon opens the menu">
       </picture>
-      <br>Stations and now playing
+      <br><b>Right click</b> on the icon: the menu
     </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tray-panel-dark.png">
+        <img src="docs/screenshots/tray-panel-light.png" width="346" alt="Left click on the tray icon opens the player">
+      </picture>
+      <br><b>Left click</b>: the player
+    </td>
+  </tr>
+</table>
+
+<table align="center">
+  <tr>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
@@ -26,8 +38,6 @@
       </picture>
       <br>Station search: thousands of stations from radio-browser.info
     </td>
-  </tr>
-  <tr>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
@@ -35,6 +45,8 @@
       </picture>
       <br>Song history
     </td>
+  </tr>
+  <tr>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
@@ -42,16 +54,7 @@
       </picture>
       <br>Settings
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
-        <img src="docs/screenshots/menu-light.png" width="400" alt="Tray menu">
-      </picture>
-      <br>Tray menu
-    </td>
-    <td align="center" valign="top">
+    <td align="center" valign="middle">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-dark.png">
         <img src="docs/screenshots/card-light.png" width="400" alt="Station change card">
