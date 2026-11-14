@@ -331,7 +331,8 @@ def test_refused_and_unsupported_stop_at_once(ctl):
         assert ctl.status is Status.STOPPED and ctl.scheduler.pending() == 0
 def test_eos_retries_then_says_broadcast_ended(ctl): ...      # EOS ×(attempts) → message "The broadcast has ended"
 def test_network_return_restarts_after_giving_up_on_network(ctl):
-    # exhaust retries with NETWORK → STOPPED; network_available() → plays the same station again
+    # exhaust retries with NETWORK → STOPPED; network_available() within 10 min → plays the same station again;
+    # after advancing the scheduler past 10 min → network_available() does nothing
 def test_network_return_does_not_restart_after_user_stop(ctl): ...  # also not after REFUSED, sleep timer, EOS end
 def test_network_return_skips_backoff_while_retrying(ctl): ...      # RETRYING with a 30 s wait → network_available() → play now
 def test_resumed_restarts_active_session(ctl): ...
@@ -362,7 +363,7 @@ Write the `...` tests out in full with the values named in their comments.
 - [ ] **Step 3: Implement `RadioController`.**
   - The retry rules mirror `StartPlayback` in `src/Radio/RadioApp.cs`: backoff `(2, 3, 5, 10, 15, 30)`; at most 10 attempts once it has played, 2 before; the counter resets when the last connection lasted over 60 s.
   - EOS goes through the same path. When attempts run out after an EOS without an error, the status is "The broadcast has ended".
-  - Track `gave_up_on_network` (set only when attempts run out on NETWORK errors) for `network_available()`.
+  - Record `gave_up_on_network_at` (set only when attempts run out on NETWORK errors) for `network_available()`, which restarts only within 10 minutes of it, like Windows 2.3.0.
   - The sleep timer ticks every second through the scheduler.
   - Covers: an `artwork_from_raw` URL, or iTunes via `fetch`. The image is downloaded with `fetch_file` to `paths.cache / "covers" / <sha1 of url>.jpg`, then `cover_path` is set and COVER emitted.
   - Every mutation saves its file and emits its `Change`.
