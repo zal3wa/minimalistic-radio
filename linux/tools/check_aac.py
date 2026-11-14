@@ -41,8 +41,8 @@ def stations():
     queries = [
         "codec=AAC%2B&order=votes&reverse=true&hidebroken=true&limit=8",
         # Low bitrate AAC+ is typically HE-AACv2.
-        "codec=AAC%2B&bitrate_max=%d&order=votes&reverse=true&hidebroken=true&limit=%d"
-        % (BITRATE_MAX, LOW_LIMIT),
+        f"codec=AAC%2B&bitrate_max={BITRATE_MAX}&order=votes&reverse=true"
+        f"&hidebroken=true&limit={LOW_LIMIT}",
         "name=Czw%C3%B3rka&hidebroken=true&limit=20",
     ]
     found = []
