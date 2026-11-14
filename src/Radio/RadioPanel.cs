@@ -774,10 +774,7 @@ internal sealed partial class Radio
             historyPane.Content = content;
         }
 
-        BitmapSource titleIcon;
-        using (Stream resource = typeof(Radio).Assembly.GetManifestResourceStream("radio.ico"))
-            titleIcon = new IconBitmapDecoder(resource, BitmapCreateOptions.None, BitmapCacheOption.OnLoad)
-                .Frames.OrderByDescending(frame => frame.PixelWidth).First();
+        BitmapSource titleIcon = Theme.AppImage(64);
 
         // Settings page, laid out like the Windows 11 Settings app: groups of cards.
         Action refreshUpdates = null;

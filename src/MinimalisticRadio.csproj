@@ -14,7 +14,7 @@
     <DebugType>none</DebugType>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Minimalistic Radio</Product>
     <Copyright></Copyright>
@@ -52,7 +52,6 @@
     </Reference>
     <Page Remove="Theme\Theme.xaml" />
     <EmbeddedResource Include="Theme\Theme.xaml" LogicalName="Theme.xaml" />
-    <EmbeddedResource Include="Assets\radio.ico" LogicalName="radio.ico" />
     <EmbeddedResource Include="Assets\Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
   </ItemGroup>
 </Project>

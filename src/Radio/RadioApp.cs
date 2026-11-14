@@ -58,6 +58,7 @@ internal sealed partial class Radio
     private Task audio = Task.CompletedTask;
     private Forms.NotifyIcon tray;
     private System.Drawing.Icon icon;
+    private IntPtr iconHandle;
     private Window anchor;
     private ContextMenu popup;
 
@@ -96,8 +97,8 @@ internal sealed partial class Radio
 
     internal void Start()
     {
-        using (Stream resource = typeof(Radio).Assembly.GetManifestResourceStream("radio.ico"))
-            icon = new System.Drawing.Icon(resource);
+        iconHandle = Theme.TrayIconHandle();
+        icon = iconHandle != IntPtr.Zero ? System.Drawing.Icon.FromHandle(iconHandle) : System.Drawing.Icon.ExtractAssociatedIcon(Exe);
         tray = new Forms.NotifyIcon { Icon = icon, Text = AppName, Visible = true };
         tray.MouseUp += (_, e) => { if (e.Button == Forms.MouseButtons.Right) Post(ShowMenu); };
         tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Post(ShowPlayer); };
@@ -149,6 +150,8 @@ internal sealed partial class Radio
                 ParseTrack("Promo - text=\"Reklama\" song_spot=\"A\"", 0) != null ||
                 ParseTrack("- text=\"Spot Block End\" amgTrackId=\"9876543\" length=\"00:00:00\"", 0) != null)
                 throw new InvalidOperationException("Błędne metadane.");
+            if (iconHandle == IntPtr.Zero || Theme.AppImage(64)?.PixelWidth != 64)
+                throw new InvalidOperationException("Brak ikony w zasobach programu.");
             Covers.Split("Leonard Cohen - Everybody Knows", out string artist, out string song);
             Covers.Split("Dżingiel", out string noArtist, out string onlyTitle);
             if (artist != "Leonard Cohen" || song != "Everybody Knows" || noArtist != null || onlyTitle != "Dżingiel" ||
@@ -1074,6 +1077,7 @@ internal sealed partial class Radio
         mediaSession?.Dispose();
         tray?.Dispose();
         icon?.Dispose();
+        if (iconHandle != IntPtr.Zero) Theme.DestroyIcon(iconHandle);
         app.Shutdown();
     }
 }

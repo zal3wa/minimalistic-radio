@@ -1,15 +1,54 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Path = System.Windows.Shapes.Path;
 
 internal static class Theme
 {
     internal static bool Dark { get; private set; }
+
+    // The app icon is read from the exe's own Win32 resources (the .ico the exe shows in Explorer),
+    // so it is stored in the file only once. 32512 is the resource ID the C# compiler gives it.
+    private static readonly IntPtr AppIconId = (IntPtr)32512;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr GetModuleHandle(string name);
+
+    [DllImport("comctl32.dll")]
+    private static extern int LoadIconMetric(IntPtr instance, IntPtr name, int metric, out IntPtr icon);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr LoadImage(IntPtr instance, IntPtr name, uint type, int width, int height, uint flags);
+
+    [DllImport("user32.dll")]
+    internal static extern bool DestroyIcon(IntPtr icon);
+
+    // The small icon for next to the clock, in the size Windows wants at the current display scale.
+    internal static IntPtr TrayIconHandle()
+    {
+        LoadIconMetric(GetModuleHandle(null), AppIconId, 0, out IntPtr handle); // LIM_SMALL
+        return handle;
+    }
+
+    internal static BitmapSource AppImage(int size)
+    {
+        IntPtr handle = LoadImage(GetModuleHandle(null), AppIconId, 1, size, size, 0); // IMAGE_ICON
+        if (handle == IntPtr.Zero) return null;
+        try
+        {
+            BitmapSource image = Imaging.CreateBitmapSourceFromHIcon(handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            image.Freeze();
+            return image;
+        }
+        finally { DestroyIcon(handle); }
+    }
 
     internal static void Load(Application app)
     {

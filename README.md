@@ -1,4 +1,6 @@
-# Minimalistic Radio — only 185 KB
+<p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
+
+# Minimalistic Radio — only 194 KB
 
 A tiny internet radio for Windows 10 and 11 that lives next to the clock. One `.exe`, no installer, nothing else to install.
 
@@ -89,7 +91,9 @@ src/
   Audio/         station connection, decoding by Windows, FFmpeg fallback
   Services/      cover art, updates, storage, Windows integration, language
   Theme/         colours and Windows 11 style controls
-  Assets/        icon and the icons' licence
+  Assets/        app icon (radio.ico) and the Lucide icons' licence
+docs/            icon.svg (the icon's source), README screenshots
+tools/IconMaker  draws radio.ico in all sizes: dotnet run --project tools/IconMaker -- <folder>
 ```
 
 ## License
