@@ -97,7 +97,7 @@ class RadioApplication(Adw.Application):
 
     def do_startup(self) -> None:
         Adw.Application.do_startup(self)
-        self.hold()   # closing the window never ends the application
+        # self.hold()   # EXPERIMENT: removed to prove the app tests fail without it
         self._add_action("show-panel", self.show_window)
         self._add_action("toggle", lambda: self.controller.toggle())
         self._add_action("quit", self.quit)
