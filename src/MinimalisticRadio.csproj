@@ -8,7 +8,7 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>Minimalistic Radio</AssemblyName>
     <RootNamespace>MinimalisticRadio</RootNamespace>
-    <ApplicationIcon>radio.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\radio.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Prefer32Bit>false</Prefer32Bit>
     <DebugType>none</DebugType>
@@ -50,9 +50,9 @@
       <IsWinMDFile>true</IsWinMDFile>
       <Private>false</Private>
     </Reference>
-    <Page Remove="Theme.xaml" />
-    <EmbeddedResource Include="Theme.xaml" LogicalName="Theme.xaml" />
-    <EmbeddedResource Include="radio.ico" LogicalName="radio.ico" />
-    <EmbeddedResource Include="Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
+    <Page Remove="Theme\Theme.xaml" />
+    <EmbeddedResource Include="Theme\Theme.xaml" LogicalName="Theme.xaml" />
+    <EmbeddedResource Include="Assets\radio.ico" LogicalName="radio.ico" />
+    <EmbeddedResource Include="Assets\Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
   </ItemGroup>
 </Project>

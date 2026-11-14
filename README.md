@@ -50,4 +50,16 @@ dotnet build src/MinimalisticRadio.csproj -c Release -o out
 
 ## Licencja
 
-[MIT](LICENSE). Ikony: [Lucide](https://lucide.dev) (ISC, zob. `src/Lucide_Icons_license.txt`).
+[MIT](LICENSE). Ikony: [Lucide](https://lucide.dev) (ISC, zob. `src/Assets/Lucide_Icons_license.txt`).
+
+## Struktura
+
+```
+src/
+  Program.cs            start, jedna kopia programu
+  Radio/                ikona obok zegara, menu, odtwarzanie (RadioApp) i panel (RadioPanel)
+  Audio/                połączenie ze stacją, dekodowanie przez Windows, FFmpeg jako zapas
+  Services/             okładki, aktualizacje, zapis ustawień, integracja z Windows, język
+  Theme/                kolory i wygląd kontrolek (Windows 11)
+  Assets/               ikona i licencja ikon
+```
