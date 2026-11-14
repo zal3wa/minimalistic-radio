@@ -73,7 +73,7 @@ jobs:
       - name: Install PyGObject, GTK, libadwaita and GStreamer
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-gi python3-pytest gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-pulseaudio gstreamer1.0-tools xvfb dbus-x11 gettext meson
+          sudo apt-get install -y python3-gi python3-pytest gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-pulseaudio gstreamer1.0-tools xvfb dbus-x11 gettext meson desktop-file-utils appstream
 
       # fdkaacenc makes the HE-AAC test stream. Without it that one case is skipped.
       - name: Install the HE-AAC encoder
@@ -87,3 +87,9 @@ jobs:
 
       - name: Run the integration tests
         run: cd linux && dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q -rs
+
+      - name: Build with Meson and run its checks
+        run: |
+          meson setup _build linux
+          meson compile -C _build
+          meson test -C _build --print-errorlogs

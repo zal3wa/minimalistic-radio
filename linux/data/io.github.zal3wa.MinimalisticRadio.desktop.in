@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Minimalistic Radio
+Comment=Internet radio that lives next to the clock
+Icon=io.github.zal3wa.MinimalisticRadio
+Exec=minimalistic-radio
+Categories=AudioVideo;Audio;Player;
+Keywords=radio;internet radio;stream;station;
+StartupNotify=true
+SingleMainWindow=true

@@ -1,0 +1,90 @@
+# Polish translation of Minimalistic Radio.
+# The wording follows the Windows version.
+msgid ""
+msgstr ""
+"Project-Id-Version: minimalistic-radio 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/zal3wa/minimalistic-radio/issues\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "Internet radio that lives next to the clock"
+msgstr "Internetowe radio, które mieszka obok zegara"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "radio;internet radio;stream;station;"
+msgstr "radio;radio internetowe;strumień;stacja;"
+
+#: data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in
+msgid ""
+"A tiny open-source internet radio that lives in the system tray. Click the "
+"icon to pick a station and play it. The panel shows what is playing with its "
+"cover, the volume, a sleep timer and the song history. Stations can be "
+"searched in the radio-browser.info directory, added by hand, exported and "
+"imported. Media keys and the desktop's media controls work, and there is no "
+"telemetry."
+msgstr ""
+"Malutkie internetowe radio o otwartym kodzie, które mieszka w zasobniku "
+"systemowym. Kliknij ikonę, wybierz stację i słuchaj. Panel pokazuje, co "
+"gra, razem z okładką, głośność, wyłącznik czasowy i historię utworów. "
+"Stacje można wyszukać w katalogu radio-browser.info, dodać ręcznie, "
+"wyeksportować i zaimportować. Działają klawisze multimedialne i sterowanie "
+"multimediami pulpitu, a telemetrii nie ma."
+
+# Used by the window in a later task; kept here so the list stays complete.
+msgid "Play"
+msgstr "Odtwórz"
+
+#: minimalistic_radio/controller.py
+msgid "Couldn't save the station list."
+msgstr "Nie udało się zapisać listy stacji."
+
+#: minimalistic_radio/controller.py
+msgid "Couldn't save the file."
+msgstr "Nie udało się zapisać pliku."
+
+#: minimalistic_radio/controller.py
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "To nie jest lista stacji Minimalistic Radio."
+
+#: minimalistic_radio/controller.py
+msgid "The broadcast has ended"
+msgstr "Transmisja zakończyła się"
+
+#: minimalistic_radio/controller.py
+#, python-brace-format
+msgid "Connection lost. Retrying in {n} s…"
+msgstr "Brak połączenia. Ponawiam za {n} s…"
+
+#: minimalistic_radio/controller.py
+msgid "Stopped by the sleep timer"
+msgstr "Wyłączono wyłącznikiem czasowym"
+
+#: minimalistic_radio/audio/player.py
+#, python-brace-format
+msgid "The station's server refused access ({code})."
+msgstr "Serwer stacji odmówił dostępu ({code})."
+
+#: minimalistic_radio/audio/player.py
+#, python-brace-format
+msgid "The station's server returned error {code}."
+msgstr "Serwer stacji zwrócił błąd {code}."
+
+#: minimalistic_radio/audio/player.py
+msgid "The station's server refused access."
+msgstr "Serwer stacji odmówił dostępu."
+
+#: minimalistic_radio/audio/player.py
+msgid "This station uses a format that can't be played."
+msgstr "Ta stacja nadaje w formacie, którego nie da się odtworzyć."
+
+#: minimalistic_radio/audio/player.py
+msgid "The connection to the station was lost."
+msgstr "Połączenie ze stacją zostało przerwane."
+
+#: minimalistic_radio/audio/player.py
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Nie udało się połączyć ze stacją. Sprawdź internet."
