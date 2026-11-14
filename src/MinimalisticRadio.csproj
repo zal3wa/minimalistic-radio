@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- .NET Framework 4.8 is part of every Windows 10/11, so the exe carries no runtime and stays tiny. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Minimalistic Radio</AssemblyName>
+    <RootNamespace>MinimalisticRadio</RootNamespace>
+    <ApplicationIcon>radio.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugType>none</DebugType>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <Version>2.0.0</Version>
+    <Product>Minimalistic Radio</Product>
+    <Copyright></Copyright>
+  </PropertyGroup>
+  <!-- Windows.winmd from whichever Windows 10/11 SDK is installed (only the metadata is used at build time). -->
+  <PropertyGroup>
+    <UnionMetadata>$(MSBuildProgramFiles32)\Windows Kits\10\UnionMetadata</UnionMetadata>
+    <WindowsWinmd Condition="'$(WindowsWinmd)' == '' And Exists('$(UnionMetadata)\10.0.22621.0\Windows.winmd')">$(UnionMetadata)\10.0.22621.0\Windows.winmd</WindowsWinmd>
+    <WindowsWinmd Condition="'$(WindowsWinmd)' == '' And Exists('$(UnionMetadata)\10.0.26100.0\Windows.winmd')">$(UnionMetadata)\10.0.26100.0\Windows.winmd</WindowsWinmd>
+    <WindowsWinmd Condition="'$(WindowsWinmd)' == '' And Exists('$(UnionMetadata)\10.0.22000.0\Windows.winmd')">$(UnionMetadata)\10.0.22000.0\Windows.winmd</WindowsWinmd>
+    <WindowsWinmd Condition="'$(WindowsWinmd)' == '' And Exists('$(UnionMetadata)\10.0.20348.0\Windows.winmd')">$(UnionMetadata)\10.0.20348.0\Windows.winmd</WindowsWinmd>
+    <WindowsWinmd Condition="'$(WindowsWinmd)' == '' And Exists('$(UnionMetadata)\10.0.19041.0\Windows.winmd')">$(UnionMetadata)\10.0.19041.0\Windows.winmd</WindowsWinmd>
+  </PropertyGroup>
+  <Target Name="RequireWindowsSdk" BeforeTargets="ResolveAssemblyReferences" Condition="'$(WindowsWinmd)' == ''">
+    <Error Text="Windows 10/11 SDK not found (Windows.winmd). Install it with Visual Studio Installer or from https://developer.microsoft.com/windows/downloads/windows-sdk/" />
+  </Target>
+  <ItemGroup>
+
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices.WindowsRuntime" />
+    <!-- WinRT (media playback, system media controls): metadata from the Windows SDK, runtime parts ship with Windows. -->
+    <Reference Include="System.Runtime.WindowsRuntime">
+      <HintPath>$(WINDIR)\Microsoft.NET\Framework64\v4.0.30319\System.Runtime.WindowsRuntime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Windows">
+      <HintPath>$(WindowsWinmd)</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
+      <Private>false</Private>
+    </Reference>
+    <Page Remove="Theme.xaml" />
+    <EmbeddedResource Include="Theme.xaml" LogicalName="Theme.xaml" />
+    <EmbeddedResource Include="radio.ico" LogicalName="radio.ico" />
+    <EmbeddedResource Include="Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
+  </ItemGroup>
+</Project>
