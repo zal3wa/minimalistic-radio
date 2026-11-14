@@ -77,6 +77,17 @@ class ImportResult:
 
 
 class Player(Protocol):
+    """The audio player. The controller has no session token for its callbacks, so it relies on this contract:
+
+    - Once play() or stop() returns, no callback (on_player_started, _title, _error, _eos) for an
+      earlier stream may be delivered. With GStreamer, the bus's auto-flush on going to NULL covers bus
+      messages, but not anything already queued through GLib.idle_add: those must be dropped too.
+    - Callbacks are never delivered synchronously from inside play(), stop() or set_volume().
+    - The volume from set_volume() persists across play() calls. The controller never sends it again
+      when it connects, so a fresh playbin per play() must get the last volume (or a sleep-timer fade
+      would play at 100%).
+    """
+
     def play(self, url: str) -> None: ...
     def stop(self) -> None: ...
     def set_volume(self, percent: int) -> None: ...
@@ -492,6 +503,8 @@ class RadioController:
         if left <= 0:
             if self.active:
                 self.stop(self._("Stopped by the sleep timer"))
+            else:
+                self.gave_up_on_network_at = None   # the network coming back must not start it again
             self.set_sleep_timer(None)   # after stopping, so the full volume never sounds
             return
         self._set_fade(100 if left >= FADE_SECONDS else int(left * 100 / FADE_SECONDS))

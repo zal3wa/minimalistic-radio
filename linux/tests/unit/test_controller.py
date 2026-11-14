@@ -148,6 +148,17 @@ def test_sleep_timer_fades_last_30_seconds_then_stops(ctl):
     ctl.scheduler.advance(15 * 60 - 15); assert ctl.effective_volume == 30
     ctl.scheduler.advance(15); assert ctl.status is Status.STOPPED and ctl.message == "Stopped by the sleep timer" and ctl.sleep_at is None
 def test_sleep_timer_off(ctl): ctl.set_sleep_timer(30); ctl.set_sleep_timer(None); assert ctl.sleep_at is None and ctl.scheduler.pending() == 0
+def test_sleep_timer_end_cancels_a_network_comeback(ctl):
+    playing(ctl); ctl.set_sleep_timer(15)
+    ctl.scheduler.advance(10 * 60)                                           # the Wi-Fi drops at minute 10
+    for d in (2, 3, 5, 10, 15, 30, 30, 30, 30, 30): ctl.on_player_error(ErrorKind.NETWORK, "lost"); ctl.scheduler.advance(d)
+    ctl.on_player_error(ErrorKind.NETWORK, "lost")                           # gives up around minute 13
+    assert ctl.status is Status.STOPPED and ctl.gave_up_on_network_at is not None
+    ctl.scheduler.advance(5 * 60)                                            # the timer ends at minute 15
+    assert ctl.sleep_at is None and ctl.gave_up_on_network_at is None
+    calls = list(ctl.player.calls)
+    ctl.network_available(); ctl.resumed()                                   # the network is back at minute 18
+    assert ctl.status is Status.STOPPED and ctl.player.calls == calls
 def test_sleep_timer_restores_volume_when_turned_off(ctl):
     playing(ctl); ctl.set_volume(60); ctl.set_sleep_timer(15)
     assert ctl.sleep_minutes == 15 and ctl.sleep_at == ctl.scheduler.now().replace(minute=15)
