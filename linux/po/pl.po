@@ -34,7 +34,7 @@ msgstr ""
 "wyeksportować i zaimportować. Działają klawisze multimedialne i sterowanie "
 "multimediami pulpitu, a telemetrii nie ma."
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Play"
 msgstr "Odtwórz"
 
@@ -105,7 +105,7 @@ msgstr "Połączenie ze stacją zostało przerwane."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Nie udało się połączyć ze stacją. Sprawdź internet."
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Stop"
 msgstr "Zatrzymaj"
 
@@ -113,7 +113,7 @@ msgstr "Zatrzymaj"
 msgid "Station"
 msgstr "Stacja"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Volume"
 msgstr "Głośność"
 
@@ -125,27 +125,92 @@ msgstr "Zwiększ o 5%"
 msgid "Down 5%"
 msgstr "Zmniejsz o 5%"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Mute"
 msgstr "Wycisz"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Sleep timer"
 msgstr "Wyłącznik czasowy"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 #, python-brace-format
 msgid "Stops at {time}"
 msgstr "Wyłączy się o {time}"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Off"
 msgstr "Wyłączony"
 
-#: minimalistic_radio/platform/menu_model.py
+#: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/window.py
 msgid "Settings"
 msgstr "Ustawienia"
 
 #: minimalistic_radio/platform/menu_model.py
 msgid "Quit"
 msgstr "Zakończ"
+
+#: minimalistic_radio/ui/window.py minimalistic_radio/ui/stations_page.py
+msgid "Add a station"
+msgstr "Dodaj stację"
+
+#: minimalistic_radio/ui/window.py
+msgid "Song history"
+msgstr "Historia utworów"
+
+#: minimalistic_radio/ui/window.py
+msgid "Your station list couldn't be read. It was saved as stations.json.bad."
+msgstr "Nie udało się odczytać listy stacji. Zapisano ją jako stations.json.bad."
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Edit"
+msgstr "Edytuj"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Remove"
+msgstr "Usuń"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Station options"
+msgstr "Opcje stacji"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "No stations yet"
+msgstr "Nie ma jeszcze stacji"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Now playing"
+msgstr "Teraz gra"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Copy title"
+msgstr "Kopiuj tytuł"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Copied"
+msgstr "Skopiowano"
+
+#: minimalistic_radio/ui/footer.py
+msgid "The station doesn't send song titles"
+msgstr "Stacja nie podaje tytułu"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Ready to play"
+msgstr "Gotowe do odtwarzania"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Connecting to the station…"
+msgstr "Łączenie ze stacją…"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Stopped"
+msgstr "Zatrzymano"
+
+#: minimalistic_radio/ui/footer.py
+msgid "Unmute"
+msgstr "Wyłącz wyciszenie"
+
+#: minimalistic_radio/ui/footer.py
+#, python-brace-format
+msgid "{n} min"
+msgstr "{n} min"

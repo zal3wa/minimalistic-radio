@@ -1,0 +1,36 @@
+/* What libadwaita's style classes don't cover. Colours are libadwaita's named colours, so light and
+   dark and the accent colour follow the system. */
+
+/* Station logos and the cover: rounded like GNOME's app icons in lists. */
+.station-logo,
+.now-cover {
+  border-radius: 8px;
+}
+
+/* The chosen station's name in the accent colour; the playing one also shows a play mark. */
+row.current .title {
+  color: @accent_color;
+}
+
+/* The now-playing card. */
+.now-playing {
+  padding: 6px 6px 6px 8px;
+}
+
+/* A station lifted for dragging: a floating copy with a shadow, slightly transparent. */
+.drag-lift {
+  background-color: @window_bg_color;
+  background-image: linear-gradient(@card_bg_color, @card_bg_color);
+  border-radius: 12px;
+  box-shadow: 0 6px 16px alpha(black, 0.3), 0 0 0 1px alpha(black, 0.08);
+  opacity: 0.92;
+}
+
+/* The volume value above the slider. */
+.volume-bubble > contents {
+  padding: 4px 8px;
+}
+
+.volume-bubble label {
+  min-width: 2em;
+}

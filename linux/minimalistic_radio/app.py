@@ -15,14 +15,15 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
+from gi.repository import Adw, Gio, GLib  # noqa: E402
 
-from . import APP_ID, APP_NAME  # noqa: E402
+from . import APP_ID  # noqa: E402
 from .audio.player import GstPlayer  # noqa: E402
 from .controller import RadioController  # noqa: E402
 from .core import net  # noqa: E402
 from .core.storage import default_paths  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
+from .ui.window import RadioWindow  # noqa: E402
 
 COVER_LIMIT = 5_000_000
 
@@ -76,7 +77,7 @@ class RadioApplication(Adw.Application):
         super().__init__(application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self._ = translate
         self.controller: RadioController | None = None
-        self.window: Gtk.ApplicationWindow | None = None
+        self.window: RadioWindow | None = None
         self.tray = None      # Task 10
         self.mpris = None     # Task 11
         self.updated = False
@@ -103,7 +104,7 @@ class RadioApplication(Adw.Application):
         self._add_action("quit", self.quit)
         self._add_action("settings", lambda: self._open_page("settings"))
         self._add_action("history", lambda: self._open_page("history"))
-        self._add_action("add-station", lambda: self._open_page("add-station"))
+        self._add_action("add-station", lambda: self._open_page("search"))
         self.set_accels_for_action("app.quit", ["<Ctrl>q"])
         self.set_accels_for_action("window.close", ["<Ctrl>w"])
 
@@ -164,18 +165,16 @@ class RadioApplication(Adw.Application):
 
     # ---- The window ----
 
-    def _create_window(self) -> Gtk.ApplicationWindow:
-        """A placeholder: the real window replaces it (Task 9)."""
-        return Adw.ApplicationWindow(application=self, title=APP_NAME, default_width=360, default_height=520)
+    def _create_window(self) -> RadioWindow:
+        return RadioWindow(self.controller, self._, application=self)
 
     def show_window(self) -> None:
         if self.window is None:
+            self._start_radio(True)   # an action from outside before any launch: the radio, but not playing
             self.window = self._create_window()
             self.window.set_hide_on_close(True)
         self.window.present()
 
     def _open_page(self, page: str) -> None:
         self.show_window()
-        opener = getattr(self.window, "open_page", None)
-        if opener is not None:
-            opener(page)
+        self.window.show_page(page)

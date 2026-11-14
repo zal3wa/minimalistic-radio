@@ -32,3 +32,16 @@ python.install_sources(
   'platform/menu_model.py',
   subdir: 'minimalistic_radio/platform',
 )
+
+python.install_sources(
+  'ui/__init__.py',
+  'ui/footer.py',
+  'ui/logos.py',
+  'ui/reorder.py',
+  'ui/stations_page.py',
+  'ui/window.py',
+  subdir: 'minimalistic_radio/ui',
+)
+
+# Loaded by ui/window.py from next to the module.
+install_data('ui/style.css', install_dir: python.get_install_dir() / 'minimalistic_radio' / 'ui')
