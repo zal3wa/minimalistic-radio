@@ -8,7 +8,7 @@
   <a href="https://github.com/zal3wa/minimalistic-radio/releases/latest/download/Minimalistic-Radio.exe"><img src="docs/download-windows.svg" height="56" alt="Download for Windows"></a>
 </p>
 
-<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>. <a href="#code-signing-policy">Code signing policy</a></sub></p>
+<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.</sub></p>
 
 <table align="center">
   <tr>
@@ -85,15 +85,6 @@ There's no installer. The radio adds a Start menu shortcut, so Windows shows its
 
 1. Settings → turn off *Start with Windows*, then *Quit*.
 2. Delete `Minimalistic-Radio.exe`, the folder `%LOCALAPPDATA%\Minimalistic Radio` and the shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Minimalistic Radio.lnk`.
-
-## Code signing policy
-
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org). Signing is being set up: releases up to 2.2.3 are not signed.
-
-- Committers and reviewers: [zal3wa](https://github.com/zal3wa)
-- Approvers: [zal3wa](https://github.com/zal3wa)
-
-Only builds made by [GitHub Actions](.github/workflows/build.yml) from the source in this repository are signed, each release after manual approval. Privacy: see [Privacy](#privacy).
 
 ## License
 
