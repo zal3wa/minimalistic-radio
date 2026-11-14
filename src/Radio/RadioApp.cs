@@ -218,6 +218,9 @@ internal sealed partial class Radio
             }, picked);
             if (string.Join("|", popular.Select(item => item.Name)) != "Pierwsza|Czwarta")
                 throw new InvalidOperationException("Błędne czyszczenie listy popularnych stacji: " + string.Join("|", popular.Select(item => item.Name)));
+            if (string.Join("|", Storage.CleanPopular(new[] { "RMF FM", "Radio RMF FM", "Radio ZET", "Radio ZET Chilli" }
+                .Select(name => Sample(name, "https://" + name.Replace(' ', '-') + ".example/s")), new DirectoryStation[0]).Select(item => item.Name)) != "RMF FM|Radio ZET|Radio ZET Chilli")
+                throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
             if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
                 throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
             using (var testSession = new CancellationTokenSource())

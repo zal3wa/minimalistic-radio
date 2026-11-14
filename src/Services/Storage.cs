@@ -159,13 +159,17 @@ internal static class Storage
             name.Contains("***") || name.Count(letter => letter == ',') > 3;
     }
 
+    // Names compared loosely: "Radio RMF FM" and "RMF FM" are one station. Lower case, no word "radio", letters and digits only.
+    internal static string NameKey(string name) => new string(string.Join(" ", (name ?? "").ToLowerInvariant().Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
+        .Where(word => word != "radio")).Where(char.IsLetterOrDigit).ToArray());
+
     // The popular list as shown: playable, not already recommended, no duplicates, no spam, the first 15.
     internal static DirectoryStation[] CleanPopular(IEnumerable<DirectoryStation> popular, IEnumerable<DirectoryStation> recommended)
     {
-        var names = new HashSet<string>(recommended.Select(entry => entry.Name.Trim().ToLowerInvariant()));
+        var names = new HashSet<string>(recommended.Select(entry => NameKey(entry.Name)));
         var streams = new HashSet<string>(recommended.Select(entry => StreamKey(AddressOf(entry))));
         return popular.Where(entry => Playable(entry.Codec, entry.Hls) && !LooksLikeSpam(entry.Name) &&
-            names.Add(entry.Name.Trim().ToLowerInvariant()) & streams.Add(StreamKey(AddressOf(entry)))).Take(15).ToArray();
+            names.Add(NameKey(entry.Name)) & streams.Add(StreamKey(AddressOf(entry)))).Take(15).ToArray();
     }
 
     internal static async Task<SuggestionList> Suggestions(HttpClient client, CancellationToken token)

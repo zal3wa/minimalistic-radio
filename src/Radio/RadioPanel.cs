@@ -465,8 +465,8 @@ internal sealed partial class Radio
                 catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
                 {
                     if (!loadingSuggestions.IsCancellationRequested && ShowingSuggestions())
-                        searchStatus.Text = T("Nie udało się połączyć z katalogiem stacji. Spróbuj ponownie.",
-                            "Couldn't reach the station directory. Try again.");
+                        searchStatus.Text = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
+                            "The station directory is unavailable right now. Try again.");
                 }
                 finally { loadingNow = false; }
                 if (suggestions == null) return;
