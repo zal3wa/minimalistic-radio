@@ -986,13 +986,15 @@ internal sealed partial class Radio
             if (volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track)
                 volumeSlider.Value = Math.Round(Math.Max(0, Math.Min(100, track.ValueFromPoint(e.GetPosition(track)))));
         }
-        volumeSlider.PreviewMouseLeftButtonDown += (_, e) =>
+        // handledEventsToo: with IsMoveToPointEnabled the Slider itself marks a press next to the knob as
+        // handled (it only jumps there), and a plain += handler would never see it.
+        volumeSlider.AddHandler(UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((_, e) =>
         {
             volumeSlider.Focus();
             SlideTo(e);
             volumeSlider.CaptureMouse();
             e.Handled = true;
-        };
+        }), true);
         volumeSlider.PreviewMouseMove += (_, e) =>
         {
             if (volumeSlider.IsMouseCaptured && e.LeftButton == MouseButtonState.Pressed) SlideTo(e);

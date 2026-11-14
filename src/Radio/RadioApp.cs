@@ -205,6 +205,17 @@ internal sealed partial class Radio
                 ShowPlayer();
                 if (playerPanel?.IsVisible != true || !Storage.IsWebUrl("https://example.com/live") || Storage.IsWebUrl("file:///tmp/test"))
                     throw new InvalidOperationException("Błędny panel lub walidacja adresu.");
+                // Pressing the volume bar next to the knob has to start a drag, not only jump there. The press goes
+                // in the way Windows delivers it: PreviewMouseDown tunnels down to the bar.
+                var slider = Descendants(playerPanel).OfType<Slider>().First();
+                var bar = Descendants(slider).OfType<RepeatButton>().First();
+                void Press(RoutedEvent pressEvent) => bar.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(
+                    System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left) { RoutedEvent = pressEvent });
+                Press(System.Windows.Input.Mouse.PreviewMouseDownEvent);
+                bool dragging = slider.IsMouseCaptured;
+                Press(System.Windows.Input.Mouse.PreviewMouseUpEvent);
+                if (!dragging || slider.IsMouseCaptured)
+                    throw new InvalidOperationException("Głośności nie da się przeciągać z dowolnego miejsca paska.");
                 if (preview)
                 {
                     await Task.Delay(3000);
