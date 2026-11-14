@@ -318,7 +318,7 @@ internal sealed partial class Radio
         searchPane.Children.Add(results);
         CancellationTokenSource activeSearch = null;
         var loadingSuggestions = new CancellationTokenSource();
-        bool loadingNow = false;
+        bool loadingNow = false, resetting = false;
         string page = "stations";
         panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
 
@@ -455,35 +455,46 @@ internal sealed partial class Radio
         async void ShowSuggestions()
         {
             if (!ShowingSuggestions()) return;
-            if (suggestions == null)
+            string loadingText = T("Wczytuję propozycje…", "Loading suggestions…");
+            string unavailable = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
+                "The station directory is unavailable right now. Try again.");
+            Storage.SuggestionList shown = suggestions;
+            if (shown == null)
             {
+                results.Items.Clear();
+                searchStatus.Text = loadingText;
                 if (loadingNow) return;
                 loadingNow = true;
-                results.Items.Clear();
-                searchStatus.Text = T("Wczytuję propozycje…", "Loading suggestions…");
-                try { suggestions = await Storage.Suggestions(metadataClient, loadingSuggestions.Token); }
+                try
+                {
+                    shown = await Storage.Suggestions(metadataClient, loadingSuggestions.Token);
+                    if (shown.Complete) suggestions = shown;   // kept for the run only when nothing failed
+                }
                 catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
                 {
-                    if (!loadingSuggestions.IsCancellationRequested && ShowingSuggestions())
-                        searchStatus.Text = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
-                            "The station directory is unavailable right now. Try again.");
+                    if (!loadingSuggestions.IsCancellationRequested && ShowingSuggestions()) searchStatus.Text = unavailable;
                 }
                 finally { loadingNow = false; }
-                if (suggestions == null) return;
+                if (!ShowingSuggestions())
+                {
+                    // The user typed, searched or left meanwhile: do not leave the loading text behind.
+                    if (activeSearch == null && searchStatus.Text == loadingText) searchStatus.Text = searchHint;
+                    return;
+                }
+                if (shown == null) return;
             }
-            if (!ShowingSuggestions()) return;
             results.Items.Clear();
-            searchStatus.Text = searchHint;
-            if (suggestions.Recommended.Length > 0)
+            searchStatus.Text = shown.Complete ? searchHint : unavailable;
+            if (shown.Recommended.Length > 0)
             {
                 results.Items.Add(Heading(T("Polecane", "Recommended")));
-                foreach (DirectoryStation item in suggestions.Recommended) results.Items.Add(ResultRow(item));
+                foreach (DirectoryStation item in shown.Recommended) results.Items.Add(ResultRow(item));
             }
-            if (suggestions.Popular.Length > 0)
+            if (shown.Popular.Length > 0)
             {
-                results.Items.Add(Heading(suggestions.Country != null ? T("Popularne w Twoim kraju", "Popular in your country")
+                results.Items.Add(Heading(shown.Country != null ? T("Popularne w Twoim kraju", "Popular in your country")
                     : T("Popularne na świecie", "Popular worldwide")));
-                foreach (DirectoryStation item in suggestions.Popular) results.Items.Add(ResultRow(item));
+                foreach (DirectoryStation item in shown.Popular) results.Items.Add(ResultRow(item));
             }
         }
 
@@ -495,6 +506,9 @@ internal sealed partial class Radio
             searchButton.IsEnabled = true;
             results.Items.Clear();
             searchStatus.Text = searchHint;
+            resetting = true;   // clearing the box must not start the suggestions again
+            searchBox.Text = "";
+            resetting = false;
         }
 
         void SetPage(string target)
@@ -538,7 +552,7 @@ internal sealed partial class Radio
         // Clearing the box drops the results (and a running search) and brings the suggestions back.
         searchBox.TextChanged += (_, _) =>
         {
-            if (page != "search" || !string.IsNullOrWhiteSpace(searchBox.Text)) return;
+            if (resetting || page != "search" || !string.IsNullOrWhiteSpace(searchBox.Text)) return;
             activeSearch?.Cancel();
             activeSearch = null;
             searchButton.IsEnabled = true;

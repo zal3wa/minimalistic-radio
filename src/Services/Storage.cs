@@ -136,20 +136,30 @@ internal static class Storage
     {
         internal DirectoryStation[] Recommended, Popular;
         internal string Country;   // null: worldwide
+        internal bool Complete;    // false: the popular request failed, so this is not kept for the run
     }
 
     // The country from the system settings ("Country or region"), never from the IP address; null when unknown.
     internal static string CurrentCountry()
     {
+        // "Country or region" first (RegionInfo follows the regional format, which may differ), then RegionInfo.
+        try
+        {
+            string code = Windows.System.UserProfile.GlobalizationPreferences.HomeGeographicRegion;
+            if (IsCountryCode(code)) return code.ToUpperInvariant();
+        }
+        catch (Exception) { /* Older Windows: use RegionInfo. */ }
         try
         {
             string code = RegionInfo.CurrentRegion.TwoLetterISORegionName;
-            if (code.Length == 2 && code.All(char.IsLetter) && !new[] { "IV", "XX", "ZZ" }.Contains(code.ToUpperInvariant()))
-                return code.ToUpperInvariant();
+            if (IsCountryCode(code)) return code.ToUpperInvariant();
         }
         catch (Exception error) when (error is ArgumentException || error is CultureNotFoundException) { Debug.WriteLine(error); }
         return null;
     }
+
+    static bool IsCountryCode(string code) => code != null && code.Length == 2 && code.All(letter => letter < 128 && char.IsLetter(letter)) &&
+        !new[] { "IV", "XX", "ZZ" }.Contains(code.ToUpperInvariant());
 
     // Names like "-- # TOP 100 CHARTS ---" or "a,b,c,d,e": starts with a symbol, has "||", "#" or "***", or many commas.
     internal static bool LooksLikeSpam(string name)
@@ -168,8 +178,9 @@ internal static class Storage
     {
         var names = new HashSet<string>(recommended.Select(entry => NameKey(entry.Name)));
         var streams = new HashSet<string>(recommended.Select(entry => StreamKey(AddressOf(entry))));
+        // A name that is nothing but "Radio" has an empty key: it is not compared by name.
         return popular.Where(entry => Playable(entry.Codec, entry.Hls) && !LooksLikeSpam(entry.Name) &&
-            names.Add(NameKey(entry.Name)) & streams.Add(StreamKey(AddressOf(entry)))).Take(15).ToArray();
+            (NameKey(entry.Name).Length == 0 || names.Add(NameKey(entry.Name))) & streams.Add(StreamKey(AddressOf(entry)))).Take(15).ToArray();
     }
 
     internal static async Task<SuggestionList> Suggestions(HttpClient client, CancellationToken token)
@@ -181,8 +192,13 @@ internal static class Storage
             .Where(entry => entry != null && entry.Working && Playable(entry.Codec, entry.Hls)).ToArray();
         string route = "/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=40" +
             (country == null ? "" : "&countrycode=" + country);
-        DirectoryStation[] popular = CleanPopular((await Fetch(client, route, token)).Where(entry => entry.Working), recommended);
-        return new SuggestionList { Recommended = recommended, Popular = popular, Country = country };
+        DirectoryStation[] popular = new DirectoryStation[0];
+        bool complete = true;
+        try { popular = CleanPopular((await Fetch(client, route, token)).Where(entry => entry.Working), recommended); }
+        catch (HttpRequestException error) { Debug.WriteLine(error); complete = false; }   // the recommended ones are still shown
+        if (recommended.Length == 0 && popular.Length == 0)
+            throw new HttpRequestException(Lang.T("Nie udało się połączyć z katalogiem stacji.", "Couldn't reach the station directory."));
+        return new SuggestionList { Recommended = recommended, Popular = popular, Country = country, Complete = complete };
     }
 
     static string AddressOf(DirectoryStation entry) => IsWebUrl(entry.ResolvedUrl) ? entry.ResolvedUrl : entry.Url;

@@ -199,8 +199,9 @@ internal sealed partial class Radio
             if (!Storage.Playable("MP3", false) || !Storage.Playable("aac+", false) || !Storage.Playable("UNKNOWN", false) ||
                 Storage.Playable("AAC", true) || Storage.Playable("OGG", false) || Storage.Playable("FLAC", false))
                 throw new InvalidOperationException("Błędny filtr formatów stacji.");
-            if (!new[] { "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "a,b,c,d,e" }.All(Storage.LooksLikeSpam) ||
-                new[] { "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli" }.Any(Storage.LooksLikeSpam))
+            if (!new[] { "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "a,b,c,d,e",
+                "*Chill", "Lofi || Chill", "Hits #1", "Top ***", "a, b, c, d, e" }.All(Storage.LooksLikeSpam) ||
+                new[] { "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli", "Rock, Pop, Jazz, Blues" }.Any(Storage.LooksLikeSpam))
                 throw new InvalidOperationException("Błędne rozpoznawanie śmieciowych nazw stacji.");
             DirectoryStation Sample(string name, string url, string codec = "MP3", bool hls = false) =>
                 new DirectoryStation { Name = name, Url = url, Codec = codec, Hls = hls };
@@ -221,6 +222,8 @@ internal sealed partial class Radio
             if (string.Join("|", Storage.CleanPopular(new[] { "RMF FM", "Radio RMF FM", "Radio ZET", "Radio ZET Chilli" }
                 .Select(name => Sample(name, "https://" + name.Replace(' ', '-') + ".example/s")), new DirectoryStation[0]).Select(item => item.Name)) != "RMF FM|Radio ZET|Radio ZET Chilli")
                 throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
+            if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
+                throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
             if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
                 throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
             using (var testSession = new CancellationTokenSource())
