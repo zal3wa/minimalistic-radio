@@ -483,7 +483,7 @@ Write the `...` tests out in full with the values named in their comments.
   - `build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | None) -> list[MenuItem]`
   - `tooltip(c: RadioController) -> tuple[str, str]`
   - `mpris_metadata(c: RadioController) -> dict[str, Any]`
-  - `TRACK_ID = "https://gh.ali360.cloudns.ch/io/github/zal3wa/MinimalisticRadio/Track"`
+  - `TRACK_ID = "/io/github/zal3wa/MinimalisticRadio/Track"`
   - Item IDs:
     - playback: `playback`
     - stations: `stations`, `station:<i>`
