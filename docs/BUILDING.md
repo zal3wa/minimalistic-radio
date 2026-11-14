@@ -11,13 +11,13 @@
 dotnet build src/MinimalisticRadio.csproj -c Release -o out
 ```
 
-That is the exe people get (GitHub Actions builds it the same way). The self-test and the README screenshots aren't in it: it ignores `--preview` and `--screenshot`, and exits with code 3 on `--test-menu`. They are in a separate test build:
+That is the exe people get (GitHub Actions builds it the same way). `out` holds only this one file, the newest build. The self-test and the README screenshots aren't in it: it ignores `--preview` and `--screenshot`, and exits with code 3 on `--test-menu`. They are in a separate test build:
 
 ```
-dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out\selftest
+dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out-test
 ```
 
-- `out\selftest\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
+- `out-test\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
 - `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
 
