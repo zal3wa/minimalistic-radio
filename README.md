@@ -1,36 +1,38 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-# Minimalistic Radio — only 191 KB
+<h1 align="center">Minimalistic Radio - only 191 KB</h1>
 
-A tiny internet radio for Windows 10 and 11 that lives next to the clock. One `.exe`, no installer, nothing else to install.
+<p align="center">A tiny internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stations-dark.png">
-    <img src="docs/screenshots/stations-light.png" width="380" alt="Minimalistic Radio: station list, now playing with cover art, volume">
-  </picture>
-</p>
-
-<table>
+<table align="center">
   <tr>
-    <td align="center">
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stations-dark.png">
+        <img src="docs/screenshots/stations-light.png" width="400" alt="Station list, now playing with cover art, volume">
+      </picture>
+      <br>Stations and now playing
+    </td>
+    <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
-        <img src="docs/screenshots/history-light.png" width="270" alt="Song history">
+        <img src="docs/screenshots/history-light.png" width="400" alt="Song history">
       </picture>
       <br>Song history
     </td>
-    <td align="center">
+  </tr>
+  <tr>
+    <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
-        <img src="docs/screenshots/settings-light.png" width="270" alt="Settings">
+        <img src="docs/screenshots/settings-light.png" width="400" alt="Settings">
       </picture>
       <br>Settings
     </td>
-    <td align="center">
+    <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
-        <img src="docs/screenshots/menu-light.png" width="270" alt="Tray menu">
+        <img src="docs/screenshots/menu-light.png" width="400" alt="Tray menu">
       </picture>
       <br>Tray menu
     </td>
@@ -55,19 +57,19 @@ The file isn't digitally signed, so Windows SmartScreen may ask first: *More inf
 
 ## How it works
 
-- The UI is WPF on **.NET Framework 4.8**, which is part of every Windows 10 and 11 — that's why the file is so small.
+- The UI is WPF on **.NET Framework 4.8**, which is part of every Windows 10 and 11. That's why the file is so small.
 - MP3 and AAC (including HE-AAC/AAC+) are decoded by **Windows itself** (Media Foundation). For other formats (Ogg/Opus, FLAC, HLS) the radio downloads [FFmpeg](https://ffmpeg.org) once (a [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) build, checked against its SHA-256). The settings let you choose: automatic, Windows only, or always FFmpeg.
-- A player on the Windows 11 taskbar is possible with the free [Windhawk](https://windhawk.net) and its [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod — the radio's settings walk you through it. The radio itself doesn't modify Windows.
+- A player on the Windows 11 taskbar is possible with the free [Windhawk](https://windhawk.net) and its [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod, and the radio's settings walk you through it. The radio itself doesn't modify Windows.
 
 ## Privacy
 
 The radio collects no data. It only connects to:
 - the servers of the stations you listen to,
-- `radio-browser.info` — when you search for stations,
-- `itunes.apple.com` — to find the cover art of the song that's playing, by artist and title,
-- `api.github.com` — to check for updates (every few hours, can be turned off),
-- `github.com` — to download FFmpeg or a new version, only when needed,
-- `stream.radio357.pl` — song titles of Radio 357.
+- `radio-browser.info`: when you search for stations,
+- `itunes.apple.com`: to find the cover art of the song that's playing, by artist and title,
+- `api.github.com`: to check for updates (every few hours, can be turned off),
+- `github.com`: to download FFmpeg or a new version, only when needed,
+- `stream.radio357.pl`: song titles of Radio 357.
 
 Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
 
