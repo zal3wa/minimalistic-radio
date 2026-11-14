@@ -8,7 +8,7 @@
   <a href="https://github.com/zal3wa/minimalistic-radio/releases/latest/download/Minimalistic-Radio.exe"><img src="docs/download-windows.svg" height="56" alt="Download for Windows"></a>
 </p>
 
-<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.</sub></p>
+<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>. <a href="#code-signing-policy">Code signing policy</a></sub></p>
 
 <table align="center">
   <tr>
@@ -66,15 +66,34 @@
 
 ## Privacy
 
-The radio collects no data. It only connects to:
+The radio collects no personal data: no accounts, no telemetry, no ads. It only connects to:
 - the servers of the stations you listen to,
-- `radio-browser.info`: when you search for stations,
-- `itunes.apple.com`: to find the cover art of the song that's playing, by artist and title,
-- `api.github.com`: to check for updates (every few hours, can be turned off),
+- the websites the station logos come from, for your list and for search results,
+- `radio-browser.info`: when you search for stations, it gets what you typed,
+- `itunes.apple.com`: the artist and title of the song that's playing, to find its cover art ([Apple's privacy policy](https://www.apple.com/legal/privacy/)),
+- `api.github.com`: to check for updates, every few hours; can be turned off in Settings → Updates ([GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)),
 - `github.com`: to download FFmpeg or a new version, only when needed,
-- `stream.radio357.pl`: song titles of Radio 357.
+- `stream.radio357.pl`: song titles, only while Radio 357 is playing.
 
-Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
+Nothing else is sent. Like any internet connection, these servers see your IP address.
+
+Settings, the station list, the history and a downloaded FFmpeg are stored in `%LOCALAPPDATA%\Minimalistic Radio`.
+
+## Uninstall
+
+There's no installer. The radio adds a Start menu shortcut, so Windows shows its name and icon in the media controls, and an entry in Startup apps only if you turn on *Start with Windows*. To remove everything:
+
+1. Settings → turn off *Start with Windows*, then *Quit*.
+2. Delete `Minimalistic-Radio.exe`, the folder `%LOCALAPPDATA%\Minimalistic Radio` and the shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Minimalistic Radio.lnk`.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org). Signing is being set up: releases up to 2.2.3 are not signed.
+
+- Committers and reviewers: [zal3wa](https://github.com/zal3wa)
+- Approvers: [zal3wa](https://github.com/zal3wa)
+
+Only builds made by [GitHub Actions](.github/workflows/build.yml) from the source in this repository are signed, each release after manual approval. Privacy: see [Privacy](#privacy).
 
 ## License
 
