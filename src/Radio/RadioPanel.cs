@@ -276,16 +276,6 @@ internal sealed partial class Radio
         return toggle;
     }
 
-    private static string FirstLine(string text)
-    {
-        foreach (string line in (text ?? "").Split('\n'))
-        {
-            string clean = line.Trim().TrimStart('#', '-', '*', ' ').Trim();
-            if (clean.Length > 0) return clean.Length > 140 ? clean.Substring(0, 140) + "…" : clean;
-        }
-        return null;
-    }
-
     // ---- The panel ----
 
     private void OpenPlayer(string startPage = "stations")
@@ -362,13 +352,17 @@ internal sealed partial class Radio
         CancellationTokenSource activeSearch = null;
         panel.Closed += (_, _) => activeSearch?.Cancel();
 
-        // Header: title with History and Settings, the update banner, and the page title with a back arrow.
+        // Header: title with Update (when ready), History, Settings and Hide; the page title with a back arrow.
         var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), T("Historia utworów", "Song history"));
         var settingsButton = NewButton("GhostButton", Theme.Glyph(Theme.SettingsIcon), T("Ustawienia", "Settings"));
         // Hides the panel (like the X of Windows 11 flyouts); the radio keeps playing next to the clock.
         var closeButton = NewButton("GhostButton", Theme.Glyph(Theme.CloseIcon), T("Ukryj panel (radio gra dalej)", "Hide the panel (the radio keeps playing)"));
         closeButton.Click += (_, _) => panel.Close();
-        foreach (Button button in new[] { historyButton, settingsButton, closeButton })
+        // Like Discord: a green arrow appears once a new version is downloaded; a click installs it.
+        var updateButton = NewButton("GhostButton", Theme.Glyph(Theme.UpdateReadyIcon, 18, "Success"), T("Aktualizacja gotowa!", "Update Ready!"));
+        updateButton.Visibility = Visibility.Collapsed;
+        updateButton.Click += (_, _) => InstallUpdate();
+        foreach (Button button in new[] { updateButton, historyButton, settingsButton, closeButton })
         {
             button.Padding = new Thickness(8, 6, 8, 6);
             button.VerticalAlignment = VerticalAlignment.Center;
@@ -392,44 +386,6 @@ internal sealed partial class Radio
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Visibility = Visibility.Collapsed, Padding = new Thickness(0, 0, 8, 0), Focusable = false
         };
-
-        // Update banner, one line like a Windows 11 InfoBar: what's new, later and skip are in its "…" menu.
-        var bannerTitle = new TextBlock
-        {
-            FontSize = 13, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        var installButton = SmallButton("AccentButton", T("Zaktualizuj", "Update"));
-        installButton.Click += (_, _) => InstallUpdate();
-        var bannerMore = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), T("Więcej", "More"));
-        bannerMore.Padding = new Thickness(6, 4, 6, 4);
-        bannerMore.Margin = new Thickness(4, 0, -6, 0);
-        bannerMore.Click += (_, _) =>
-        {
-            var menu = new ContextMenu { PlacementTarget = bannerMore, Placement = PlacementMode.Bottom };
-            menu.Items.Add(Item(T("Co nowego", "What's new"), Theme.ExternalIcon,
-                () => OpenWebPage(availableUpdate?.Page ?? Updater.Page + "/releases/latest")));
-            menu.Items.Add(Item(T("Przypomnij za 3 dni", "Remind me in 3 days"), null, PostponeUpdate));
-            menu.Items.Add(Item(T("Pomiń tę wersję", "Skip this version"), null, SkipUpdate));
-            Hold(menu);
-            menu.IsOpen = true;
-        };
-        FrameworkElement bannerIcon = Theme.Glyph(Theme.DownloadIcon, 18, "Accent");
-        bannerIcon.VerticalAlignment = VerticalAlignment.Center;
-        bannerIcon.Margin = new Thickness(0, 0, 10, 0);
-        var bannerActions = Columns((installButton, Auto), (bannerMore, Auto));
-        bannerActions.Margin = new Thickness(8, 0, 0, 0);
-        var banner = CardFrame(Columns((bannerIcon, Auto), (bannerTitle, Star), (bannerActions, Auto)), new Thickness(12, 6, 10, 6));
-        banner.Margin = new Thickness(0);
-        void RefreshBanner()
-        {
-            banner.Visibility = UpdateBannerVisible ? Visibility.Visible : Visibility.Collapsed;
-            if (availableUpdate == null) return;
-            bannerTitle.Text = installing && updateStatus != null ? updateStatus
-                : T("Dostępna wersja ", "Version ") + availableUpdate.Version.ToString(3) + T("", " is available");
-            banner.ToolTip = FirstLine(availableUpdate.Notes);
-            bannerActions.Visibility = installing ? Visibility.Collapsed : Visibility.Visible;
-        }
 
         int shownStation = station;
         void ShowActiveStation(bool centre)
@@ -954,22 +910,22 @@ internal sealed partial class Radio
             checkNow.Margin = new Thickness(8, 0, 0, 0);
             checkNow.Click += (_, _) =>
             {
-                if (availableUpdate != null && !installing) InstallUpdate();
+                if (readyUpdate != null && !installing) InstallUpdate();
                 else CheckForUpdates(true);
             };
             refreshUpdates = () =>
             {
                 CultureInfo culture = new CultureInfo(Polish ? "pl-PL" : "en-US");
                 DateTime? checkedAt = lastUpdateCheck?.ToLocalTime();
-                updateDescription.Text = availableUpdate != null
-                    ? T("Dostępna wersja ", "Version ") + availableUpdate.Version.ToString(3) + T("", " is available")
-                    : T("Raz dziennie sprawdza, czy jest nowa wersja", "Looks for a new version once a day");
+                updateDescription.Text = readyUpdate != null
+                    ? T("Wersja ", "Version ") + readyUpdate.Version.ToString(3) + T(" jest gotowa do instalacji", " is ready to install")
+                    : T("Co kilka godzin sprawdza, czy jest nowa wersja", "Looks for a new version every few hours");
                 updateNote.Text = updateStatus ?? (checkedAt == null ? T("Jeszcze nie sprawdzano.", "Not checked yet.")
                     : T("Ostatnio sprawdzono: ", "Last checked: ") +
                       checkedAt.Value.ToString(checkedAt.Value.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture));
-                checkNow.Content = availableUpdate != null ? T("Zaktualizuj", "Update") : T("Sprawdź teraz", "Check now");
-                checkNow.SetResourceReference(FrameworkElement.StyleProperty, availableUpdate != null ? "AccentButton" : (object)typeof(Button));
-                checkNow.IsEnabled = !installing;
+                checkNow.Content = readyUpdate != null ? T("Zaktualizuj", "Update") : T("Sprawdź teraz", "Check now");
+                checkNow.SetResourceReference(FrameworkElement.StyleProperty, readyUpdate != null ? "AccentButton" : (object)typeof(Button));
+                checkNow.IsEnabled = !installing && !checking;
             };
             refreshUpdates();
             settings.Children.Add(Group(T("O aplikacji", "About")));
@@ -1037,8 +993,8 @@ internal sealed partial class Radio
             (Spaced(Orientation.Horizontal, 10,
                 new Image { Source = titleIcon, Width = 20, Height = 20 },
                 new TextBlock { Text = AppName, FontSize = 16, VerticalAlignment = VerticalAlignment.Center }), Star),
-            (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
-        var header = Spaced(Orientation.Vertical, 12, titleRow, banner, add, manual, fields, sectionRow);
+            (updateButton, Auto), (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
+        var header = Spaced(Orientation.Vertical, 12, titleRow, add, manual, fields, sectionRow);
         header.Margin = new Thickness(0, 0, 0, 8);
         var volumeRow = Columns((volumeText, Auto), (volumeSlider, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1137,7 +1093,7 @@ internal sealed partial class Radio
             if (shownUpdate != updateVersion)
             {
                 shownUpdate = updateVersion;
-                RefreshBanner();
+                updateButton.Visibility = readyUpdate != null && !installing ? Visibility.Visible : Visibility.Collapsed;
                 refreshUpdates?.Invoke();
             }
             if (page == "history" && shownHistory != historyVersion) FillHistory();

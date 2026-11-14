@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-# Minimalistic Radio — only 194 KB
+# Minimalistic Radio — only 191 KB
 
 A tiny internet radio for Windows 10 and 11 that lives next to the clock. One `.exe`, no installer, nothing else to install.
 
@@ -46,7 +46,7 @@ A tiny internet radio for Windows 10 and 11 that lives next to the clock. One `.
 - **Sleep timer** (15–90 min) with a gentle fade-out.
 - **Reconnects by itself** after the internet drops and after the computer wakes up.
 - **Start with Windows** (optional), **English and Polish** (follows Windows or your choice), light and dark theme.
-- **Updates the ShareX way**: checks for a new version at most once a day, tells you about it once and installs it only when you ask.
+- **Updates like Discord**: every few hours the radio quietly downloads a new version; a green arrow then shows *Update Ready!* and one click restarts into it. No pop-ups.
 
 ## Download
 
@@ -65,7 +65,7 @@ The radio collects no data. It only connects to:
 - the servers of the stations you listen to,
 - `radio-browser.info` — when you search for stations,
 - `itunes.apple.com` — to find the cover art of the song that's playing, by artist and title,
-- `api.github.com` — to check for updates (once a day, can be turned off),
+- `api.github.com` — to check for updates (every few hours, can be turned off),
 - `github.com` — to download FFmpeg or a new version, only when needed,
 - `stream.radio357.pl` — song titles of Radio 357.
 

@@ -74,10 +74,10 @@ internal sealed partial class Radio
 
     // Updates (see Updater.cs).
     private bool checkUpdates = true;
-    private DateTime? lastUpdateCheck, remindAfter;
-    private string skippedVersion, notifiedVersion;
-    private Release availableUpdate;
-    private bool installing;
+    private DateTime? lastUpdateCheck;
+    private Release readyUpdate;   // downloaded and checked, waiting for a click
+    private string readyFile;
+    private bool installing, checking;
     private string updateStatus;
     private int updateVersion;
     private readonly DispatcherTimer updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
@@ -113,7 +113,7 @@ internal sealed partial class Radio
             Updater.CleanUp();
             AttachMediaSession();
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
-            // Updates: first look 20 s after start, then hourly; CheckForUpdates itself keeps it to once a day.
+            // Updates: first look 20 s after start, then hourly; CheckForUpdates itself keeps it to every 6 hours.
             updateTimer.Tick += (_, _) => CheckForUpdates(false);
             updateTimer.Start();
             var firstCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
@@ -198,7 +198,7 @@ internal sealed partial class Radio
                     session = testSession;
                     status = StationName;
                     sleepAt = DateTime.Now.AddMinutes(30);
-                    availableUpdate = new Release { Version = new Version(9, 9, 9), Tag = "v9.9.9", Notes = "Podgląd banera aktualizacji." };
+                    readyUpdate = new Release { Version = new Version(9, 9, 9), Tag = "v9.9.9" };
                     foreach (string played in new[] { "Leonard Cohen - Everybody Knows", "Queen - A Kind Of Magic", "Daughtry - What About Now" })
                         AddToHistory(played);
                 }
@@ -410,8 +410,8 @@ internal sealed partial class Radio
             menu.Items.Add(trackItem);
         }
         menu.Items.Add(new Separator());
-        if (UpdateBannerVisible)
-            menu.Items.Add(Item(T("Zaktualizuj do ", "Update to ") + availableUpdate.Version.ToString(3), Theme.DownloadIcon, () => OpenPlayer()));
+        if (readyUpdate != null)
+            menu.Items.Add(Item(T("Zaktualizuj do ", "Update to ") + readyUpdate.Version.ToString(3), Theme.UpdateReadyIcon, InstallUpdate));
         menu.Items.Add(Item(T("Ustawienia", "Settings"), Theme.SettingsIcon, () =>
         {
             playerPanel?.Close();
@@ -926,16 +926,19 @@ internal sealed partial class Radio
     }
 
     // ---- Updates ----
+    // Like Discord: every few hours the radio looks for a newer release and quietly downloads it
+    // (checked against GitHub's SHA-256). A green arrow in the panel then says "Update Ready!",
+    // and a click swaps the exe and restarts into the new version. No pop-ups.
 
-    private bool UpdateBannerVisible => installing || (availableUpdate != null && availableUpdate.Tag != skippedVersion &&
-        (remindAfter == null || DateTime.UtcNow >= remindAfter.Value.ToUniversalTime()));
+    private static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(6);
 
     private async void CheckForUpdates(bool manual)
     {
-        if (testMenu || installing) return;
+        if (testMenu || installing || checking) return;
         if (!manual && (!checkUpdates || (lastUpdateCheck != null &&
-            DateTime.UtcNow - lastUpdateCheck.Value.ToUniversalTime() < TimeSpan.FromHours(24))))
+            DateTime.UtcNow - lastUpdateCheck.Value.ToUniversalTime() < UpdateInterval)))
             return;
+        checking = true;
         lastUpdateCheck = DateTime.UtcNow;
         SavePreferences();
         if (manual)
@@ -946,71 +949,64 @@ internal sealed partial class Radio
         try
         {
             Release latest = await Updater.Latest(metadataClient);
-            availableUpdate = latest != null && latest.Version > Updater.Current ? latest : null;
-            updateStatus = availableUpdate == null && manual ? T("Masz najnowszą wersję.", "You have the latest version.") : null;
-            if (availableUpdate != null && manual)
+            if (latest == null || latest.Version <= Updater.Current)
+                updateStatus = manual ? T("Masz najnowszą wersję.", "You have the latest version.") : null;
+            else if (readyUpdate?.Tag != latest.Tag || !File.Exists(readyFile))
             {
-                // Asked for explicitly: show it again even if it was postponed or skipped.
-                remindAfter = null;
-                skippedVersion = null;
-                SavePreferences();
+                if (manual)
+                {
+                    updateStatus = T("Pobieram wersję ", "Downloading version ") + latest.Version.ToString(3) + "…";
+                    updateVersion++;
+                }
+                string file = await Updater.Download(latest, null);
+                if (readyFile != null && readyFile != file)
+                {
+                    try { File.Delete(readyFile); }
+                    catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
+                }
+                readyUpdate = latest;
+                readyFile = file;
+                updateStatus = null;
             }
-            else if (availableUpdate != null && availableUpdate.Tag != skippedVersion && availableUpdate.Tag != notifiedVersion)
-            {
-                // Each new version is announced once; after that only the panel shows it.
-                notifiedVersion = availableUpdate.Tag;
-                SavePreferences();
-                tray.ShowBalloonTip(6000, AppName, string.Format(T(
-                    "Jest nowa wersja {0}. Kliknij, aby zobaczyć.", "Version {0} is available. Click to see it."),
-                    availableUpdate.Version.ToString(3)), Forms.ToolTipIcon.Info);
-            }
+            else updateStatus = null;
         }
-        catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException ||
-            error is ArgumentException || error is InvalidOperationException)
+        catch (Exception error) when (error is HttpRequestException || error is IOException || error is InvalidDataException ||
+            error is OperationCanceledException || error is ArgumentException || error is InvalidOperationException ||
+            error is UnauthorizedAccessException)
         {
             Debug.WriteLine(error);
             if (manual) updateStatus = T("Nie udało się sprawdzić aktualizacji.", "Couldn't check for updates.");
         }
+        finally { checking = false; }
         updateVersion++;
     }
 
-    private void PostponeUpdate()
+    private void InstallUpdate()
     {
-        remindAfter = DateTime.UtcNow.AddDays(3);
-        SavePreferences();
-        updateVersion++;
-    }
-
-    private void SkipUpdate()
-    {
-        skippedVersion = availableUpdate?.Tag;
-        SavePreferences();
-        updateVersion++;
-    }
-
-    private async void InstallUpdate()
-    {
-        Release release = availableUpdate;
+        Release release = readyUpdate;
         if (release == null || installing) return;
+        if (!File.Exists(readyFile))
+        {
+            // The downloaded file was cleaned from the temporary folder: get it again.
+            readyUpdate = null;
+            readyFile = null;
+            updateVersion++;
+            CheckForUpdates(true);
+            return;
+        }
         installing = true;
-        updateStatus = T("Pobieranie aktualizacji…", "Downloading the update…");
-        updateVersion++;
         try
         {
-            string file = await Updater.Download(release, percent => Post(() =>
-            {
-                updateStatus = T("Pobieranie aktualizacji… ", "Downloading the update… ") + percent + "%";
-                updateVersion++;
-            }));
-            Updater.Install(file);
+            Updater.Install(readyFile);   // swaps the exe and starts the new version
             Shutdown();
         }
-        catch (Exception error) when (error is HttpRequestException || error is IOException || error is InvalidDataException ||
-            error is UnauthorizedAccessException || error is InvalidOperationException || error is OperationCanceledException ||
-            error is System.ComponentModel.Win32Exception)
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException ||
+            error is System.ComponentModel.Win32Exception || error is ArgumentException)
         {
             Debug.WriteLine(error);
             installing = false;
+            readyUpdate = null;
+            readyFile = null;
             updateStatus = T("Nie udało się zainstalować. Otwieram stronę z nową wersją.",
                 "Couldn't install it. Opening the page with the new version.");
             updateVersion++;
@@ -1032,9 +1028,6 @@ internal sealed partial class Radio
         Lang.Setting = saved.Language == "pl" || saved.Language == "en" ? saved.Language : "auto";
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
-        remindAfter = saved.RemindAfter;
-        skippedVersion = saved.SkippedVersion;
-        notifiedVersion = saved.NotifiedVersion;
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
     }
@@ -1047,8 +1040,7 @@ internal sealed partial class Radio
             Storage.Write(Storage.PreferencesFile, new Preferences
             {
                 Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting, Decoder = decoder,
-                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, RemindAfter = remindAfter,
-                SkippedVersion = skippedVersion, NotifiedVersion = notifiedVersion
+                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck
             });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
