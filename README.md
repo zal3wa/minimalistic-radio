@@ -1,8 +1,8 @@
-# Minimalistic Radio
+# Minimalistic Radio — only 185 KB
 
-Małe radio internetowe dla Windows 10 i 11, które mieszka obok zegara. Jeden plik `.exe` (ok. 200 KB), bez instalatora i bez dodatkowych bibliotek.
+Małe radio internetowe dla Windows 10 i 11, które mieszka obok zegara. Jeden plik `.exe`, bez instalatora i bez dodatkowych bibliotek.
 
-*A tiny internet radio for Windows 10/11 that lives in the notification area. One ~200 KB exe, no installer, nothing else to install. English UI included.*
+*A tiny internet radio for Windows 10/11 that lives in the notification area. One exe, no installer, nothing else to install. English UI included.*
 
 <p align="center">
   <picture>
