@@ -541,6 +541,7 @@ internal sealed partial class Radio
         {
             SetSleepTimer(null);
             if (session != null) StopPlayback(T("Wyłączono wyłącznikiem czasowym", "Stopped by the sleep timer"));
+            else lostConnectionAt = null;   // the radio had already lost the station: don't bring it back later
         }
         else Volatile.Write(ref fade, left >= 30 ? 100 : (int)(left * 100 / 30));
     }
