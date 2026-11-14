@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -286,7 +287,6 @@ internal sealed partial class Radio
             Minimum = 0, Maximum = 100, Value = volume, IsSnapToTickEnabled = true, TickFrequency = 1,
             SmallChange = 1, LargeChange = 5, IsMoveToPointEnabled = true, VerticalAlignment = VerticalAlignment.Center
         };
-        var volumeText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, MinWidth = 104 };
         var name = new TextBox { Tag = T("Nazwa stacji", "Station name"), MaxLength = 100 };
         var url = new TextBox { Tag = T("Adres strumienia HTTP lub HTTPS", "Stream address (HTTP or HTTPS)"), MaxLength = 2048 };
         var logo = new TextBox { Tag = T("Adres logotypu (opcjonalnie)", "Logo address (optional)"), MaxLength = 2048 };
@@ -971,13 +971,84 @@ internal sealed partial class Radio
         settingsPane.Content = BuildSettings();
 
         // Footer: now playing, volume with the sleep timer, play/stop.
-        volumeSlider.ValueChanged += (_, e) => ChangeVolume((int)Math.Round(e.NewValue));
+        // The volume row is like Windows 11's: a speaker button that shows the level and mutes, the slider, and the
+        // number in a bubble above the knob while the volume changes by hand. With no label, the slider is named.
+        AutomationProperties.SetName(volumeSlider, T("Głośność", "Volume"));
+        var muteButton = NewButton("GhostButton", null);
+        muteButton.Padding = new Thickness(8, 6, 8, 6);
+        muteButton.Margin = new Thickness(-4, 0, 6, 0);
+        muteButton.VerticalAlignment = VerticalAlignment.Center;
+        void ShowVolume()
+        {
+            string glyph = VolumeGlyph(volume);
+            if (Equals(muteButton.Tag, glyph)) return;
+            muteButton.Tag = glyph;
+            muteButton.Content = Theme.Glyph(glyph);
+            string tip = volume == 0 ? T("Włącz dźwięk", "Unmute") : T("Wycisz", "Mute");
+            muteButton.ToolTip = tip;
+            AutomationProperties.SetName(muteButton, tip);
+        }
+        muteButton.Click += (_, _) =>
+        {
+            ToggleMute();
+            volumeSlider.Value = volume;
+            ShowVolume();
+        };
+        // The bubble lives in the panel (a layer over the slider that may draw above it), not in a popup window, so it
+        // needs no window of its own, follows the theme like the rest, and shows in the self-test's pictures. It goes
+        // a second after the last wheel turn or key, or when a drag lets go.
+        var bubbleText = new TextBlock { FontSize = 12 };
+        var bubbleFace = new Border
+        {
+            CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(8, 3, 8, 4), Child = bubbleText
+        };
+        bubbleFace.SetResourceReference(Border.BackgroundProperty, "Bg");
+        bubbleFace.SetResourceReference(Border.BorderBrushProperty, "Line");
+        var bubble = new Grid { Visibility = Visibility.Collapsed };
+        // Its shadow on a layer of its own, so the number keeps sharp ClearType text (like the panel's shadow).
+        bubble.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(4), Background = Brushes.Black,
+            Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 1, Opacity = 0.25, Direction = 270 }
+        });
+        bubble.Children.Add(bubbleFace);
+        var bubbleLayer = new Canvas { IsHitTestVisible = false };
+        bubbleLayer.Children.Add(bubble);
+        var sliderCell = new Grid();
+        sliderCell.Children.Add(volumeSlider);
+        sliderCell.Children.Add(bubbleLayer);
+        var bubbleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        void HideBubble()
+        {
+            bubbleTimer.Stop();
+            bubble.Visibility = Visibility.Collapsed;
+        }
+        bubbleTimer.Tick += (_, _) => HideBubble();
+        panel.Closed += (_, _) => bubbleTimer.Stop();
+        void ShowBubble(bool untilRelease)
+        {
+            if (!(volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track) || track.Thumb == null) return;
+            bubbleText.Text = ((int)Math.Round(volumeSlider.Value)).ToString(CultureInfo.InvariantCulture);
+            bubble.Visibility = Visibility.Visible;
+            sliderCell.UpdateLayout();   // the knob where the new value puts it, the bubble at its new width
+            Point knob = track.Thumb.TranslatePoint(new Point(track.Thumb.ActualWidth / 2, 0), bubbleLayer);
+            Canvas.SetLeft(bubble, Math.Round(knob.X - bubble.ActualWidth / 2));
+            Canvas.SetTop(bubble, Math.Round(knob.Y - bubble.ActualHeight - 4));
+            bubbleTimer.Stop();
+            if (!untilRelease) bubbleTimer.Start();
+        }
+        volumeSlider.ValueChanged += (_, e) =>
+        {
+            ChangeVolume((int)Math.Round(e.NewValue));
+            ShowVolume();
+        };
         // Like the Windows 11 volume slider: press anywhere on it and drag (WPF on its own only jumps
         // there and drags just the knob), and the mouse wheel changes the volume by 2%.
         void SlideTo(MouseEventArgs e)
         {
             if (volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track)
                 volumeSlider.Value = Math.Round(Math.Max(0, Math.Min(100, track.ValueFromPoint(e.GetPosition(track)))));
+            ShowBubble(true);
         }
         // handledEventsToo: with IsMoveToPointEnabled the Slider itself marks a press next to the knob as
         // handled (it only jumps there), and a plain += handler would never see it.
@@ -998,11 +1069,20 @@ internal sealed partial class Radio
             volumeSlider.ReleaseMouseCapture();
             e.Handled = true;
         };
+        volumeSlider.LostMouseCapture += (_, _) => HideBubble();
         volumeSlider.MouseWheel += (_, e) =>
         {
             volumeSlider.Value = Clamp((int)volumeSlider.Value + (e.Delta > 0 ? 2 : -2), 0, 100);
+            ShowBubble(false);
             e.Handled = true;
         };
+        // handledEventsToo: the Slider handles its keys itself; this runs after, with the new value.
+        volumeSlider.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler((_, e) =>
+        {
+            if (e.Key == Key.Left || e.Key == Key.Right || e.Key == Key.Up || e.Key == Key.Down ||
+                e.Key == Key.PageUp || e.Key == Key.PageDown || e.Key == Key.Home || e.Key == Key.End)
+                ShowBubble(false);
+        }), true);
         play.Click += (_, _) => TogglePlayback();
         var copy = NewButton("GhostButton", Theme.Glyph(Theme.CopyIcon), T("Kopiuj tytuł", "Copy title"));
         copy.Padding = new Thickness(8);
@@ -1053,7 +1133,7 @@ internal sealed partial class Radio
             (updateButton, Auto), (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
         var header = Spaced(Orientation.Vertical, 12, titleRow, add, fields, sectionRow);
         header.Margin = new Thickness(0, 0, 0, 8);
-        var volumeRow = Columns((volumeText, Auto), (volumeSlider, Star), (sleepButton, Auto));
+        var volumeRow = Columns((muteButton, Auto), (sliderCell, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
         var footer = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
         footer.Margin = new Thickness(0, 10, 0, 0);
@@ -1143,8 +1223,8 @@ internal sealed partial class Radio
             copy.IsEnabled = track != null;
             now.Text = track ?? (session != null && status == StationName ? NoTrack : status);
             now.ToolTip = track;
-            volumeText.Text = T("Głośność ", "Volume ") + volume + "%";
             volumeSlider.Value = volume;
+            ShowVolume();
             bool sleeping = sleepAt != null;
             if (shownSleep != sleeping)
             {
@@ -1272,5 +1352,32 @@ internal sealed partial class Radio
             Debug.WriteLine(error);
             return null;
         }
+    }
+
+    // Self-test of the volume row (--test-menu, from VerifyMenu): the speaker for 0, 20, 50 and 90%, mute and unmute,
+    // and the number in the bubble on a wheel turn.
+    private async Task VerifyVolumeRow()
+    {
+        playerPanel?.Close();
+        OpenPlayer();
+        await Task.Delay(500);
+        var slider = Descendants(playerPanel).OfType<Slider>().First();
+        string[] speakers = { Theme.VolumeMutedIcon, Theme.Volume1Icon, Theme.Volume2Icon, Theme.Volume3Icon };
+        Button speaker = Descendants(playerPanel).OfType<Button>().First(button => speakers.Contains(button.Tag as string));
+        for (int i = 0; i < 4; i++)
+        {
+            ChangeVolume(new[] { 0, 20, 50, 90 }[i]);
+            await Task.Delay(300);   // the panel refreshes every 250 ms
+            if (speaker.Tag as string != speakers[i]) throw new InvalidOperationException("Błędna ikona głośności przy " + volume + "%.");
+        }
+        speaker.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        int muted = volume;
+        speaker.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        if (muted != 0 || volume != 90) throw new InvalidOperationException($"Wyciszanie: {muted}%, potem {volume}%.");
+        slider.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, 120) { RoutedEvent = Mouse.MouseWheelEvent });
+        var bubble = (FrameworkElement)((Panel)VisualTreeHelper.GetParent(slider)).Children.OfType<Canvas>().First().Children[0];
+        if (volume != 92 || !bubble.IsVisible || Descendants(bubble).OfType<TextBlock>().First().Text != "92")
+            throw new InvalidOperationException("Dymek głośności nie pokazuje wartości.");
+        playerPanel.Close();
     }
 }

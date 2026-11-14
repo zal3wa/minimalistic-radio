@@ -12,7 +12,7 @@ dotnet build src/MinimalisticRadio.csproj -c Release -o out
 ```
 
 - `out\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`).
-- `--test-menu --preview` also renders the panel, a station being dragged, menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
+- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
 
 ## Releases

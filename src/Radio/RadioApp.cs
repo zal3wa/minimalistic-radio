@@ -53,6 +53,8 @@ internal sealed partial class Radio
     private string artworkUrl;
     private string shownThumbnail;
     private int volume = 30;
+    private int unmuteVolume = 30, volumeBefore = 30;   // see ChangeVolume and ToggleMute
+    private readonly Stopwatch sinceVolumeChange = new Stopwatch();
     private bool playing;
     private string status = Ready;
     private CancellationTokenSource session;
@@ -333,6 +335,7 @@ internal sealed partial class Radio
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
                 CloseMenu();
                 await VerifyStationDrag();
+                await VerifyVolumeRow();
             }
         }
         catch (Exception error)
@@ -605,10 +608,28 @@ internal sealed partial class Radio
     {
         value = Clamp(value, 0, 100);
         if (value == volume) return;
+        // Changes less than a second apart (a drag, the wheel, the arrow keys) count as one: turned down to 0 that way,
+        // unmuting brings back the level from before them, not the 1% passed last.
+        if (!sinceVolumeChange.IsRunning || sinceVolumeChange.ElapsedMilliseconds > 1000) volumeBefore = volume;
+        sinceVolumeChange.Restart();
+        if (value == 0 && volumeBefore > 0) unmuteVolume = volumeBefore;
         Volatile.Write(ref volume, value);
         SavePreferences();
         UpdateMediaSession();
     }
+
+    // The panel's speaker button: mutes, and unmutes back to the level from before (30 if there was none). Through
+    // ChangeVolume like any change, so the tray menu, the media controls and the saved volume follow.
+    private void ToggleMute()
+    {
+        int before = volume;
+        ChangeVolume(before > 0 ? 0 : unmuteVolume);
+        if (before > 0) unmuteVolume = before;
+    }
+
+    // The speaker for a level, like Windows 11: muted, or one to three waves.
+    internal static string VolumeGlyph(int level) =>
+        level <= 0 ? Theme.VolumeMutedIcon : level <= 33 ? Theme.Volume1Icon : level <= 66 ? Theme.Volume2Icon : Theme.Volume3Icon;
 
     private void TogglePlayback()
     {
