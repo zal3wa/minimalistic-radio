@@ -4,9 +4,13 @@
 Plays each station for up to 15 s and reads the negotiated raw caps. A missing
 SBR shows as half the sample rate, a missing PS as mono.
 
-Exit 0: all decoded stations have rate >= 32000 and at least 75% are stereo.
-Exit 1: the codec fails (the table is printed).
-Exit 2: fewer than 4 stations produced audio (network trouble, inconclusive).
+The encoded caps (the core rate and channels the AAC parser reports) are compared
+with the decoded caps. HE-AAC has a core rate <= 24000; SBR doubles the rate,
+PS turns the single core channel into two.
+
+Exit 1: any SBR-FAIL or PS-FAIL.
+Exit 0: at least 3 stations are SBR-proven and at least 1 is PS-proven.
+Exit 2: inconclusive (fewer than 4 decoded, or a proof is missing).
 """
 import json
 import sys
@@ -22,6 +26,8 @@ from gi.repository import Gst  # noqa: E402
 API = "https://de1.api.radio-browser.info/json/stations/search"
 UA = "MinimalisticRadio-check/1 (Linux)"
 PLAY_SECONDS = 15
+BITRATE_MAX = 48
+LOW_LIMIT = 8
 
 
 def fetch(query):
@@ -32,16 +38,29 @@ def fetch(query):
 
 
 def stations():
+    queries = [
+        "codec=AAC%2B&order=votes&reverse=true&hidebroken=true&limit=8",
+        # Low bitrate AAC+ is typically HE-AACv2.
+        "codec=AAC%2B&bitrate_max=%d&order=votes&reverse=true&hidebroken=true&limit=%d"
+        % (BITRATE_MAX, LOW_LIMIT),
+        "name=Czw%C3%B3rka&hidebroken=true&limit=20",
+    ]
     found = []
-    popular = "codec=AAC%2B&order=votes&reverse=true&hidebroken=true&limit=8"
-    by_name = "name=" + urllib.parse.quote("Polskie Radio Czwórka AAC+") + "&limit=1&hidebroken=true"
-    for query in (popular, by_name):
+    for query in queries:
         try:
             found.extend(fetch(query))
         except Exception as exc:  # network trouble is reported as inconclusive later
             print(f"radio-browser query failed: {exc}", flush=True)
+    if not any("czw" in s.get("name", "").lower() for s in found):
+        try:
+            found.extend(fetch("name=Polskie%20Radio&codec=AAC%2B&hidebroken=true&limit=5"))
+            print("Czworka not found; using Polskie Radio AAC+ stations instead", flush=True)
+        except Exception as exc:
+            print(f"radio-browser query failed: {exc}", flush=True)
     seen, result = set(), []
     for s in found:
+        if s.get("codec", "").upper() not in ("AAC", "AAC+"):
+            continue
         url = s.get("url_resolved") or s.get("url")
         if url and url not in seen:
             seen.add(url)
@@ -50,12 +69,24 @@ def stations():
 
 
 def probe(url):
-    """Return (rate, channels) of the decoded audio, or None if nothing came out."""
+    """Return ((enc_rate, enc_ch), (dec_rate, dec_ch)) or None if nothing came out."""
     pipeline = Gst.parse_launch(
-        f'uridecodebin uri="{url}" ! audioconvert ! fakesink name=sink sync=false'
+        f'uridecodebin name=src uri="{url}" ! audioconvert ! fakesink name=sink sync=false'
     )
     sink = pipeline.get_by_name("sink")
-    got = {"buffers": 0}
+    got = {"buffers": 0, "enc": None}
+
+    def on_continue(_bin, _pad, caps):
+        for i in range(caps.get_size()):
+            st = caps.get_structure(i)
+            if st.get_name() == "audio/mpeg" and st.get_int("mpegversion")[1] in (2, 4):
+                ok_r, rate = st.get_int("rate")
+                ok_c, ch = st.get_int("channels")
+                if ok_r and ok_c:
+                    got["enc"] = (rate, ch)
+        return True
+
+    pipeline.get_by_name("src").connect("autoplug-continue", on_continue)
 
     def on_buffer(pad, info):
         got["buffers"] += 1
@@ -74,36 +105,66 @@ def probe(url):
                 print(f"  error: {err.message}", flush=True)
                 break
             caps = sink.get_static_pad("sink").get_current_caps()
-            if caps and got["buffers"] >= 5 and caps.get_size():
+            if caps and got["buffers"] >= 5 and caps.get_size() and got["enc"]:
                 s = caps.get_structure(0)
                 ok_r, rate = s.get_int("rate")
                 ok_c, channels = s.get_int("channels")
                 if ok_r and ok_c:
-                    result = (rate, channels)
+                    result = (got["enc"], (rate, channels))
                     break
     finally:
         pipeline.set_state(Gst.State.NULL)
     return result
 
 
+def verdicts(enc, dec):
+    er, ec = enc
+    dr, dc = dec
+    out = []
+    if er > 24000:
+        return ["LC"]
+    if dr >= 2 * er:
+        out.append("SBR-proven")
+    elif dr == er:
+        out.append("SBR-FAIL")
+    if ec == 1 and dc == 2:
+        out.append("PS-proven")
+    elif ec == 1 and dc == 1 and "SBR-proven" in out:
+        out.append("PS-FAIL")
+    return out or ["unclear"]
+
+
 def main():
     Gst.init(None)
-    rows = []
+    sbr = ps = fails = decoded = 0
     for name, url in stations():
         r = probe(url)
-        if r:
-            rows.append((name, r[0], r[1]))
-            print(f"{name}, {r[0]}, {r[1]}, {'OK' if r[0] >= 32000 and r[1] == 2 else 'FAIL'}", flush=True)
-        else:
-            print(f"{name}, -, -, NO AUDIO", flush=True)
+        if not r:
+            print(f"{name}, -, -, -, -, NO AUDIO", flush=True)
+            continue
+        (er, ec), (dr, dc) = r
+        v = verdicts((er, ec), (dr, dc))
+        decoded += 1
+        sbr += "SBR-proven" in v
+        ps += "PS-proven" in v
+        fails += any(x.endswith("FAIL") for x in v)
+        print(f"{name}, {er}, {ec}, {dr}, {dc}, {' '.join(v)}", flush=True)
 
-    if len(rows) < 4:
-        print(f"Only {len(rows)} stations produced audio: inconclusive (network?)")
+    print(f"decoded={decoded} SBR-proven={sbr} PS-proven={ps} fails={fails}")
+    if fails:
+        return 1
+    if decoded < 4:
+        print("Inconclusive: fewer than 4 stations produced audio (network?)")
         return 2
-    rate_ok = all(rate >= 32000 for _, rate, _ in rows)
-    stereo = sum(1 for _, _, ch in rows if ch == 2) / len(rows)
-    print(f"{len(rows)} decoded, all rates >= 32000: {rate_ok}, stereo share: {stereo:.0%}")
-    return 0 if rate_ok and stereo >= 0.75 else 1
+    if sbr >= 3 and ps >= 1:
+        return 0
+    missing = []
+    if sbr < 3:
+        missing.append(f"SBR proven on only {sbr} stations (need 3)")
+    if ps < 1:
+        missing.append("no HE-AACv2 (PS) station among the candidates")
+    print("Inconclusive: " + "; ".join(missing))
+    return 2
 
 
 if __name__ == "__main__":
