@@ -36,7 +36,8 @@ public sealed class HistoryEntry
 
 internal sealed class DirectoryStation
 {
-    internal string Name, Country, Url, ResolvedUrl, Logo;
+    internal string Name, Country, Url, ResolvedUrl, Logo, Codec, Tags;
+    internal int Bitrate;
 }
 
 internal static class Storage
@@ -108,7 +109,9 @@ internal static class Storage
                             var entry = new DirectoryStation
                             {
                                 Name = Text("name"), Country = Text("country"), Url = Text("url"),
-                                ResolvedUrl = Text("url_resolved"), Logo = Text("favicon")
+                                ResolvedUrl = Text("url_resolved"), Logo = Text("favicon"),
+                                Codec = Text("codec"), Tags = Text("tags"),
+                                Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0
                             };
                             string address = IsWebUrl(entry.ResolvedUrl) ? entry.ResolvedUrl : entry.Url;
                             if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(address) && seen.Add(address))

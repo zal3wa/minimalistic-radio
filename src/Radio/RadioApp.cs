@@ -289,13 +289,17 @@ internal sealed partial class Radio
                 ShowMenu();
                 await SavePreview(popup, "shot-menu");
                 CloseMenu();
-                foreach (string page in new[] { "stations", "history", "settings" })
+                foreach (var (page, name) in new[] { ("stations", "stations"), ("search:jazz", "search"), ("history", "history"), ("settings", "settings") })
                 {
                     OpenPlayer(page);
-                    await Task.Delay(3000);   // station logos and the cover arrive over the network
-                    await SavePreview(playerPanel, "shot-" + page);
+                    await Task.Delay(page.StartsWith("search") ? 6000 : 3000);   // results, logos and the cover arrive over the network
+                    await SavePreview(playerPanel, "shot-" + name);
                     playerPanel.Close();
                 }
+                ShowStationPopup();
+                await Task.Delay(2000);
+                await SavePreview(osd, "shot-card");
+                osd.Hide();
             }
         }
         catch (Exception error)

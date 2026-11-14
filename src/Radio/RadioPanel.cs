@@ -278,9 +278,16 @@ internal sealed partial class Radio
 
     // ---- The panel ----
 
+    // startPage: "stations", "history", "settings", or "search:<query>" to open the station search with results.
     private void OpenPlayer(string startPage = "stations")
     {
         if (playerPanel != null) { playerPanel.Activate(); return; }
+        string startSearch = null;
+        if (startPage.StartsWith("search:", StringComparison.Ordinal))
+        {
+            startSearch = startPage.Substring(7);
+            startPage = "stations";
+        }
         CloseMenu();
         Theme.Apply(app);
         var panel = new Window
@@ -338,13 +345,17 @@ internal sealed partial class Radio
         var searchBox = new TextBox { Tag = T("Wpisz nazwę stacji", "Type a station name"), MaxLength = 100 };
         var searchButton = NewButton(null, T("Szukaj", "Search"));
         searchButton.Margin = new Thickness(8, 0, 0, 0);
-        var manual = NewButton(null, T("Dodaj z adresu", "Add by address"));
-        manual.HorizontalAlignment = HorizontalAlignment.Left;
-        manual.Visibility = Visibility.Collapsed;
+        // The search page: box and button, then one line with the status (or a hint) and "Add by address".
+        string searchHint = T("Szukaj w katalogu radio-browser.info", "Search the radio-browser.info directory");
+        var manual = SmallButton("LinkButton", T("Dodaj z adresu", "Add by address"));
+        manual.VerticalAlignment = VerticalAlignment.Center;
+        manual.Margin = new Thickness(8, 0, -8, 0);
         var results = new ListBox();
-        var searchStatus = new TextBlock { TextWrapping = TextWrapping.Wrap };
-        var searchHeader = Spaced(Orientation.Vertical, 8, Columns((searchBox, Star), (searchButton, Auto)), searchStatus);
-        searchHeader.Margin = new Thickness(0, 0, 0, 8);
+        TextBlock searchStatus = Note(searchHint);
+        searchStatus.VerticalAlignment = VerticalAlignment.Center;
+        var searchHeader = Spaced(Orientation.Vertical, 4, Columns((searchBox, Star), (searchButton, Auto)),
+            Columns((searchStatus, Star), (manual, Auto)));
+        searchHeader.Margin = new Thickness(0, 0, 0, 6);
         var searchPane = new DockPanel { Visibility = Visibility.Collapsed };
         DockPanel.SetDock(searchHeader, Dock.Top);
         searchPane.Children.Add(searchHeader);
@@ -471,21 +482,14 @@ internal sealed partial class Radio
             }
         }
 
-        void SetSearchVisible(bool visible)
+        // Leaving the search page: no results kept, no request left running.
+        void ResetSearch()
         {
-            searchPane.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-            list.Visibility = visible ? Visibility.Collapsed : Visibility.Visible;
-            manual.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-            add.Content = visible ? (object)T("Anuluj", "Cancel") : IconText(Theme.PlusIcon, T("Stacja", "Station"));
-            if (!visible)
-            {
-                activeSearch?.Cancel();
-                activeSearch = null;
-                searchButton.IsEnabled = true;
-                results.Items.Clear();
-                searchStatus.Text = "";
-                ShowActiveStationAfterLayout(false);
-            }
+            activeSearch?.Cancel();
+            activeSearch = null;
+            searchButton.IsEnabled = true;
+            results.Items.Clear();
+            searchStatus.Text = searchHint;
         }
 
         string page = "stations";
@@ -493,18 +497,22 @@ internal sealed partial class Radio
         {
             if (target != "stations")
             {
-                SetSearchVisible(false);
                 fields.Visibility = Visibility.Collapsed;
                 editing = null;
             }
+            if (page == "search" && target != "search") ResetSearch();
             page = target;
             bool stations = target == "stations";
             list.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
+            searchPane.Visibility = target == "search" ? Visibility.Visible : Visibility.Collapsed;
             settingsPane.Visibility = target == "settings" ? Visibility.Visible : Visibility.Collapsed;
             historyPane.Visibility = target == "history" ? Visibility.Visible : Visibility.Collapsed;
             add.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
             sectionLabel.Text = target == "settings" ? T("Ustawienia", "Settings")
-                : target == "history" ? T("Historia", "History") : T("Stacje", "Stations");
+                : target == "history" ? T("Historia", "History")
+                : target == "search" ? T("Dodaj stację", "Add a station") : T("Stacje", "Stations");
+            if (target == "search")
+                app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
             backButton.Visibility = stations ? Visibility.Collapsed : Visibility.Visible;
             // Off the stations page these two go away entirely, so the rest moves up to the X on the right.
             historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
@@ -517,15 +525,10 @@ internal sealed partial class Radio
             if (stations) ShowActiveStationAfterLayout(false);
         }
 
-        add.Click += (_, _) =>
-        {
-            SetSearchVisible(searchPane.Visibility != Visibility.Visible);
-            fields.Visibility = Visibility.Collapsed;
-            if (searchPane.Visibility == Visibility.Visible) searchBox.Focus();
-        };
+        add.Click += (_, _) => SetPage("search");
         searchButton.Click += (_, _) => Search();
         searchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Search(); };
-        manual.Click += (_, _) => { SetSearchVisible(false); Edit(null); };
+        manual.Click += (_, _) => { SetPage("stations"); Edit(null); };
         settingsButton.Click += (_, _) => SetPage("settings");
         historyButton.Click += (_, _) => SetPage("history");
         backButton.Click += (_, _) => SetPage("stations");
@@ -535,11 +538,7 @@ internal sealed partial class Radio
             bool adding = editing == null;
             editing = null;
             fields.Visibility = Visibility.Collapsed;
-            if (adding)
-            {
-                SetSearchVisible(true);
-                searchBox.Focus();
-            }
+            if (adding) SetPage("search");
         }
         cancelForm.Click += (_, _) => CancelForm();
 
@@ -555,7 +554,7 @@ internal sealed partial class Radio
             if (!ApplyStations(Stations.Concat(new[] { added }).ToList())) return;
             if (station < 0) SelectStation(Stations.IndexOf(added));
             list.SelectedIndex = station;
-            SetSearchVisible(false);
+            SetPage("stations");
         }
 
         save.Click += (_, _) =>
@@ -626,15 +625,45 @@ internal sealed partial class Radio
             ApplyStations(updated);
         }
 
+        // A search result: logo, name, then country · format · genres, and + (or a tick when it's already on the list).
         FrameworkElement ResultRow(DirectoryStation item)
         {
-            var button = NewButton("GhostButton", new TextBlock
+            var image = new Image { Width = 32, Height = 32, Stretch = Stretch.Uniform };
+            var placeholder = Theme.Glyph(Theme.RadioIcon);
+            var badge = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center };
+            badge.Children.Add(placeholder);
+            badge.Children.Add(image);
+            image.Loaded += async (_, _) =>
             {
-                Text = string.IsNullOrWhiteSpace(item.Country) ? item.Name : item.Name + " · " + item.Country,
-                TextWrapping = TextWrapping.Wrap
-            });
-            button.HorizontalContentAlignment = HorizontalAlignment.Left;
-            button.Padding = new Thickness(10, 8, 10, 8);
+                if (image.Source != null) return;
+                ImageSource source = await LoadImage(item.Logo);
+                if (source == null) return;
+                image.Source = source;
+                placeholder.Visibility = Visibility.Hidden;
+            };
+            var details = new List<string>();
+            if (!string.IsNullOrWhiteSpace(item.Country)) details.Add(item.Country.Trim());
+            string format = (item.Codec ?? "").Trim().ToUpperInvariant();
+            if (format == "UNKNOWN") format = "";
+            if (item.Bitrate > 0) format = (format + " " + item.Bitrate + " kbps").Trim();
+            if (format.Length > 0) details.Add(format);
+            string genres = string.Join(", ", (item.Tags ?? "").Split(',').Select(tag => tag.Trim()).Where(tag => tag.Length > 0).Take(2));
+            if (genres.Length > 0) details.Add(genres);
+            var name = new TextBlock { Text = item.Name.Trim(), FontSize = 15, TextTrimming = TextTrimming.CharacterEllipsis };
+            TextBlock info = Note(string.Join(" · ", details));
+            info.TextWrapping = TextWrapping.NoWrap;
+            info.TextTrimming = TextTrimming.CharacterEllipsis;
+            var text = Spaced(Orientation.Vertical, 1, name, info);
+            text.Margin = new Thickness(12, 0, 8, 0);
+            text.VerticalAlignment = VerticalAlignment.Center;
+            string address = Storage.IsWebUrl(item.ResolvedUrl) ? item.ResolvedUrl : item.Url;
+            bool known = Stations.Any(entry => Storage.SameStream(entry.Url, address));
+            FrameworkElement mark = Theme.Glyph(known ? Theme.CheckIcon : Theme.PlusIcon, 18, known ? "Success" : null);
+            mark.VerticalAlignment = VerticalAlignment.Center;
+            var button = NewButton("GhostButton", Columns((badge, Auto), (text, Star), (mark, Auto)),
+                known ? T("Już jest na twojej liście", "Already on your list") : T("Dodaj do stacji", "Add to your stations"));
+            button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            button.Padding = new Thickness(10, 6, 10, 6);
             button.Click += (_, _) => AddSearchResult(item);
             return button;
         }
@@ -1027,7 +1056,7 @@ internal sealed partial class Radio
                 new Image { Source = titleIcon, Width = 20, Height = 20 },
                 new TextBlock { Text = AppName, FontSize = 16, VerticalAlignment = VerticalAlignment.Center }), Star),
             (updateButton, Auto), (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
-        var header = Spaced(Orientation.Vertical, 12, titleRow, add, manual, fields, sectionRow);
+        var header = Spaced(Orientation.Vertical, 12, titleRow, add, fields, sectionRow);
         header.Margin = new Thickness(0, 0, 0, 8);
         var volumeRow = Columns((volumeText, Auto), (volumeSlider, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1065,13 +1094,19 @@ internal sealed partial class Radio
         panel.Content = root;
         FillList();
         SetPage(startPage);
+        if (startSearch != null)
+        {
+            SetPage("search");
+            searchBox.Text = startSearch;
+            searchBox.CaretIndex = startSearch.Length;
+            Search();
+        }
 
         panel.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
             if (page != "stations") SetPage("stations");
             else if (fields.Visibility == Visibility.Visible) CancelForm();
-            else if (searchPane.Visibility == Visibility.Visible) SetSearchVisible(false);
             else panel.Close();
             e.Handled = true;
         };

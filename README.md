@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 197 KB</h1>
+<h1 align="center">Minimalistic Radio - only 200 KB</h1>
 
 <p align="center">A tiny internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
@@ -21,13 +21,20 @@
     </td>
     <td align="center" valign="top">
       <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
+        <img src="docs/screenshots/search-light.png" width="400" alt="Station search with logos, country, codec and bitrate">
+      </picture>
+      <br>Station search: thousands of stations from radio-browser.info
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+      <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
         <img src="docs/screenshots/history-light.png" width="400" alt="Song history">
       </picture>
       <br>Song history
     </td>
-  </tr>
-  <tr>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
@@ -35,12 +42,21 @@
       </picture>
       <br>Settings
     </td>
+  </tr>
+  <tr>
     <td align="center" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/menu-dark.png">
         <img src="docs/screenshots/menu-light.png" width="400" alt="Tray menu">
       </picture>
       <br>Tray menu
+    </td>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/card-dark.png">
+        <img src="docs/screenshots/card-light.png" width="400" alt="Station change card">
+      </picture>
+      <br>Station change card (media keys)
     </td>
   </tr>
 </table>
