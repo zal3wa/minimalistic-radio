@@ -783,19 +783,7 @@ internal sealed partial class Radio
         // A search result: logo, name, then country · format · genres, and + (or a tick when it's already on the list).
         FrameworkElement ResultRow(DirectoryStation item)
         {
-            var image = new Image { Width = 32, Height = 32, Stretch = Stretch.Uniform };
-            var placeholder = Theme.Glyph(Theme.RadioIcon);
-            var badge = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center };
-            badge.Children.Add(placeholder);
-            badge.Children.Add(image);
-            image.Loaded += async (_, _) =>
-            {
-                if (image.Source != null) return;
-                ImageSource source = await LoadLogo(item.Logo);
-                if (source == null) return;
-                image.Source = source;
-                placeholder.Visibility = Visibility.Hidden;
-            };
+            Grid badge = LogoBadge(item.Logo, 32);
             var details = new List<string>();
             if (!string.IsNullOrWhiteSpace(item.Country)) details.Add(item.Country.Trim());
             string format = (item.Codec ?? "").Trim().ToUpperInvariant();
@@ -825,19 +813,7 @@ internal sealed partial class Radio
 
         FrameworkElement StationRow(SavedStation item)
         {
-            var image = new Image { Width = 32, Height = 32, Stretch = Stretch.Uniform };
-            var placeholder = Theme.Glyph(Theme.RadioIcon);
-            var badge = new Grid { Width = 32, Height = 32 };
-            badge.Children.Add(placeholder);
-            badge.Children.Add(image);
-            image.Loaded += async (_, _) =>
-            {
-                if (image.Source != null) return;
-                ImageSource source = await LoadLogo(item.Logo);
-                if (source == null) return;
-                image.Source = source;
-                placeholder.Visibility = Visibility.Hidden;
-            };
+            Grid badge = LogoBadge(item.Logo, 32);
             var text = new TextBlock
             {
                 Text = item.Name, TextTrimming = TextTrimming.CharacterEllipsis,
@@ -881,7 +857,8 @@ internal sealed partial class Radio
             return row;
         }
 
-        // History page: the songs the radio played, newest first.
+        // History page: the songs the radio played, newest first, each with its station's logo (found by the station's
+        // name, as the history keeps it; the radio icon for a station without one or no longer on the list).
         int shownHistory = -1;
         void FillHistory()
         {
@@ -897,11 +874,16 @@ internal sealed partial class Radio
             var rows = new StackPanel();
             foreach (HistoryEntry entry in history)
             {
-                if (rows.Children.Count > 0) rows.Children.Add(Divider(new Thickness(-12, 0, -4, 0)));
+                if (rows.Children.Count > 0) rows.Children.Add(Divider(new Thickness(0)));
                 DateTime time = entry.Time.ToLocalTime();
-                var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 7, 0, 7) };
-                text.Children.Add(new TextBlock { Text = entry.Title, FontSize = 14, TextWrapping = TextWrapping.Wrap });
-                text.Children.Add(Note(entry.Station + " · " + time.ToString(time.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture)));
+                Grid badge = LogoBadge(Stations.FirstOrDefault(item => item.Name == entry.Station)?.Logo, 32);
+                badge.Margin = new Thickness(0, 0, 12, 0);
+                var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 7, 4, 7), ToolTip = entry.Title };
+                text.Children.Add(new TextBlock { Text = entry.Title, FontSize = 14, TextTrimming = TextTrimming.CharacterEllipsis });
+                TextBlock where = Note(entry.Station + " · " + time.ToString(time.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture));
+                where.TextWrapping = TextWrapping.NoWrap;
+                where.TextTrimming = TextTrimming.CharacterEllipsis;
+                text.Children.Add(where);
                 var more = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("More"));
                 more.Padding = new Thickness(8, 6, 8, 6);
                 more.VerticalAlignment = VerticalAlignment.Center;
@@ -918,12 +900,15 @@ internal sealed partial class Radio
                     () => OpenWebPage("https://www.youtube.com/results?search_query=" + query)));
                 Hold(menu);
                 more.Click += (_, _) => menu.IsOpen = true;
-                rows.Children.Add(Columns((text, Star), (more, Auto)));
+                var row = (Grid)Columns((badge, Auto), (text, Star), (more, Auto));
+                row.MinHeight = 50;
+                row.Margin = new Thickness(10, 0, 4, 0);
+                rows.Children.Add(row);
             }
-            content.Children.Add(CardFrame(rows, new Thickness(12, 2, 4, 2)));
+            content.Children.Add(CardFrame(rows, new Thickness(0)));
             var clear = SmallButton("LinkButton", L("Clear history"));
             clear.HorizontalAlignment = HorizontalAlignment.Left;
-            clear.Margin = new Thickness(-8, 6, 0, 0);
+            clear.Margin = new Thickness(-4, 6, 0, 0);
             clear.Click += (_, _) => { ClearHistory(); FillHistory(); };
             content.Children.Add(clear);
             historyPane.Content = content;
@@ -1388,6 +1373,25 @@ internal sealed partial class Radio
     private const int LogoCacheSize = 200;
     private static readonly Dictionary<string, Task<ImageSource>> logos = new Dictionary<string, Task<ImageSource>>();
     private static readonly Queue<string> logoOrder = new Queue<string>();
+
+    // A station's logo, or the radio icon while it loads and when there is none.
+    private static Grid LogoBadge(string address, double size)
+    {
+        var image = new Image { Width = size, Height = size, Stretch = Stretch.Uniform };
+        FrameworkElement placeholder = Theme.Glyph(Theme.RadioIcon, size < 32 ? 16 : 18);
+        var badge = new Grid { Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center };
+        badge.Children.Add(placeholder);
+        badge.Children.Add(image);
+        image.Loaded += async (_, _) =>
+        {
+            if (image.Source != null) return;
+            ImageSource source = await LoadLogo(address);
+            if (source == null) return;
+            image.Source = source;
+            placeholder.Visibility = Visibility.Hidden;
+        };
+        return badge;
+    }
 
     private static Task<ImageSource> LoadLogo(string address)
     {
