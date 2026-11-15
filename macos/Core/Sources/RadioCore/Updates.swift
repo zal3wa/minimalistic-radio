@@ -102,7 +102,7 @@ public func afterCheck(_ result: AvailableUpdate?, fetchFailed: Bool, previous: 
 
 // MARK: - When an update can't be installed
 
-public enum UpdateError: CaseIterable, Equatable, Sendable {
+public enum UpdateError: Error, CaseIterable, Equatable, Sendable {
     /// The download failed: try again at the next check, the arrow stays.
     case network
     /// macOS didn't let the app replace itself (App Management, a folder it can't write).
