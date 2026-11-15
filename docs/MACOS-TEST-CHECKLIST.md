@@ -37,7 +37,7 @@ A click on the icon opens the window under the icon; a right click opens the men
 3. **AirPlay.** The AirPlay button lists your HomePod, Apple TV or AirPlay speaker, and the radio plays there.
 4. **Search.** + Station: Recommended and Popular in your country show at once. Search for a station, add it with +; it shows a check mark afterwards. Add by address works with a stream address.
 5. **History and settings.** History (top left) lists the songs with the station's logo, the station and time; ⋯ → Search on Spotify and YouTube open the browser. Settings (the gear): change the language (the window and the menu change at once), Open at login, Export… and Import…, Check now, the GitHub link.
-6. **Statistics.** Settings → Statistics → Show. After listening for a while: the time, the stations and (with stations that send song titles) the artists show for this month; All and Year switch the period. Clear statistics asks first, then empties the page; the song history stays.
+6. **Statistics.** Settings → Statistics → Show. After listening for a while: the time, the stations and (with stations that send song titles) the artists show for this month; All and Year switch the period. Clear statistics asks first, then empties the page; the song history stays. Settings shows "Collected since" with the day you started. Switch Statistics off: the page says they are off, and listening adds nothing until you switch them on again.
 7. **The station card.** Switch stations with ⏭ or the menu: a card shows the station under the icon for a moment. Settings → Show station changes off: no card.
 8. **Keys.** In the window: Space plays and stops, ⌘F opens the search, ⌘, the settings, ⌘W closes it, ⌘Q quits the radio.
 
