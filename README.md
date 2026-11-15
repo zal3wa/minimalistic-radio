@@ -137,9 +137,21 @@ The same radio for the Mac, in the menu bar next to the clock: a click opens the
 
 <p align="center"><a href="https://github.com/zal3wa/minimalistic-radio/releases/download/macos-download/Minimalistic-Radio.dmg"><img src="docs/download-macos.svg" height="56" alt="Download for macOS"></a></p>
 
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <a href="docs/screenshots/README.md#macos-right-click-the-menu"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos-menu-dark.png">
+        <img src="docs/screenshots/macos-menu-light.png" width="600" alt="Right click on the menu bar icon opens the menu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
+      </picture></a>
+      <br><b>Right click</b> on the icon: the menu
+    </td>
+  </tr>
+</table>
+
 **Install:** open `Minimalistic-Radio.dmg` and drag Minimalistic Radio to Applications. The radio isn't from Apple's store, so the first time you open it macOS blocks it: click Done, open **System Settings → Privacy & Security**, scroll to "Minimalistic Radio was blocked", click **Open Anyway** and confirm with your password. That's needed once: updates come by themselves, with the green arrow, as on Windows.
 
-The app is under 1 MB. Mac beta testers are welcome: see the [test checklist](docs/MACOS-TEST-CHECKLIST.md).
+The app is about 2 MB. Mac beta testers are welcome: see the [test checklist](docs/MACOS-TEST-CHECKLIST.md).
 
 <table align="center">
   <tr>
