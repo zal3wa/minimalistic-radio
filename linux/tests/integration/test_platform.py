@@ -8,7 +8,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import GLib, Gtk  # noqa: E402
+from gi.repository import Gio, GLib  # noqa: E402
 
 from minimalistic_radio.app import RadioApplication  # noqa: E402
 from minimalistic_radio.controller import RadioController  # noqa: E402
@@ -86,16 +86,73 @@ def test_host_autostart_file(setup, tmp_path):
     assert not file.exists() and not autostart.enabled()
 
 
-def test_inhibit_follows_playback(setup, monkeypatch):
+PORTAL_XML = """
+<node>
+  <interface name="org.freedesktop.portal.Inhibit">
+    <method name="Inhibit">
+      <arg type="s" direction="in"/><arg type="u" direction="in"/><arg type="a{sv}" direction="in"/>
+      <arg type="o" direction="out"/>
+    </method>
+  </interface>
+</node>"""
+REQUEST_XML = """
+<node><interface name="org.freedesktop.portal.Request"><method name="Close"/></interface></node>"""
+REQUEST_PATH = "/org/freedesktop/portal/desktop/request/fake/1"
+
+
+class FakePortal:
+    def __init__(self):
+        self.inhibits, self.closes = [], []
+        self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        self.owned = False
+        self.ids = []
+        self.ids.append(self.bus.register_object(
+            "/org/freedesktop/portal/desktop", Gio.DBusNodeInfo.new_for_xml(PORTAL_XML).interfaces[0],
+            self._inhibit, None, None))
+        self.name = Gio.bus_own_name_on_connection(self.bus, "org.freedesktop.portal.Desktop",
+                                                   Gio.BusNameOwnerFlags.NONE,
+                                                   lambda *_a: setattr(self, "owned", True), None)
+
+    def _inhibit(self, _c, _s, _p, _i, _m, params, invocation):
+        _window, flags, options = params.unpack()
+        self.inhibits.append((flags, options["reason"]))
+        self.ids.append(self.bus.register_object(
+            REQUEST_PATH, Gio.DBusNodeInfo.new_for_xml(REQUEST_XML).interfaces[0],
+            lambda _c, _s, path, _i, _m, _p, inv: (self.closes.append(path), inv.return_value(None)), None, None))
+        invocation.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
+
+    def stop(self):
+        Gio.bus_unown_name(self.name)
+        for i in self.ids:
+            self.bus.unregister_object(i)
+
+
+def test_inhibit_follows_playback(setup):
     app, controller = setup()
-    calls = []
-    monkeypatch.setattr(Gtk.Application, "inhibit", lambda self, window, flags, reason: calls.append("on") or 7)
-    monkeypatch.setattr(Gtk.Application, "uninhibit", lambda self, cookie: calls.append(("off", cookie)))
+    portal = FakePortal()
+    try:
+        assert pump(lambda: portal.owned)
+        controller.subscribe(app._playback_changed)
+        controller.select(0)
+        controller.play()
+        controller.play()
+        assert pump(lambda: portal.inhibits)
+        assert portal.inhibits == [(4, "Playing internet radio")]
+        controller.stop()
+        assert pump(lambda: portal.closes)
+        assert portal.closes == [REQUEST_PATH] and len(portal.inhibits) == 1
+    finally:
+        portal.stop()
+
+
+def test_inhibit_without_portal_is_quiet(setup):
+    app, controller = setup()
     controller.subscribe(app._playback_changed)
     controller.select(0)
     controller.play()
+    settle(300)
     controller.stop()
-    assert calls == ["on", ("off", 7)]
+    settle(300)
 
 
 def test_network_return_calls_controller(setup):

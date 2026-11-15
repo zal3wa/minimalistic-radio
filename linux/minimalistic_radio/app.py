@@ -24,6 +24,7 @@ from .core import net  # noqa: E402
 from .core.storage import default_paths  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
 from .platform.background import Autostart  # noqa: E402
+from .platform.inhibit import SuspendInhibitor  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
 from .platform.notifications import StationNotifier  # noqa: E402
 from .platform.session import SessionWatcher  # noqa: E402
@@ -79,8 +80,6 @@ def fetch_file(url: str, path: Path, cb: Callable[[bool], None]) -> None:
 
 class RadioApplication(Adw.Application):
     def __init__(self, translate: Callable[[str], str] = lambda s: s, application_id: str = APP_ID) -> None:
-        if GLib.get_prgname() is None:
-            GLib.set_prgname("minimalistic-radio")   # GTK's inhibit crashes on a missing program name
         super().__init__(application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self._ = translate
         self.controller: RadioController | None = None
@@ -89,7 +88,7 @@ class RadioApplication(Adw.Application):
         self.mpris: MprisService | None = None
         self.session: SessionWatcher | None = None
         self.notifier: StationNotifier | None = None
-        self._inhibit_cookie = 0
+        self.inhibitor = SuspendInhibitor(lambda s: self._(s))
         self.updated = False
         self.screenshot_dir: str | None = None
         self._started = False
@@ -147,14 +146,10 @@ class RadioApplication(Adw.Application):
         """Playing keeps the computer from suspending, like the Windows version."""
         if not change & Change.STATE:
             return
-        if self.controller.active and not self._inhibit_cookie:
-            # A hidden window (the radio plays on in the background) crashes GTK here: only a shown one is named.
-            window = self.window if self.window is not None and self.window.is_visible() else None
-            self._inhibit_cookie = self.inhibit(window, Gtk.ApplicationInhibitFlags.SUSPEND,
-                                                self._("Playing internet radio"))
-        elif not self.controller.active and self._inhibit_cookie:
-            self.uninhibit(self._inhibit_cookie)
-            self._inhibit_cookie = 0
+        if self.controller.active:
+            self.inhibitor.hold()
+        else:
+            self.inhibitor.release()
 
     def _window_closing(self, _window: Gtk.Window) -> bool:
         controller = self.controller
@@ -194,6 +189,7 @@ class RadioApplication(Adw.Application):
 
     def do_shutdown(self) -> None:
         # A clean exit, like Shutdown on Windows: the stream is closed before the process ends.
+        self.inhibitor.release()
         if self.session is not None:
             self.session.close()
         if self.notifier is not None:
