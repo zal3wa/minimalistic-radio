@@ -70,9 +70,14 @@ class SettingsPage(Adw.NavigationPage):
         self.import_button = Gtk.Button(label=_("Import…"), valign=Gtk.Align.CENTER)
         self.export_button.connect("clicked", lambda _button: self._choose_export())
         self.import_button.connect("clicked", lambda _button: self._choose_import())
-        self.stations_row.add_suffix(self.export_button)
-        self.stations_row.add_suffix(self.import_button)
+        # The buttons get a row of their own: beside the text, a long translation squeezes the title to a few letters.
+        buttons = Gtk.Box(spacing=6, halign=Gtk.Align.END, hexpand=True, margin_top=8, margin_bottom=8,
+                          margin_start=12, margin_end=12)
+        buttons.append(self.export_button)
+        buttons.append(self.import_button)
         self.stations_group.add(self.stations_row)
+        self.buttons_row = Adw.PreferencesRow(child=buttons, activatable=False, focusable=False)
+        self.stations_group.add(self.buttons_row)
 
         # About
         about_group = Adw.PreferencesGroup(title=_("About"))
