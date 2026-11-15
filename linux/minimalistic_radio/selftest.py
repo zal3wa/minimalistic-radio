@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -23,13 +23,14 @@ from gi.repository import Adw, Gdk, GLib, Gtk  # noqa: E402
 from . import i18n  # noqa: E402
 from .controller import RadioController  # noqa: E402
 from .core import directory  # noqa: E402
-from .core.models import HistoryEntry, Station  # noqa: E402
+from .core.models import HistoryEntry, ListeningSession, SongPlay, Station, Statistics  # noqa: E402
+from .core.statistics import Period  # noqa: E402
 from .core.storage import Paths, save_history, save_stations  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
 from .pictures import picture  # noqa: E402
 from .platform.menu_model import build_tray_menu  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
-from .ui.window import PAGES, RadioWindow  # noqa: E402
+from .ui.window import HISTORY_ICON, PAGES, RadioWindow  # noqa: E402
 
 TEST_STATIONS = [Station("Radio 357", "http://s0.example/live"), Station("RMF FM", "http://s1.example/live")]
 
@@ -58,6 +59,11 @@ SHOT_SONGS = [("Daughtry - What About Now", 7), ("Dawid Podsiadło - Małomiaste
               ("Queen - A Kind Of Magic", 4), ("Editors - Shadow", 3), ("Leonard Cohen - Everybody Knows", 2)]
 SHOT_SEARCH = "jazz"
 NETWORK_WAIT = 20   # seconds at most for a page's logos, cover or search results
+SAMPLE_SONGS = ["Leonard Cohen - Everybody Knows", "Editors - Shadow", "Queen - A Kind Of Magic",
+                "Leonard Cohen - Hallelujah", "Dawid Podsiadło - Małomiasteczkowy", "Queen - Bohemian Rhapsody",
+                "Daughtry - What About Now", "Editors - Papillon", "Metallica - Nothing Else Matters",
+                "Leonard Cohen - Suzanne", "Kult - Arahja", "Radio jingle"]
+LONG_PAGES = ("settings", "statistics")   # pictured a second time, scrolled to the end
 
 
 class SilentPlayer:
@@ -111,9 +117,59 @@ def _controller(folder: Path, stations: list[Station], history: list[HistoryEntr
     return controller
 
 
+def sample_statistics(stations: list[Station], now: datetime, days: int = 75) -> Statistics:
+    """Evenings of listening over the last `days` days, for the Statistics page's picture and check: the first three
+    stations with song titles (in `SAMPLE_SONGS`), the rest without."""
+    stats = Statistics()
+    plan = [(2, 95), (3, 70), (5, 45), (1, 30), (0, 20)]   # (station, minutes an evening)
+    local_now = now.astimezone()
+    for day in range(days, -1, -1):
+        when = (local_now - timedelta(days=day)).replace(second=0, microsecond=0)
+        for order, (index, minutes) in enumerate(plan):
+            if (day + order) % 4 == 3:
+                continue   # not every station every evening
+            start = when.replace(hour=(17 + 2 * order + day % 3) % 24, minute=(day * 7) % 60)
+            end = start + timedelta(minutes=minutes + (day % 5) * 6)
+            station = stations[index % len(stations)]
+            titled = order < 3
+            stats.sessions.append(ListeningSession(station.name, station.url, start.astimezone(timezone.utc),
+                                                   end.astimezone(timezone.utc), titled))
+            if titled:
+                for number, song_at in enumerate(range(0, int((end - start).total_seconds()), 240)):
+                    song = SAMPLE_SONGS[(day * 3 + number * (order + 1)) % len(SAMPLE_SONGS)]
+                    stats.songs.append(SongPlay(station.name, song, (start + timedelta(seconds=song_at))
+                                                .astimezone(timezone.utc)))
+    stats.sessions.sort(key=lambda s: s.start)
+    stats.songs.sort(key=lambda s: s.time)
+    return stats
+
+
 def _check(condition: bool, reason: str) -> None:
     if not condition:
         raise AssertionError(reason)
+
+
+def _check_statistics(window: RadioWindow) -> None:
+    """The Statistics page with data, in each period (libadwaita's toggle group where there is one)."""
+    controller = window.controller
+    sample = sample_statistics(controller.stations, datetime.now(timezone.utc), days=40)
+    controller.statistics.sessions[:] = sample.sessions
+    controller.statistics.songs[:] = sample.songs
+    page = window.statistics_page
+    window.show_page("statistics")
+    pump(50)
+    _check(window.shown_pages() == ["stations", "settings", "statistics"], "Statistics doesn't open over Settings")
+    for period in (Period.ALL, Period.YEAR, Period.MONTH):
+        page.switch.select(period)
+        page._period_chosen(period)
+        pump(20)
+        _check(page.stack.get_visible_child_name() == "data" and page.stations_list.get_row_at_index(0) is not None,
+               f"the Statistics page shows nothing for {period.value}")
+    controller.clear_statistics()
+    pump(20)
+    _check(page.stack.get_visible_child_name() == "empty", "the Statistics page isn't empty after clearing")
+    theme = Gtk.IconTheme.get_for_display(window.get_display())
+    _check(theme.has_icon(HISTORY_ICON), "the History button's icon is missing")
 
 
 def _check_polish() -> None:
@@ -162,6 +218,7 @@ def run_self_test(app: Any) -> int:
                 pump(50)
                 visible = window.navigation.get_visible_page()
                 _check(visible is not None and visible.get_tag() == tag, f"page {tag} did not open")
+            _check_statistics(window)
             window.destroy()
             ids = [item.id for item in build_tray_menu(controller, translate, None)]
             _check({"playback", "stations", "volume", "sleep", "settings", "quit"} <= set(ids),
@@ -185,6 +242,22 @@ def _render(window: Gtk.Window, path: Path) -> None:
     texture = window.get_renderer().render_texture(snapshot.to_node(), None)
     texture.save_to_png(str(path))
     print("wrote", path)
+
+
+def _scroll(page: Gtk.Widget, to_end: bool) -> None:
+    """Scrolls the page's list to its start, or to its end (the second picture of a long page)."""
+    pending = [page]
+    while pending:
+        widget = pending.pop(0)
+        if isinstance(widget, Gtk.ScrolledWindow):
+            adjustment = widget.get_vadjustment()
+            adjustment.set_value(adjustment.get_upper() - adjustment.get_page_size() if to_end
+                                 else adjustment.get_lower())
+            return
+        child = widget.get_first_child()
+        while child is not None:
+            pending.append(child)
+            child = child.get_next_sibling()
 
 
 def _prepare(window: RadioWindow, page: str) -> None:
@@ -211,7 +284,9 @@ def _arrived(window: RadioWindow, page: str) -> bool:
 
 
 def take_screenshots(app: Any, folder: Path) -> int:
-    """Writes linux-<page>-<light|dark>.png for the stations, search, history and settings pages."""
+    """Writes linux-<page>-<light|dark>.png for every page (the stations, search, history, settings and statistics
+    pages), and linux-<page>-end-<light|dark>.png for the long ones scrolled to their end. The statistics are a
+    sample made up in memory."""
     styles = None
     try:
         Adw.init()
@@ -223,6 +298,9 @@ def take_screenshots(app: Any, folder: Path) -> int:
             older = [HistoryEntry(song, SHOT_STATIONS[station].name, now)
                      for song, station in reversed(SHOT_SONGS[:-1])]   # newest first, as in history.json
             controller = _controller(Path(temp), SHOT_STATIONS, older, network=True)
+            sample = sample_statistics(SHOT_STATIONS, datetime.now(timezone.utc))   # in memory only
+            controller.statistics.sessions[:] = sample.sessions
+            controller.statistics.songs[:] = sample.songs
             controller.select(SHOT_PLAYING)
             controller.play()
             controller.on_player_started()
@@ -235,8 +313,13 @@ def take_screenshots(app: Any, folder: Path) -> int:
                 for page in PAGES:
                     _prepare(window, page)
                     _wait(lambda page=page: _arrived(window, page), NETWORK_WAIT)
+                    _scroll(window.navigation.get_visible_page(), to_end=False)
                     pump(600)
                     _render(window, folder / f"linux-{page}-{look}.png")
+                    if page in LONG_PAGES:
+                        _scroll(window.navigation.get_visible_page(), to_end=True)
+                        pump(400)
+                        _render(window, folder / f"linux-{page}-end-{look}.png")
             window.destroy()
     except Exception as error:
         print(f"screenshots failed: {error!r}", file=sys.stderr)
