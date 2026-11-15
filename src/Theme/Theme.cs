@@ -158,15 +158,9 @@ internal static class Theme
     internal const string CopyIcon = "M8 8h12v12H8z M16 8V4H4v12h4";
     internal const string SettingsIcon = "M21 4H14 M10 4H3 M21 12H12 M8 12H3 M21 20H16 M12 20H3 M14 2V6 M8 10V14 M16 18V22";
     internal const string BackIcon = "M19 12 H5 M12 19 L5 12 L12 5";
-    internal const string CloseIcon = "M18 6 L6 18 M6 6 L18 18";
-    internal const string GlobeIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 2 A14.5 14.5 0 0 0 12 22 A14.5 14.5 0 0 0 12 2 M2 12 H22";
     internal const string ExternalIcon = "M15 3 H21 V9 M10 14 L21 3 M18 13 V19 A2 2 0 0 1 16 21 H5 A2 2 0 0 1 3 19 V8 A2 2 0 0 1 5 6 H11";
-    internal const string PopupIcon = "M3 5 A2 2 0 0 1 5 3 H19 A2 2 0 0 1 21 5 V13 A2 2 0 0 1 19 15 H5 A2 2 0 0 1 3 13 Z M8 19 H16 M12 15 V19";
     internal const string UpdateReadyIcon ="M12 3 V15 M6 9 L12 15 L18 9 M5 20 H19";   // arrow down to a line, like Discord's
     internal const string HistoryIcon = "M3 12 A9 9 0 1 0 12 3 A9.75 9.75 0 0 0 5.26 5.74 L3 8 M3 3 V8 H8 M12 7 V12 L16 14";   // Lucide history
     internal const string MoonIcon = "M12 3 A6 6 0 0 0 21 12 A9 9 0 1 1 12 3 Z";
-    internal const string UpdateIcon = "M21 12 A9 9 0 1 1 18.36 5.64 M21 3 V9 H15";
     internal const string DownloadIcon = "M21 15 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V15 M7 10 L12 15 L17 10 M12 15 V3";
-    internal const string PowerIcon = "M12 2 V12 M18.4 6.6 A9 9 0 1 1 5.63 6.64";
-    internal const string ListIcon = "M8 6 H21 M8 12 H21 M8 18 H21 M3 6 H3.01 M3 12 H3.01 M3 18 H3.01";
 }

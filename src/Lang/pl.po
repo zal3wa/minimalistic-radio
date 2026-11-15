@@ -422,3 +422,9 @@ msgstr[2] "{0} odtworzeń"
 
 msgid "Statistics"
 msgstr "Statystyki"
+
+msgid "Show"
+msgstr "Pokaż"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Zbierane tylko na tym komputerze, nigdzie niewysyłane"

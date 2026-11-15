@@ -427,3 +427,9 @@ msgstr[1] "{0} ascolti"
 
 msgid "Statistics"
 msgstr "Statistiche"
+
+msgid "Show"
+msgstr "Mostra"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Raccolte solo su questo computer, mai inviate altrove"

@@ -344,7 +344,13 @@ internal sealed partial class Radio
                         await Task.Delay(1000);
                         await SavePreview(playerPanel, page);
                         var scroller = Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel);
-                        await SavePreview((Visual)scroller.Content, page + "-all");
+                        // The whole page; a picture starts where its content's margin does, so the margin moves to the far side meanwhile.
+                        var all = (StackPanel)scroller.Content;
+                        Thickness margin = all.Margin;
+                        all.Margin = new Thickness(0, 0, margin.Left + margin.Right, margin.Top + margin.Bottom);
+                        all.UpdateLayout();
+                        await SavePreview(all, page + "-all");
+                        all.Margin = margin;
                     }
                 }
                 playerPanel.Close();

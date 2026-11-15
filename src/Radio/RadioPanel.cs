@@ -195,10 +195,8 @@ internal sealed partial class Radio
         catch (Win32Exception error) { Debug.WriteLine(error); }
     }
 
-    // A Windows 11 settings card: icon, title and description on the left, a control on the right,
-    // optional extra rows below a divider (like the expanders in the Settings app).
-    private static FrameworkElement Card(FrameworkElement icon, string title, object description,
-        FrameworkElement control, params FrameworkElement[] rows)
+    // A settings row: an optional icon, the title with a grey description under it, the control on the right.
+    private static FrameworkElement SettingRow(string title, object description, FrameworkElement control, FrameworkElement icon = null)
     {
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(new TextBlock { Text = title, FontSize = 14, TextWrapping = TextWrapping.Wrap });
@@ -208,31 +206,50 @@ internal sealed partial class Radio
             note.Margin = new Thickness(0, 1, 0, 0);
             text.Children.Add(note);
         }
-        icon.VerticalAlignment = VerticalAlignment.Center;
-        icon.Margin = new Thickness(0, 0, 14, 0);
-        var head = new Grid { MinHeight = 40 };
-        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        head.Children.Add(icon);
+        var row = new Grid { MinHeight = 40, Margin = new Thickness(14, 12, 14, 12) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        if (icon != null)
+        {
+            icon.VerticalAlignment = VerticalAlignment.Center;
+            icon.Margin = new Thickness(0, 0, 12, 0);
+            row.Children.Add(icon);
+        }
         Grid.SetColumn(text, 1);
-        head.Children.Add(text);
+        row.Children.Add(text);
         if (control != null)
         {
             control.Margin = new Thickness(12, 0, 0, 0);
             control.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(control, 2);
-            head.Children.Add(control);
+            row.Children.Add(control);
         }
+        return row;
+    }
+
+    // A settings card, like a group in the Settings app: its rows in one box, with thin lines between them.
+    private static Border SettingsCard(params FrameworkElement[] rows)
+    {
         var body = new StackPanel();
-        body.Children.Add(head);
         foreach (FrameworkElement row in rows)
         {
-            body.Children.Add(Divider(new Thickness(-14, 12, -14, 12)));
-            row.Margin = new Thickness(34, 0, 0, 0);
+            if (body.Children.Count > 0) body.Children.Add(Divider(new Thickness(0)));
             body.Children.Add(row);
         }
-        return CardFrame(body, new Thickness(14, 12, 14, 12));
+        Border card = CardFrame(body, new Thickness(0));
+        card.Margin = new Thickness(0);
+        return card;
+    }
+
+    // A button in a settings row, as tall as the language list.
+    private static Button RowButton(string text)
+    {
+        Button button = NewButton(null, text);
+        button.MinHeight = 32;
+        button.Padding = new Thickness(14, 0, 14, 0);
+        button.VerticalAlignment = VerticalAlignment.Center;
+        return button;
     }
 
     private static TextBlock Group(string text, bool first = false) => new TextBlock
@@ -248,6 +265,7 @@ internal sealed partial class Radio
         arrow.Margin = new Thickness(6, 0, 0, 0);
         content.Children.Add(arrow);
         Button button = NewButton("LinkButton", content);
+        button.Padding = new Thickness(8, 5, 0, 5);   // the arrow ends where the row's controls end
         button.VerticalAlignment = VerticalAlignment.Center;
         button.Click += (_, _) => OpenWebPage(address);
         return button;
@@ -916,9 +934,8 @@ internal sealed partial class Radio
 
         void FillStatistics() { }
 
-        BitmapSource titleIcon = Theme.AppImage(64);
-
-        // Settings page, laid out like the Windows 11 Settings app: groups of cards.
+        // Settings page, laid out like the Windows 11 Settings app (and like the Linux and Mac apps): General, Stations,
+        // Statistics, Updates, About and Quit, each one card of rows.
         Action refreshUpdates = null;
         FrameworkElement BuildSettings()
         {
@@ -945,25 +962,20 @@ internal sealed partial class Radio
                 });
             };
             settings.Children.Add(Group(L("General"), true));
-            settings.Children.Add(Card(Theme.Glyph(Theme.GlobeIcon, 20), L("Language"),
-                L("In Windows: {0}", LanguageName(SystemLanguage)), language));
-            settings.Children.Add(Card(Theme.Glyph(Theme.PowerIcon, 20), L("Start with Windows"),
-                L("Waits by the clock, doesn't play by itself"),
-                Toggle(Autostart.Enabled, on => Autostart.Set(on, Exe))));
-            settings.Children.Add(Card(Theme.Glyph(Theme.PopupIcon, 20), L("Show station changes"),
-                L("A card at the bottom after a media key or menu switch"),
-                Toggle(showStationPopup, on => { showStationPopup = on; SavePreferences(); })));
+            settings.Children.Add(SettingsCard(
+                SettingRow(L("Language"), L("In Windows: {0}", LanguageName(SystemLanguage)), language),
+                SettingRow(L("Start with Windows"), L("Waits by the clock, doesn't play by itself"),
+                    Toggle(Autostart.Enabled, on => Autostart.Set(on, Exe))),
+                SettingRow(L("Show station changes"), L("A card at the bottom after a media key or menu switch"),
+                    Toggle(showStationPopup, on => { showStationPopup = on; SavePreferences(); }))));
 
-            // Stations: export / import (e.g. to give someone your list)
+            // Stations: export / import (e.g. to give someone your list); what happened shows left of the buttons.
             var stationsNote = Note("");
-            stationsNote.Visibility = Visibility.Collapsed;
-            void Report(string text)
-            {
-                stationsNote.Text = text;
-                stationsNote.Visibility = Visibility.Visible;
-            }
-            var export = SmallButton(null, L("Export…"));
-            var import = SmallButton(null, L("Import…"));
+            stationsNote.VerticalAlignment = VerticalAlignment.Center;
+            void Report(string text) => stationsNote.Text = text;
+            var export = RowButton(L("Export…"));
+            var import = RowButton(L("Import…"));
+            import.Margin = new Thickness(8, 0, 0, 0);
             export.Click += (_, _) =>
             {
                 var dialog = new Microsoft.Win32.SaveFileDialog
@@ -1012,15 +1024,22 @@ internal sealed partial class Radio
                 finally { holdOpen--; }
             };
             settings.Children.Add(Group(L("Stations")));
-            settings.Children.Add(Card(Theme.Glyph(Theme.ListIcon, 20), L("Station list"),
-                L("A copy in a file, e.g. for friends"), null,
-                Spaced(Orientation.Vertical, 8, Spaced(Orientation.Horizontal, 8, export, import), stationsNote)));
+            var transfer = Columns((stationsNote, Star), (export, Auto), (import, Auto));
+            transfer.Margin = new Thickness(14, 10, 14, 10);
+            settings.Children.Add(SettingsCard(SettingRow(L("Station list"), L("A copy in a file, e.g. for friends"), null), transfer));
 
-            // About and updates
+            // Statistics: a card of its own, without a group title.
+            var showStatistics = RowButton(L("Show"));
+            showStatistics.Click += (_, _) => SetPage("statistics");
+            Border statisticsCard = SettingsCard(SettingRow(L("Statistics"), L("Collected only on this computer, never sent anywhere"), showStatistics));
+            statisticsCard.Margin = new Thickness(0, 18, 0, 0);
+            settings.Children.Add(statisticsCard);
+
+            // Updates
             var updateNote = Note("");
+            updateNote.VerticalAlignment = VerticalAlignment.Center;
             var updateDescription = Note("");
-            var checkNow = SmallButton(null, "");
-            checkNow.VerticalAlignment = VerticalAlignment.Center;
+            var checkNow = RowButton("");
             checkNow.Margin = new Thickness(8, 0, 0, 0);
             checkNow.Click += (_, _) =>
             {
@@ -1042,18 +1061,30 @@ internal sealed partial class Radio
                 checkNow.IsEnabled = !installing && !checking;
             };
             refreshUpdates();
+            settings.Children.Add(Group(L("Updates")));
+            var lastCheck = Columns((updateNote, Star), (checkNow, Auto));
+            lastCheck.Margin = new Thickness(14, 10, 14, 10);
+            settings.Children.Add(SettingsCard(
+                SettingRow(L("Updates"), updateDescription, Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); })),
+                lastCheck));
+
+            // About: the round app icon (as many pixels as the screen shows), the version and a link to the project.
+            int iconPixels = (int)Math.Round(32 * VisualTreeHelper.GetDpi(panel).DpiScaleX);
+            var appIcon = new Image { Source = Theme.AppImage(iconPixels), Width = 32, Height = 32 };
+            RenderOptions.SetBitmapScalingMode(appIcon, BitmapScalingMode.HighQuality);
             settings.Children.Add(Group(L("About")));
-            settings.Children.Add(Card(new Image { Source = titleIcon, Width = 20, Height = 20 }, AppName,
-                L("Version {0}", Updater.Current.ToString(3)) + " · MIT · " + L("Lucide icons"),
-                Link("GitHub", Updater.Page)));
-            settings.Children.Add(Card(Theme.Glyph(Theme.UpdateIcon, 20), L("Updates"), updateDescription,
-                Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); }),
-                Columns((updateNote, Star), (checkNow, Auto))));
+            settings.Children.Add(SettingsCard(SettingRow(AppName,
+                L("Version {0}", Updater.Current.ToString(3)) + " · MIT · " + L("Lucide icons"), Link("GitHub", Updater.Page), appIcon)));
+
             // Quitting is rare and stops the music, so it lives here and in the tray menu, not next to Play.
-            var quit = SmallButton(null, L("Quit"));
+            var quit = RowButton(L("Quit Minimalistic Radio"));
+            quit.SetResourceReference(Control.ForegroundProperty, "Danger");
+            quit.HorizontalAlignment = HorizontalAlignment.Left;
+            quit.Margin = new Thickness(14, 12, 14, 12);
             quit.Click += (_, _) => Shutdown();
-            settings.Children.Add(Card(Theme.Glyph(Theme.QuitIcon, 20), L("Quit Minimalistic Radio"),
-                L("Stops the radio and removes it from next to the clock"), quit));
+            Border quitCard = SettingsCard(quit);
+            quitCard.Margin = new Thickness(0, 18, 0, 0);
+            settings.Children.Add(quitCard);
             return settings;
         }
         settingsPane.Content = BuildSettings();
