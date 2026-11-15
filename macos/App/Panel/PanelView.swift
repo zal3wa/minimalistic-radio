@@ -25,9 +25,16 @@ struct PanelView: View {
                 case .history: HistoryPage(model: model)
                 case .settings: SettingsPage(model: model)
                 case .statistics: StatisticsPage(model: model)
+                case .shared(let station): SharedStationPage(model: model, station: station)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .bottom) {
+                if model.linkCopied && model.page == .stations {
+                    LinkCopiedPill().padding(.bottom, 12).transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: model.linkCopied)
             if model.page == .stations {
                 PanelDivider()
                 FooterView(model: model)
@@ -137,7 +144,38 @@ struct HeaderView: View {
         case .history: return L("Song history")
         case .settings: return L("Settings")
         case .statistics: return L("Statistics")
+        case .shared: return L("Shared station")
         case .station(let index): return index == nil ? L("Add by address") : L("Edit")
         }
+    }
+}
+
+/// "Link copied" after ⋯ › Share: a pill in the menus' colours over the bottom of the list, just above the player.
+struct LinkCopiedPill: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .green)
+                .font(.system(size: 18))
+            Text(L("Link copied"))
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 16)
+        .frame(height: 36)
+        .background {
+            Capsule()
+                .fill(Color(nsColor: Self.menuBackground))
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.16), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.18), radius: 9, y: 6)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The menus' background: light grey, or dark grey in the dark look.
+    private static let menuBackground = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            ? NSColor(srgbRed: 0x2C / 255, green: 0x2C / 255, blue: 0x2E / 255, alpha: 1)
+            : NSColor(srgbRed: 0xEC / 255, green: 0xEC / 255, blue: 0xEC / 255, alpha: 1)
     }
 }

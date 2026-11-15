@@ -107,11 +107,17 @@ msgstr "Statistiky"
 msgid "Stations"
 msgstr "Stanice"
 
+msgid "Shared station"
+msgstr "Sdílená stanice"
+
 msgid "Add by address"
 msgstr "Přidat podle adresy"
 
 msgid "Edit"
 msgstr "Upravit"
+
+msgid "Link copied"
+msgstr "Odkaz zkopírován"
 
 msgid "Type a station name"
 msgstr "Zadejte název stanice"
@@ -236,6 +242,18 @@ msgstr "Přidáno stanic: {0}."
 msgid "Checking…"
 msgstr "Kontrola…"
 
+msgid "Add it to your stations and play it now?"
+msgstr "Přidat ji mezi vaše stanice a hned pustit?"
+
+msgid "Add and play"
+msgstr "Přidat a pustit"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "This link doesn't contain a station."
+msgstr "Tento odkaz neobsahuje stanici."
+
 msgid "Station name"
 msgstr "Název stanice"
 
@@ -245,9 +263,6 @@ msgstr "Adresa streamu (HTTP nebo HTTPS)"
 msgid "Logo address (optional)"
 msgstr "Adresa loga (nepovinné)"
 
-msgid "Cancel"
-msgstr "Zrušit"
-
 msgid "Save"
 msgstr "Uložit"
 
@@ -256,6 +271,9 @@ msgstr "Tato adresa už je v seznamu."
 
 msgid "Enter a name and a valid stream address. The logo is optional."
 msgstr "Zadejte název a platnou adresu streamu. Logo je nepovinné."
+
+msgid "Share"
+msgstr "Sdílet"
 
 msgid "Remove"
 msgstr "Odebrat"

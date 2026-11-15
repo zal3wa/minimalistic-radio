@@ -15,6 +15,8 @@ final class PanelModel: ObservableObject {
         case statistics
         /// Add (nil) or edit (the station's index) a station by its address.
         case station(Int?)
+        /// A station from a share link, to add and play; nil for a link without one.
+        case shared(SharedStation?)
     }
 
     let controller: RadioController
@@ -37,6 +39,9 @@ final class PanelModel: ObservableObject {
     var sampleStatistics: StatisticsLog?
     var sampleUpdate: String?
     var showsUpdatesAlways = false
+    /// "Link copied" over the stations, for a moment after Share.
+    @Published private(set) var linkCopied = false
+    private var linkCopiedTimer: DispatchWorkItem?
 
     init(controller: RadioController, logos: LogoCache) {
         self.controller = controller
@@ -54,12 +59,62 @@ final class PanelModel: ObservableObject {
         page = .search
     }
 
-    /// Space plays and stops, except where a text field takes the typing.
+    /// Space plays and stops, except where a text field takes the typing (and on a shared station, which asks).
     var spacePlays: Bool {
         switch page {
-        case .search, .station: return false
+        case .search, .station, .shared: return false
         default: return true
         }
+    }
+
+    // MARK: - Sharing
+
+    /// ⋯ › Share: the station's link on the clipboard, and "Link copied" for about two seconds.
+    func share(_ station: Station) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(shareLink(station), forType: .string)
+        showLinkCopied(for: 2)
+    }
+
+    /// `seconds` nil keeps it (the pictures).
+    func showLinkCopied(for seconds: Double?) {
+        linkCopiedTimer?.cancel()
+        linkCopied = true
+        guard let seconds else { return }
+        let hide = DispatchWorkItem { [weak self] in self?.linkCopied = false }
+        linkCopiedTimer = hide
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: hide)
+    }
+
+    func hideLinkCopied() {
+        linkCopiedTimer?.cancel()
+        linkCopied = false
+    }
+
+    /// A share link opened or pasted: a station already on the list just plays on the stations page; any other asks
+    /// on the Shared station page; a link without a station says so there.
+    func openShared(_ link: StationLink) {
+        switch link {
+        case .station(let station):
+            page = controller.playIfKnown(station) ? .stations : .shared(station)
+        case .invalid:
+            page = .shared(nil)
+        }
+    }
+
+    /// Text typed or pasted into an add-station field: true when it was a share link, now open. `complete`: the
+    /// text was submitted, so a link without a station shows its message too (while typing, only a whole station
+    /// opens, so a link typed by hand doesn't jump away half-way).
+    func openSharedText(_ text: String, complete: Bool) -> Bool {
+        guard let link = readShareLink(text), complete || link != .invalid else { return false }
+        openShared(link)
+        return true
+    }
+
+    /// Shared station › Add and play: added at the end, playing, and back to the stations.
+    func addShared(_ station: SharedStation) {
+        controller.addAndPlay(station)
+        page = .stations
     }
 
     /// The page Statistics was opened from (Song history or Settings): where ‹ and Esc take it back.

@@ -23,6 +23,8 @@ struct SearchPage: View {
                         if text.trimmingCharacters(in: .whitespaces).isEmpty {
                             results = nil
                             message = nil
+                        } else if model.openSharedText(text, complete: false) {
+                            query = ""   // a pasted share link: its Shared station page is open
                         }
                     }
                 Button(L("Search"), action: search)
@@ -74,6 +76,10 @@ struct SearchPage: View {
     private func search() {
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
+        if model.openSharedText(text, complete: true) {   // a share link isn't a search
+            query = ""
+            return
+        }
         message = L("Searching…")
         results = []
         Task {

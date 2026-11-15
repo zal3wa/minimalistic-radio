@@ -712,6 +712,35 @@ public final class RadioController {
         stationsChanged(changes)
     }
 
+    // MARK: - Shared stations
+
+    /// A share link for a station already on the list (the link's matching): plays it, true. Otherwise false, and
+    /// the panel asks first.
+    public func playIfKnown(_ shared: SharedStation) -> Bool {
+        guard let index = stations.firstIndex(where: { sameStationAddress($0.url, shared.url) }) else { return false }
+        select(index)
+        play()
+        return true
+    }
+
+    /// Shared station › Add and play: the station at the end of the list, playing. If the list already has the
+    /// stream under a slightly different address (http instead of https), that one plays.
+    @discardableResult
+    public func addAndPlay(_ shared: SharedStation) -> Bool {
+        let station = Station(name: shared.name, url: shared.url, logo: shared.logo)
+        switch addStation(station) {
+        case .added:
+            select(stations.count - 1)
+        case .duplicate:
+            guard let index = stations.firstIndex(where: { sameStream($0.url, station.url) }) else { return false }
+            select(index)
+        case .invalid:
+            return false
+        }
+        play()
+        return true
+    }
+
     /// Adds the stations from a list exported here, on Windows or on Linux, skipping the ones already here.
     public func importStations(_ file: URL) -> ImportResult {
         guard let items = (try? readJSON(file)) as? [Any] else {

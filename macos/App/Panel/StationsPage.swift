@@ -78,6 +78,8 @@ struct StationRow: View {
             .onTapGesture(perform: onPlay)
             Menu {
                 Button(L("Edit")) { model.page = .station(index) }
+                Button(L("Share")) { model.share(station) }
+                Divider()
                 Button(L("Remove"), role: .destructive) { model.controller.removeStation(index) }
             } label: {
                 Image(systemName: "ellipsis")
@@ -97,6 +99,7 @@ struct LogoView: View {
     let logos: LogoCache
     let url: String?
     let size: CGFloat
+    var corner: CGFloat = 6
     @State private var image: NSImage?
 
     var body: some View {
@@ -108,7 +111,7 @@ struct LogoView: View {
             }
         }
         .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .clipShape(RoundedRectangle(cornerRadius: corner))
         .task(id: url) {
             let known = logos.lookup(url)
             image = known.image
