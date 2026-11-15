@@ -72,6 +72,14 @@ HIDE_UNSAFE_MODE = """(() => {
         walk(child); } };
     walk(Main.panel.statusArea.quickSettings);
     return icons; })()"""
+# Removes every notification (and so its banner); returns their titles.
+CLEAR_NOTIFICATIONS = """(() => {
+    const titles = [];
+    for (const source of Main.messageTray.getSources()) {
+        for (const n of source.notifications || []) titles.push(n.title);
+        source.destroy();
+    }
+    return titles; })()"""
 
 
 def log(*parts: object) -> None:
@@ -157,6 +165,10 @@ def prepare_settings(look: str) -> None:
     gsettings("org.gnome.desktop.background", "picture-uri-dark", "'file:///usr/share/backgrounds/ubuntu-wallpaper-d.png'")
     gsettings("org.gnome.desktop.wm.preferences", "button-layout", "':minimize,maximize,close'")
     gsettings("org.gnome.desktop.session", "idle-delay", "uint32 0")
+    # Without GDM the shell announces "Screen Lock disabled": no locking, and no banners over the pictures.
+    gsettings("org.gnome.desktop.screensaver", "lock-enabled", "false")
+    gsettings("org.gnome.desktop.lockdown", "disable-lock-screen", "true")
+    gsettings("org.gnome.desktop.notifications", "show-banners", "false")
     gsettings("org.gnome.shell", "welcome-dialog-last-shown-version", "'999'")
     gsettings("org.gnome.shell", "enabled-extensions", f"['{APPINDICATOR}']")
     for schema, key in (("org.gnome.desktop.interface", "color-scheme"), ("org.gnome.desktop.interface", "gtk-theme"),
@@ -256,10 +268,12 @@ class Desktop:
         wait("the AppIndicator extension's StatusNotifierWatcher",
              lambda: self.alive() and has_owner("org.kde.StatusNotifierWatcher"), 30)
 
-    def hide_unsafe_mode(self) -> None:
-        """The warning icon of --unsafe-mode belongs to this way of taking the pictures, not to the desktop. (Done
-        late: the shell adds its system icons a moment after it starts.)"""
+    def tidy(self) -> None:
+        """The warning icon of --unsafe-mode and the shell's own notices belong to this way of taking the pictures,
+        not to the desktop. (Done late: the shell adds its system icons a moment after it starts.)"""
         log("  unsafe-mode icon hidden; system icons left:", info(HIDE_UNSAFE_MODE))
+        log("  notifications cleared:", info(CLEAR_NOTIFICATIONS))
+        time.sleep(0.5)   # a frame or two, so the next picture has them gone
 
     def screenshot(self, path: Path) -> Path:
         ok, used = call("org.gnome.Shell.Screenshot", "/org/gnome/Shell/Screenshot", "org.gnome.Shell.Screenshot",
@@ -310,6 +324,7 @@ class Desktop:
         return seen
 
     def shoot_menu(self, out: Path) -> None:
+        self.tidy()
         opened = shell(js("button.menu.open(0); return button.menu.isOpen;"))
         log(f"  menu open: {opened}")
         time.sleep(2.5)   # the extension asks the radio for the newest layout as the menu opens
@@ -339,6 +354,7 @@ class Desktop:
         time.sleep(2.5)
         window = shell(windows)
         log(f"  window: {window}")
+        self.tidy()
         full = self.screenshot(self.logs / f"{self.look}-{self.display}-panel-full.png")
         crop(full, out / f"linux-tray-panel-{self.look}.png",
              min(window["x"], window["clock"]["x"]) - MARGIN, 0, self.width, window["y"] + window["h"] + MARGIN)
@@ -350,7 +366,7 @@ def take(look: str, display: str, out: Path, logs: Path) -> None:
         desktop.start_shell()
         desktop.start_radio()
         desktop.wait_for_icon()
-        desktop.hide_unsafe_mode()
+        desktop.tidy()
         desktop.screenshot(logs / f"{look}-{display}-icon-full.png")
         desktop.shoot_menu(out)
         try:
