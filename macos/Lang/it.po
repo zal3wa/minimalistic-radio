@@ -14,6 +14,15 @@ msgstr "Esci"
 msgid "Add a station first."
 msgstr "Aggiungi prima una stazione."
 
+msgid "All"
+msgstr "Tutto"
+
+msgid "Year"
+msgstr "Anno"
+
+msgid "Month"
+msgstr "Mese"
+
 msgid "Now playing"
 msgstr "In riproduzione"
 
@@ -80,11 +89,8 @@ msgstr "Sposta Minimalistic Radio in Applicazioni per ricevere gli aggiornamenti
 msgid "Station"
 msgstr "Stazione"
 
-msgid "Search the radio-browser.info directory"
-msgstr "Cerca nel catalogo radio-browser.info"
-
-msgid "Back"
-msgstr "Indietro"
+msgid "History"
+msgstr "Cronologia"
 
 msgid "Song history"
 msgstr "Cronologia brani"
@@ -92,11 +98,14 @@ msgstr "Cronologia brani"
 msgid "Settings"
 msgstr "Impostazioni"
 
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Nascondi il pannello (la radio continua a suonare)"
+msgid "Back"
+msgstr "Indietro"
 
 msgid "Stations"
 msgstr "Stazioni"
+
+msgid "Statistics"
+msgstr "Statistiche"
 
 msgid "Add by address"
 msgstr "Aggiungi da indirizzo"
@@ -161,20 +170,29 @@ msgstr "Mostra i cambi di stazione"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Una scheda sotto l'icona dopo un tasto multimediale o un cambio dal menu"
 
-msgid "Export…"
-msgstr "Esporta…"
-
-msgid "Import…"
-msgstr "Importa…"
-
 msgid "Station list"
 msgstr "Elenco stazioni"
 
 msgid "A copy in a file, e.g. for friends"
 msgstr "Una copia in un file, ad es. per gli amici"
 
+msgid "Export…"
+msgstr "Esporta…"
+
+msgid "Import…"
+msgstr "Importa…"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Raccolte solo su questo computer, mai inviate altrove"
+
+msgid "Show"
+msgstr "Mostra"
+
 msgid "Updates"
 msgstr "Aggiornamenti"
+
+msgid "Automatic updates"
+msgstr "Aggiornamenti automatici"
 
 msgid "Looks for a new version every few hours"
 msgstr "Cerca una nuova versione ogni qualche ora"
@@ -185,11 +203,23 @@ msgstr "Verifica ora"
 msgid "About"
 msgstr "Informazioni"
 
+msgid "Version {0}"
+msgstr "Versione {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Esci da Minimalistic Radio"
 
+msgid "Nothing collected yet"
+msgstr "Ancora nessun dato raccolto"
+
+msgid "Collected since {0}"
+msgstr "Raccolte dal {0}"
+
 msgid "Not checked yet."
 msgstr "Non ancora verificato."
+
+msgid "Last checked: {0}"
+msgstr "Ultimo controllo: {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Stazioni salvate: {0}."
@@ -232,6 +262,60 @@ msgstr "Rimuovi"
 
 msgid "Station options"
 msgstr "Opzioni stazione"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Le statistiche sono disattivate. Non viene registrato nulla di nuovo."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Qui non c'è ancora niente. Ascolta la radio per un po' e poi torna."
+
+msgid "Clear statistics"
+msgstr "Cancella statistiche"
+
+msgid "Listening time"
+msgstr "Tempo di ascolto"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} al giorno"
+
+msgid "Song titles"
+msgstr "Titoli dei brani"
+
+msgid "Longest"
+msgstr "Ascolto più lungo"
+
+msgid "Top stations"
+msgstr "Stazioni più ascoltate"
+
+msgid "Top artists"
+msgstr "Artisti più ascoltati"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Dai titoli inviati dalle stazioni · {0} del tempo di ascolto"
+
+msgid "Not enough song titles yet"
+msgstr "Non ci sono ancora abbastanza titoli"
+
+msgid "When you listen"
+msgstr "Quando ascolti"
+
+msgid "Most often {0}"
+msgstr "Più spesso {0}"
+
+msgid "Since {0}"
+msgstr "Dal {0}"
+
+msgid "1 play"
+msgstr "1 ascolto"
+
+msgid "{0} plays"
+msgstr "{0} ascolti"
+
+msgid "Clear statistics?"
+msgstr "Cancellare le statistiche?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Tutte le statistiche di ascolto su questo computer verranno cancellate. La cronologia brani resta."
 
 msgid "This station uses a format that can't be played."
 msgstr "Questa stazione usa un formato che non può essere riprodotto."
@@ -301,6 +385,12 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Disattivato"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "Impossibile scaricare l'aggiornamento. La radio riproverà più tardi."

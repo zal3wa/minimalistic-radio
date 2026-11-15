@@ -13,7 +13,8 @@ public struct Station: Equatable, Hashable, Sendable {
     }
 }
 
-/// preferences.json: Volume, LastPlayed, Language, ShowStationPopup, CheckUpdates, LastUpdateCheck, UpdateByDownload.
+/// preferences.json: Volume, LastPlayed, Language, ShowStationPopup, CheckUpdates, LastUpdateCheck, UpdateByDownload,
+/// CollectStatistics.
 public struct Preferences: Equatable, Sendable {
     public var volume = 30
     public var lastPlayed: String?
@@ -23,6 +24,8 @@ public struct Preferences: Equatable, Sendable {
     public var lastUpdateCheck: Date?
     /// This Mac couldn't replace the app in place, so updates are offered as a DMG to drag.
     public var updateByDownload = false
+    /// Settings › Statistics: off, nothing new goes into statistics.json (what is there stays).
+    public var collectStatistics = true
 
     public init() {}
 }
