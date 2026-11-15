@@ -28,3 +28,6 @@ configure_file(
 
 subdir('data')
 subdir('po')
+
+# The HE-AAC check, run by CI inside the Flatpak and the Snap. Test-only, a few KB.
+install_data('tools/check_aac.py', install_dir: pkgdatadir)

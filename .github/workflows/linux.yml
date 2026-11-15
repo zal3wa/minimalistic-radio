@@ -94,10 +94,83 @@ jobs:
             LANGUAGE=$lang dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" "$PWD/../_installed/bin/minimalistic-radio" --screenshot ../linux-screenshots/$lang
           done
 
+      # linux-screenshots, for the metainfo, comes from the Flatpak job.
       - name: Upload the screenshots
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: linux-screenshots
+          name: linux-screenshots-ubuntu
           path: linux-screenshots/
           if-no-files-found: ignore
+
+  # The Flatpak: built as Flathub would, checked by Flathub's linter, and run in its sandbox.
+  # Each check runs whenever the build worked, so one failure does not hide the others.
+  flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    env:
+      MANIFEST: linux/flatpak/io.github.zal3wa.MinimalisticRadio.yml
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        id: build
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: linux/flatpak/io.github.zal3wa.MinimalisticRadio.yml
+          bundle: minimalistic-radio.flatpak
+          artifact-name: minimalistic-radio.flatpak
+
+      # Errors that only this repository's build has (raw output first, then the verdict):
+      # - appid-url-not-reachable: the app ID points at github.com/zal3wa/minimalisticradio,
+      #   the repository is minimalistic-radio. To be settled with Flathub before submitting.
+      # - appstream-external-screenshot-url, appstream-screenshots-not-mirrored-in-ostree: Flathub's
+      #   build mirrors the screenshots; this one keeps the GitHub URLs, which a .flatpak from a release can show.
+      # - appstream-missing-screenshots: only while the screenshots are not on main yet.
+      - name: Lint
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          allowed='"appid-url-not-reachable", "appstream-external-screenshot-url", "appstream-screenshots-not-mirrored-in-ostree"'
+          if ! curl -sfI https://raw.githubusercontent.com/zal3wa/minimalistic-radio/main/docs/screenshots/linux-stations-light.png > /dev/null; then
+            echo "::warning::The screenshots are not on main yet."
+            allowed="$allowed, \"appstream-missing-screenshots\""
+          fi
+          echo "{\"io.github.zal3wa.MinimalisticRadio\": [$allowed]}" > /tmp/lint-exceptions.json
+          flatpak-builder-lint manifest "$MANIFEST" || true
+          flatpak-builder-lint repo repo || true
+          flatpak-builder-lint --exceptions --user-exceptions /tmp/lint-exceptions.json manifest "$MANIFEST"
+          flatpak-builder-lint --exceptions --user-exceptions /tmp/lint-exceptions.json repo repo
+
+      # flatpak-builder --run: the built app on the SDK, with the manifest's permissions.
+      - name: Self-test in the sandbox
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: dbus-run-session -- xvfb-run -a flatpak-builder --run flatpak_app "$MANIFEST" minimalistic-radio --self-test
+
+      - name: Take the screenshots in the sandbox
+        id: shots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          mkdir -p "$PWD/linux-screenshots"
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" flatpak-builder --run --filesystem="$PWD/linux-screenshots" \
+            flatpak_app "$MANIFEST" minimalistic-radio --screenshot "$PWD/linux-screenshots"
+
+      - name: Upload the screenshots
+        if: ${{ !cancelled() && steps.shots.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-screenshots
+          path: linux-screenshots/
+
+      - name: HE-AAC check in the sandbox
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: dbus-run-session -- xvfb-run -a flatpak-builder --run flatpak_app "$MANIFEST" python3 /app/share/minimalistic-radio/check_aac.py
+
+      # The player tests on the runtime's GStreamer, for information only.
+      - name: Player tests in the sandbox
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          dbus-run-session -- xvfb-run -a flatpak-builder --run --filesystem="$PWD" flatpak_app "$MANIFEST" \
+            sh -c "python3 -m pip install --quiet --target /tmp/pytest pytest && cd '$PWD/linux' && PYTHONPATH=/tmp/pytest python3 -m pytest tests/integration/test_player.py -q -rs -p no:cacheprovider"
