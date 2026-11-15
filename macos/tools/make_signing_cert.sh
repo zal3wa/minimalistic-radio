@@ -16,7 +16,7 @@ mkdir -p "$folder"
 cd "$folder"
 umask 077
 name="Minimalistic Radio (self-signed)"
-openssl rand -base64 24 | tr -d '\n' > password.txt
+openssl rand -hex 24 | tr -d '\r\n' > password.txt   # Windows' OpenSSL ends its output with \r\n
 openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes -subj "/CN=$name" \
   -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=critical,codeSigning" \
   -addext "basicConstraints=critical,CA:false" -keyout key.pem -out cert.pem
