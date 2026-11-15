@@ -1,11 +1,16 @@
 #!@PYTHON@
+import os
 import sys
 
-sys.path.insert(0, "@pythondir@")
+# The Snap installs with the prefix /usr and mounts that under $SNAP.
+# (Only this snap: another snap's variables can leak into a terminal.)
+ROOT = os.environ.get("SNAP", "") if os.environ.get("SNAP_NAME") == "minimalistic-radio" else ""
+
+sys.path.insert(0, ROOT + "@pythondir@")
 
 from minimalistic_radio import main  # noqa: E402
 
-main.LOCALEDIR = "@localedir@"
-main.PKGDATADIR = "@pkgdatadir@"
+main.LOCALEDIR = ROOT + "@localedir@"
+main.PKGDATADIR = ROOT + "@pkgdatadir@"
 
 sys.exit(main.main(sys.argv))

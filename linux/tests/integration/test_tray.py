@@ -171,6 +171,7 @@ def test_item_properties(make, watcher):
     assert item.get("Category") == "ApplicationStatus"
     assert item.get("Status") == "Active"
     assert item.get("IconName") == "io.github.zal3wa.minimalistic-radio-symbolic"
+    assert item.get("IconThemePath") == ""   # the icon is in the host's theme
     pixmaps = item.get("IconPixmap")
     assert [(w, h) for w, h, _ in pixmaps] == [(16, 16), (22, 22), (32, 32), (48, 48)]
     for w, h, data in pixmaps:
@@ -182,6 +183,14 @@ def test_item_properties(make, watcher):
     assert (title, body) == tooltip(c)
     assert item.get("Menu") == "/MenuBar"
     assert item.get("ItemIsMenu") is False
+
+
+def test_icon_theme_path_in_the_snap(make, watcher, monkeypatch):
+    """The host finds the symbolic icon in the snap's folder, which it can read."""
+    monkeypatch.setenv("SNAP_NAME", "minimalistic-radio")
+    monkeypatch.setenv("SNAP", "/snap/minimalistic-radio/x1")
+    make()
+    assert Client(ITEM_PATH, ITEM).get("IconThemePath") == "/snap/minimalistic-radio/x1/usr/share/icons"
 
 
 def test_activate_shows_panel(make, watcher):

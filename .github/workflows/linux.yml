@@ -180,3 +180,47 @@ jobs:
         run: |
           dbus-run-session -- xvfb-run -a flatpak run --devel --filesystem="$PWD" --command=sh io.github.zal3wa.minimalistic-radio \
             -c "python3 -m pip install --quiet --target /tmp/pytest pytest && cd '$PWD/linux' && PYTHONPATH=/tmp/pytest python3 -m pytest tests/integration/test_player.py -q -rs -p no:cacheprovider"
+
+  # The Snap, as Ubuntu's App Center installs it: built by snapcraft, installed, and run strictly confined.
+  # Ubuntu 24.04: its session bus listens on an abstract socket, which a snap (with its own /tmp) can reach.
+  snap:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build
+        id: build
+        uses: snapcore/action-build@v1
+        with:
+          path: linux
+
+      - name: Name the artifact
+        id: artifact
+        run: echo "name=$(basename '${{ steps.build.outputs.snap }}')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the snap
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ steps.build.outputs.snap }}
+          if-no-files-found: error
+
+      # The runtime folder is where snap run copies the X authority file for the snap.
+      - name: Install the snap
+        id: install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" "/run/user/$(id -u)"
+          echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          sudo snap install --dangerous '${{ steps.build.outputs.snap }}'
+          sudo snap connect minimalistic-radio:login-session-observe
+          snap connections minimalistic-radio
+
+      - name: Self-test in the snap
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: dbus-run-session -- xvfb-run -a snap run minimalistic-radio --self-test
+
+      - name: HE-AAC check in the snap
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_aac.py'

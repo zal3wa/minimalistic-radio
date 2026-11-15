@@ -1,0 +1,71 @@
+name: minimalistic-radio
+# The summary, description, title, version and links come from the metainfo (parse-info below).
+adopt-info: minimalistic-radio
+icon: data/icons/hicolor/scalable/apps/io.github.zal3wa.minimalistic-radio.svg
+license: MIT
+# The newest base the gnome extension supports. Its GNOME platform is the content snap gnome-core26.
+base: core26
+grade: stable
+confinement: strict
+
+environment:
+  # snapcraft's default PATH, then the GNOME platform's: its python3 has PyGObject (the launcher starts with
+  # #!/usr/bin/env python3).
+  PATH: $SNAP/usr/sbin:$SNAP/usr/bin:$SNAP/sbin:$SNAP/bin:$SNAP/gnome-platform/usr/bin:$PATH
+
+slots:
+  # The desktop's media controls and the media keys, on the bus name org.mpris.MediaPlayer2.minimalistic_radio.
+  mpris:
+    interface: mpris
+    name: minimalistic_radio
+  # GtkApplication owns the app ID on the session bus (one instance per user).
+  app-id:
+    interface: dbus
+    bus: session
+    name: io.github.zal3wa.minimalistic-radio
+
+apps:
+  minimalistic-radio:
+    command: usr/bin/minimalistic-radio
+    extensions: [gnome]
+    desktop: usr/share/applications/io.github.zal3wa.minimalistic-radio.desktop
+    common-id: io.github.zal3wa.minimalistic-radio
+    # "Start with the system" writes $SNAP_USER_DATA/.config/autostart/minimalistic-radio.desktop.
+    autostart: minimalistic-radio.desktop
+    plugs:
+      - network
+      - network-status
+      - audio-playback
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      # The tray icon (StatusNotifierItem) and its menu.
+      - unity7
+      # Resume from sleep, from logind. Without it the app does without.
+      - login-session-observe
+    slots:
+      - mpris
+      - app-id
+
+parts:
+  minimalistic-radio:
+    plugin: meson
+    source: .
+    meson-parameters:
+      - --prefix=/usr
+    build-packages:
+      - meson
+      - ninja-build
+      - gettext
+      - desktop-file-utils
+      - appstream
+    # gnome-core26 has no gst-libav, and its avdec_aac decodes AAC and HE-AAC.
+    stage-packages:
+      - gstreamer1.0-libav
+    parse-info:
+      - usr/share/metainfo/io.github.zal3wa.minimalistic-radio.metainfo.xml
+    override-build: |
+      craftctl default
+      # Meson wrote the build's python3 (the SDK's) into the launcher. In the snap, PATH finds the platform's.
+      sed -i '1s|^#!.*|#!/usr/bin/env python3|' "$CRAFT_PART_INSTALL/usr/bin/minimalistic-radio"

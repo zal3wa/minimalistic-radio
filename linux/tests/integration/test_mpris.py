@@ -15,7 +15,7 @@ from minimalistic_radio.controller import Change, RadioController, Status  # noq
 from minimalistic_radio.core.models import Preferences, Station  # noqa: E402
 from minimalistic_radio.core.storage import Paths, save_preferences, save_stations  # noqa: E402
 from minimalistic_radio.glib_scheduler import GLibScheduler  # noqa: E402
-from minimalistic_radio.platform.mpris import MprisService  # noqa: E402
+from minimalistic_radio.platform.mpris import MprisService, bus_name  # noqa: E402
 
 PATH = "/org/mpris/MediaPlayer2"
 ROOT = "org.mpris.MediaPlayer2"
@@ -127,6 +127,16 @@ def test_identity(make):
     assert root.get("DesktopEntry") == APP_ID
     assert root.get("CanRaise") is True
     assert root.get("CanQuit") is True
+
+
+def test_snap_names(make, monkeypatch):
+    """In the Snap: the name the mpris slot allows, and the desktop file snapd installs (<snap>_<app>.desktop)."""
+    monkeypatch.setenv("SNAP_NAME", "minimalistic-radio")
+    assert bus_name() == "org.mpris.MediaPlayer2.minimalistic_radio"
+    _, _, name, _ = make()
+    assert Client(name, ROOT).get("DesktopEntry") == "minimalistic-radio_minimalistic-radio"
+    monkeypatch.setenv("SNAP_NAME", "code")   # another snap's variables leaked into a terminal
+    assert bus_name() == "org.mpris.MediaPlayer2." + APP_ID
 
 
 def test_controls(make):

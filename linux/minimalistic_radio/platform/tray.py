@@ -7,6 +7,7 @@ False and the app is an ordinary window app.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -19,6 +20,7 @@ from gi.repository import GdkPixbuf, Gio, GLib, GObject  # noqa: E402
 
 from .. import APP_ID, APP_NAME  # noqa: E402
 from .. import main as entry  # noqa: E402
+from . import in_snap  # noqa: E402
 from .dbusmenu import DBusMenu  # noqa: E402
 from .menu_model import build_tray_menu, tooltip  # noqa: E402
 
@@ -84,6 +86,13 @@ def _icon_file() -> Path | None:
     roots = [Path(GLib.get_user_data_dir()), *map(Path, GLib.get_system_data_dirs()),
              Path(entry.PKGDATADIR).parent, Path(__file__).resolve().parents[2] / "data"]
     return next((root / relative for root in roots if (root / relative).is_file()), None)
+
+
+def icon_theme_path() -> str:
+    """In the Snap, the snap's icons folder, which the host can read: the host's icon theme doesn't have the
+    symbolic icon, so the host would show the full-colour pixmaps. Elsewhere the icon is in the host's theme."""
+    snap = os.environ.get("SNAP")
+    return os.path.join(snap, "usr", "share", "icons") if in_snap() and snap else ""
 
 
 def _argb(pixbuf: GdkPixbuf.Pixbuf) -> bytes:
@@ -329,7 +338,7 @@ class TrayIcon(GObject.Object):
             "Title": GLib.Variant("s", APP_NAME),
             "Status": GLib.Variant("s", "Active"),
             "WindowId": GLib.Variant("i", 0),
-            "IconThemePath": GLib.Variant("s", ""),
+            "IconThemePath": GLib.Variant("s", icon_theme_path()),
             "IconName": GLib.Variant("s", ICON_NAME),
             "OverlayIconName": GLib.Variant("s", ""),
             "OverlayIconPixmap": GLib.Variant("a(iiay)", []),

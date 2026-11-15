@@ -5,7 +5,6 @@ Pause means Stop, like on Windows: a radio stream has nothing to resume.
 from __future__ import annotations
 
 import math
-import os
 from typing import Any
 
 import gi
@@ -15,6 +14,7 @@ from gi.repository import Gio, GLib  # noqa: E402
 
 from .. import APP_ID, APP_NAME  # noqa: E402
 from ..controller import Change, Status  # noqa: E402
+from . import SNAP_NAME, in_snap  # noqa: E402
 from .menu_model import mpris_metadata  # noqa: E402
 
 OBJECT_PATH = "/org/mpris/MediaPlayer2"
@@ -77,9 +77,17 @@ _METADATA_TYPES = {
 
 
 def bus_name() -> str:
-    if os.environ.get("SNAP_NAME"):
+    """In the Snap, the name its mpris slot allows."""
+    if in_snap():
         return "org.mpris.MediaPlayer2.minimalistic_radio"
     return "org.mpris.MediaPlayer2." + APP_ID
+
+
+def desktop_entry() -> str:
+    """The desktop file's name without .desktop. snapd installs the Snap's as <snap>_<app>.desktop."""
+    if in_snap():
+        return f"{SNAP_NAME}_minimalistic-radio"
+    return APP_ID
 
 
 class MprisService:
@@ -181,7 +189,7 @@ class MprisService:
             "CanRaise": GLib.Variant("b", True),
             "HasTrackList": GLib.Variant("b", False),
             "Identity": GLib.Variant("s", APP_NAME),
-            "DesktopEntry": GLib.Variant("s", APP_ID),
+            "DesktopEntry": GLib.Variant("s", desktop_entry()),
             "SupportedUriSchemes": GLib.Variant("as", []),
             "SupportedMimeTypes": GLib.Variant("as", []),
         }
