@@ -49,7 +49,10 @@ nothing about the sender, and the page behind it is on a GitHub address.
 
 - `u`: an absolute `http` or `https` address, at most 2048 characters. Anything else → invalid link.
 - `n`: trimmed, control characters removed, cut to 100 characters; empty → invalid link.
-- `l`: kept only if it is an absolute `https` address of at most 2048 characters; otherwise dropped silently.
+- `l`: kept if it is an absolute `http` or `https` address of at most 2048 characters; otherwise dropped silently.
+  Many stations' logos are plain `http` addresses (2026-11-15, owner's test: a station shared without its logo), so
+  links carry them as they are; the page shows an `http` logo through `https` (most such servers have it) and falls
+  back to the placeholder, and the apps load it as they load their own logos.
 - The app never plays or adds anything from a link without the Add and play click, except the already-on-the-list
   case, which only plays a station the person added themselves.
 
