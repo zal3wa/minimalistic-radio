@@ -410,3 +410,9 @@ msgstr "Portugiesisch"
 
 msgid "English"
 msgstr "Englisch"
+
+msgid "{0} h {1} min"
+msgstr "{0} Std. {1} min"
+
+msgid "{0} h"
+msgstr "{0} Std."

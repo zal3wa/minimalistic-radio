@@ -406,3 +406,9 @@ msgstr "portugalština"
 
 msgid "English"
 msgstr "angličtina"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"

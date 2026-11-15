@@ -405,3 +405,9 @@ msgstr "португальська"
 
 msgid "English"
 msgstr "англійська"
+
+msgid "{0} h {1} min"
+msgstr "{0} год {1} хв"
+
+msgid "{0} h"
+msgstr "{0} год"

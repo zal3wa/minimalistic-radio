@@ -412,3 +412,9 @@ msgstr "portoghese"
 
 msgid "English"
 msgstr "inglese"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
