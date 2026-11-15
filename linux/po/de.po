@@ -591,3 +591,27 @@ msgstr "Die Statistik ist ausgeschaltet. Neues wird nicht aufgezeichnet."
 #: minimalistic_radio/ui/settings_page.py
 msgid "Stops the radio and removes it from the tray"
 msgstr "Beendet das Radio und entfernt es aus dem Infobereich"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Share"
+msgstr "Teilen"
+
+#: minimalistic_radio/ui/window.py
+msgid "Link copied"
+msgstr "Link kopiert"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Shared station"
+msgstr "Geteilter Sender"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add it to your stations and play it now?"
+msgstr "Zu Ihren Sendern hinzufügen und jetzt abspielen?"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add and play"
+msgstr "Hinzufügen und abspielen"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "This link doesn't contain a station."
+msgstr "Dieser Link enthält keinen Sender."
