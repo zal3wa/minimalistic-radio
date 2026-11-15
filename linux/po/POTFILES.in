@@ -2,6 +2,7 @@ minimalistic_radio/app.py
 minimalistic_radio/controller.py
 minimalistic_radio/platform/menu_model.py
 minimalistic_radio/platform/notifications.py
+minimalistic_radio/platform/updates.py
 minimalistic_radio/audio/player.py
 minimalistic_radio/ui/window.py
 minimalistic_radio/ui/history_page.py

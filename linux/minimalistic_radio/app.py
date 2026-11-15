@@ -17,7 +17,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, i18n  # noqa: E402
+from . import APP_ID, VERSION, i18n  # noqa: E402
 from .audio.player import GstPlayer  # noqa: E402
 from .controller import Change, RadioController  # noqa: E402
 from .core import net  # noqa: E402
@@ -29,6 +29,7 @@ from .platform.mpris import MprisService  # noqa: E402
 from .platform.notifications import StationNotifier  # noqa: E402
 from .platform.session import SessionWatcher  # noqa: E402
 from .platform.tray import TrayIcon  # noqa: E402
+from .platform.updates import UpdateMonitor  # noqa: E402
 from .ui.logos import LogoCache  # noqa: E402
 from .ui.window import RadioWindow  # noqa: E402
 
@@ -92,6 +93,7 @@ class RadioApplication(Adw.Application):
         self.notifier: StationNotifier | None = None
         self.inhibitor = SuspendInhibitor(lambda s: self._(s))
         self.updated = False
+        self.updates: UpdateMonitor | None = None
         self.screenshot_dir: str | None = None
         self._started = False
 
@@ -113,6 +115,7 @@ class RadioApplication(Adw.Application):
         self._add_action("show-panel", self.show_window)
         self._add_action("toggle", lambda: self.controller.toggle())
         self._add_action("quit", self.quit)
+        self._add_action("update", lambda: self.updates.apply() if self.updates else None)
         self._add_action("settings", lambda: self._open_page("settings"))
         self._add_action("history", lambda: self._open_page("history"))
         self._add_action("add-station", lambda: self._open_page("search"))
@@ -143,6 +146,26 @@ class RadioApplication(Adw.Application):
         self.notifier = StationNotifier(self)
         self.session = SessionWatcher(self.controller)
         self.controller.subscribe(self._playback_changed)
+        self._start_updates()
+
+    def _start_updates(self, flatpak_info: str = "/.flatpak-info") -> None:
+        """Only in a Flatpak: the arrow and the tray item follow the portal's update monitor."""
+        if self.updates is not None or not os.path.exists(flatpak_info):
+            return
+        self.updates = UpdateMonitor(self, flatpak_info)
+        self.updates.connect_changed(self._update_changed)
+        self.updates.start()
+
+    def update_label(self) -> str | None:
+        state = self.updates.state if self.updates else None
+        return {"update": self._("Update"), "restart": self._("Restart to update")}.get(state)
+
+    def _update_changed(self, _state: str | None) -> None:
+        if self.window is not None:
+            self.window.set_update(self.update_label())
+        if self.tray is not None:
+            self.tray.update_label = self.update_label()
+            self.tray.refresh()
 
     def _playback_changed(self, change: Change) -> None:
         """Playing keeps the computer from suspending, like the Windows version."""
@@ -189,6 +212,8 @@ class RadioApplication(Adw.Application):
         self._start_radio(autostart)
         if not autostart:
             self.show_window()
+            if self.updated:
+                self.window.toast(self._("Updated to version {VERSION}.").replace("{VERSION}", VERSION))
         return 0
 
     def _quit_idle(self) -> bool:
@@ -229,6 +254,7 @@ class RadioApplication(Adw.Application):
             self.window = self._create_window()
             self.window.set_hide_on_close(True)
             self.window.connect("close-request", self._window_closing)
+            self.window.set_update(self.update_label())
         if startup_id:
             self.window.set_startup_id(startup_id)
         self.window.present()

@@ -33,6 +33,7 @@ python.install_sources(
   'platform/background.py',
   'platform/inhibit.py',
   'platform/notifications.py',
+  'platform/updates.py',
   'platform/session.py',
   'platform/dbusmenu.py',
   'platform/menu_model.py',

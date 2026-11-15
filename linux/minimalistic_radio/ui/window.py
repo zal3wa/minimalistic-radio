@@ -67,7 +67,8 @@ class RadioWindow(Adw.ApplicationWindow):
         self.history_button.connect("clicked", lambda _button: self.show_page("history"))
         header.pack_end(self.history_button)
         self.update_arrow = Gtk.Button(icon_name="software-update-available-symbolic", visible=False,
-                                       css_classes=["success"])   # Task 16 shows it
+                                       css_classes=["success"])   # shown by set_update()
+        self.update_arrow.connect("clicked", lambda _button: self.activate_action("app.update", None))
         header.pack_end(self.update_arrow)
 
         self.navigation = Adw.NavigationView()
@@ -150,6 +151,11 @@ class RadioWindow(Adw.ApplicationWindow):
     def ask_to_copy(self) -> None:
         """The tray's song item, when the window never got the focus (Wayland): the Copy button can copy."""
         self.toast(self._("Press Copy to copy the song"))
+
+    def set_update(self, label: str | None) -> None:
+        """The green arrow: "Update" or "Restart to update"; hidden when there is nothing new."""
+        self.update_arrow.set_visible(label is not None)
+        self.update_arrow.set_tooltip_text(label)
 
     def toast(self, text: str) -> None:
         """Shows `text` at the bottom of the window, in place of the previous toast."""

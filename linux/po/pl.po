@@ -420,3 +420,19 @@ msgstr "Radio gra dalej"
 #: minimalistic_radio/app.py
 msgid "Open it again from your apps, or control it from the clock menu."
 msgstr "Otwórz je ponownie z listy aplikacji albo steruj nim z menu przy zegarze."
+
+#: minimalistic_radio/app.py
+msgid "Update"
+msgstr "Zaktualizuj"
+
+#: minimalistic_radio/app.py
+msgid "Restart to update"
+msgstr "Uruchom ponownie, by zaktualizować"
+
+#: minimalistic_radio/app.py
+msgid "Updated to version {VERSION}."
+msgstr "Zaktualizowano do wersji {VERSION}."
+
+#: minimalistic_radio/platform/updates.py
+msgid "Couldn't update. Try again later."
+msgstr "Nie udało się zaktualizować. Spróbuj ponownie później."
