@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/icon.png" width="96" alt="Minimalistic Radio icon"></p>
 
-<h1 align="center">Minimalistic Radio - only 217 KB</h1>
+<h1 align="center">Minimalistic Radio - only 219 KB</h1>
 
 <p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install.</p>
 
@@ -67,6 +67,8 @@
 ## Languages
 
 English, Polish, German, Ukrainian, Czech, Spanish, French, Italian and Portuguese (Settings → Language). Native speakers: if a translation sounds wrong, please fix it in [`src/Lang/*.po`](src/Lang) and send a pull request.
+
+Some stations are never shown in search or suggestions; the list is in [`data/banned-stations.json`](data/banned-stations.json).
 
 ## Privacy
 

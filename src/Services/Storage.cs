@@ -198,18 +198,47 @@ internal static class Storage
     internal static string NameKey(string name) => new string(string.Join(" ", (name ?? "").ToLowerInvariant().Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
         .Where(word => word != "radio")).Where(char.IsLetterOrDigit).ToArray());
 
-    // Owner decision: Radio Republika never shows, in search or in suggestions. Its stream host, or a Polish station named so.
-    static readonly string[] HiddenHosts = { "radiotvrepublika.pl", "tvrepublika.pl" };
+    // Stations never shown in search or suggestions: data/banned-stations.json, embedded. Missing or malformed: nothing is hidden.
+    sealed class Banned { internal string[] Hosts, Uuids, Names; internal string Country; }
+
+    internal static bool BannedListValid { get; private set; }
+    static readonly List<Banned> BannedList = LoadBanned();
+
+    static List<Banned> LoadBanned()
+    {
+        var list = new List<Banned>();
+        try
+        {
+            using (Stream stream = typeof(Storage).Assembly.GetManifestResourceStream("banned-stations.json"))
+            {
+                if (stream == null) return list;
+                var root = new JavaScriptSerializer().DeserializeObject(new StreamReader(stream).ReadToEnd()) as Dictionary<string, object>;
+                string[] Strings(Dictionary<string, object> item, string key) =>
+                    (item.TryGetValue(key, out object value) ? value as object[] : null)?.OfType<string>().Select(text => text.Trim().ToLowerInvariant()).ToArray() ?? new string[0];
+                foreach (var item in ((root["stations"] as object[]) ?? throw new InvalidOperationException()).Cast<Dictionary<string, object>>())
+                    list.Add(new Banned
+                    {
+                        Hosts = Strings(item, "hosts").Select(host => host.TrimEnd('.')).ToArray(), Uuids = Strings(item, "uuids"), Names = Strings(item, "names"),
+                        Country = (item.TryGetValue("country", out object country) ? country as string : null)?.Trim().ToUpperInvariant()
+                    });
+                BannedListValid = true;
+                return list;
+            }
+        }
+        catch (Exception error) when (error is InvalidOperationException || error is ArgumentException || error is InvalidCastException ||
+            error is KeyNotFoundException || error is IOException)
+        {
+            Debug.WriteLine(error);
+            return new List<Banned>();
+        }
+    }
 
     internal static bool Hidden(DirectoryStation entry)
     {
-        if (Uri.TryCreate(AddressOf(entry), UriKind.Absolute, out Uri uri))
-        {
-            string host = uri.Host.ToLowerInvariant().TrimEnd('.');
-            if (HiddenHosts.Any(hidden => host == hidden || host.EndsWith("." + hidden))) return true;
-        }
-        string key = NameKey(entry.Name);
-        return string.Equals(entry.CountryCode, "PL", StringComparison.OrdinalIgnoreCase) && (key == "republika" || key.Contains("tvrepublika"));
+        string host = Uri.TryCreate(AddressOf(entry), UriKind.Absolute, out Uri uri) ? uri.Host.ToLowerInvariant().TrimEnd('.') : "";
+        string key = NameKey(entry.Name), code = entry.CountryCode?.ToUpperInvariant(), id = entry.Id?.ToLowerInvariant();
+        return BannedList.Any(ban => (host.Length > 0 && ban.Hosts.Any(hidden => host == hidden || host.EndsWith("." + hidden))) ||
+            (id != null && ban.Uuids.Contains(id)) || (code != null && code == ban.Country && key.Length > 0 && ban.Names.Contains(key)));
     }
 
     // The popular list as shown: playable, not already recommended, no duplicates, no spam, the first 15.

@@ -1,0 +1,12 @@
+{
+  "comment": "Stations Minimalistic Radio never shows in station search or suggestions. A station is hidden when its stream host is one of 'hosts' (or a subdomain), its radio-browser stationuuid is in 'uuids', or its country code equals 'country' and its normalized name (lower case, the word 'radio' removed, letters and digits only) equals one of 'names'.",
+  "stations": [
+    {
+      "name": "Radio Republika",
+      "hosts": ["radiotvrepublika.pl", "tvrepublika.pl"],
+      "uuids": ["f837704e-40df-4302-b546-c8401348e51c"],
+      "country": "PL",
+      "names": ["republika", "tvrepublika", "telewizjarepublika"]
+    }
+  ]
+}

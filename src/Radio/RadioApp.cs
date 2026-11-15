@@ -242,7 +242,7 @@ internal sealed partial class Radio
             if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
                 throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
             DirectoryStation Located(string name, string url, string country) => new DirectoryStation { Name = name, Url = url, CountryCode = country };
-            if (!Storage.Hidden(Located("Radio Republika", "https://ssl-1.radiotvrepublika.pl:12698/stream", "PL")) ||
+            if (!Storage.BannedListValid || !Storage.Hidden(Located("Radio Republika", "https://ssl-1.radiotvrepublika.pl:12698/stream", "PL")) ||
                 !Storage.Hidden(Located("Republika", "https://other.example/s", "PL")) ||
                 Storage.Hidden(Located("Dominikánská Republika", "https://dr.example/s", "CZ")) ||
                 Storage.Hidden(Located("Republika ni Juan 87.5", "https://juan.example/s", "PH")))

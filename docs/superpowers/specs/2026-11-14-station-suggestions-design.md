@@ -63,4 +63,4 @@ Genre chips, more sections, IP geolocation, per-user personalisation.
 - **Only popular lists:** zero maintenance, but spammy entries and duplicates at the top. Rejected.
 - **Both (chosen):** a curated international list plus local popularity, cleaned up.
 
-Hidden stations (owner decision): Radio Republika (host radiotvrepublika.pl / tvrepublika.pl, or a PL station named Republika) never appears in search or suggestions.
+Hidden stations (owner decision): the stations listed in data/banned-stations.json (Radio Republika: hosts radiotvrepublika.pl / tvrepublika.pl, its stationuuid, or a PL station named Republika) never appear in search or suggestions.
