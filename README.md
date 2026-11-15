@@ -69,6 +69,8 @@
 
 The same radio for Linux, made with GTK and libadwaita: a tray icon (where the desktop has one), media keys, the sleep timer, station search, song history and the Windows station list (export it there, import it here). It runs as a Flatpak or a Snap.
 
+<p align="center"><a href="https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a></p>
+
 <table align="center">
   <tr>
     <td align="center" valign="top">
@@ -80,8 +82,6 @@ The same radio for Linux, made with GTK and libadwaita: a tray icon (where the d
     </td>
   </tr>
 </table>
-
-<p align="center"><a href="https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a></p>
 
 <!-- When Flathub is live, remove these comment marks:
 <a href="https://flathub.org/apps/io.github.zal3wa.minimalistic-radio"><img src="https://flathub.org/api/badge?locale=en" height="56" alt="Get it on Flathub"></a>
