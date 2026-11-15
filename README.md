@@ -69,6 +69,18 @@
 
 The same radio for Linux, made with GTK and libadwaita: a tray icon (where the desktop has one), media keys, the sleep timer, station search, song history and the Windows station list (export it there, import it here). It runs as a Flatpak or a Snap.
 
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <a href="docs/screenshots/README.md#linux-the-tray-menu-on-ubuntu"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-tray-menu-dark.png">
+        <img src="docs/screenshots/linux-tray-menu-light.png" width="778" alt="The tray menu on Ubuntu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
+      </picture></a>
+      <br>The tray menu on Ubuntu, next to the clock
+    </td>
+  </tr>
+</table>
+
 <!-- When Flathub is live, remove these comment marks:
 <a href="https://flathub.org/apps/io.github.zal3wa.minimalistic-radio"><img src="https://flathub.org/api/badge?locale=en" height="56" alt="Get it on Flathub"></a>
 -->
@@ -119,18 +131,6 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
         <img src="docs/screenshots/linux-settings-light.png" width="400" alt="Settings on Linux">
       </picture></a>
       <br>Settings
-    </td>
-  </tr>
-</table>
-
-<table align="center">
-  <tr>
-    <td align="center" valign="top">
-      <a href="docs/screenshots/README.md#linux-the-tray-menu-on-ubuntu"><picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-tray-menu-dark.png">
-        <img src="docs/screenshots/linux-tray-menu-light.png" width="778" alt="The tray menu on Ubuntu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
-      </picture></a>
-      <br>The tray menu on Ubuntu, next to the clock
     </td>
   </tr>
 </table>
