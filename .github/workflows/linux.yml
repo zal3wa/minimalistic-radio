@@ -182,9 +182,8 @@ jobs:
             -c "python3 -m pip install --quiet --target /tmp/pytest pytest && cd '$PWD/linux' && PYTHONPATH=/tmp/pytest python3 -m pytest tests/integration/test_player.py -q -rs -p no:cacheprovider"
 
   # The Snap, as Ubuntu's App Center installs it: built by snapcraft, installed, and run strictly confined.
-  # Ubuntu 24.04: its session bus listens on an abstract socket, which a snap (with its own /tmp) can reach.
   snap:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -205,21 +204,26 @@ jobs:
           path: ${{ steps.build.outputs.snap }}
           if-no-files-found: error
 
-      # The runtime folder is where snap run copies the X authority file for the snap.
+      # snap run puts the app in a systemd scope, so it needs the user's own systemd and its session bus (a
+      # dbus-run-session bus has no systemd behind it): the runner user gets a lingering session.
       - name: Install the snap
         id: install
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
-          sudo install -d -m 700 -o "$(id -u)" -g "$(id -g)" "/run/user/$(id -u)"
+          sudo apt-get install -y xvfb dbus-user-session
+          sudo loginctl enable-linger "$(id -un)"
+          bus="/run/user/$(id -u)/bus"
+          for second in $(seq 30); do [ -S "$bus" ] && break; sleep 1; done
+          test -S "$bus"
           echo "XDG_RUNTIME_DIR=/run/user/$(id -u)" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_ADDRESS=unix:path=$bus" >> "$GITHUB_ENV"
           sudo snap install --dangerous '${{ steps.build.outputs.snap }}'
           sudo snap connect minimalistic-radio:login-session-observe
           snap connections minimalistic-radio
 
       - name: Self-test in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: dbus-run-session -- xvfb-run -a snap run minimalistic-radio --self-test
+        run: xvfb-run -a snap run minimalistic-radio --self-test
 
       - name: HE-AAC check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
