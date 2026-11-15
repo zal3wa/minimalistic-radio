@@ -99,9 +99,11 @@ extension AppDelegate {
         prepareShots(folder)
         try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         var written = 0
-        for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
-            NSApp.appearance = NSAppearance(named: appearance)
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+        for (dark, look) in [(false, "light"), (true, "dark")] {
+            // The menu bar and its menus follow the system's look, not the app's: switch the system.
+            Self.osascript("tell application \"System Events\" to tell appearance preferences to set dark mode to \(dark)")
+            NSApp.appearance = nil
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
             let full = output.appendingPathComponent("macos-menu-\(look)-full.png")
             var menuFrame: CGRect?
             let capture = Timer(timeInterval: 1.5, repeats: false) { _ in
@@ -120,6 +122,17 @@ extension AppDelegate {
         }
         print("wrote \(written) menu pictures to \(output.path)")
         return written == 2 ? 0 : 1
+    }
+
+    @discardableResult
+    static func osascript(_ script: String) -> Bool {
+        let run = Process()
+        run.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        run.arguments = ["-e", script]
+        try? run.run()
+        run.waitUntilExit()
+        print("osascript \(script.prefix(60))…: \(run.terminationStatus)")
+        return run.terminationStatus == 0
     }
 
     /// The top right of the screen: 778 points wide, from the menu bar to just under the menu.

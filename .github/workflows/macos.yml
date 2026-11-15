@@ -79,6 +79,11 @@ jobs:
         if: ${{ inputs.menu_picture }}
         continue-on-error: true
         run: |
+          # The runner's desktop has no wallpaper: give it macOS's default one, as a real Mac has.
+          picture=$(find "/System/Library/Desktop Pictures" -maxdepth 2 \( -name "*.heic" -o -name "*.jpg" -o -name "*.png" \) | head -n 1)
+          echo "wallpaper: $picture"
+          osascript -e "tell application \"System Events\" to tell every desktop to set picture to \"$picture\"" || echo "couldn't set the wallpaper"
+          sleep 2
           "$APP/Contents/MacOS/Minimalistic Radio" --menu-picture "$PWD/macos-screenshots"
           ls -l macos-screenshots
 
