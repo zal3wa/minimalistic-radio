@@ -101,11 +101,11 @@ msgstr "Nastavení"
 msgid "Back"
 msgstr "Zpět"
 
-msgid "Stations"
-msgstr "Stanice"
-
 msgid "Statistics"
 msgstr "Statistiky"
+
+msgid "Stations"
+msgstr "Stanice"
 
 msgid "Add by address"
 msgstr "Přidat podle adresy"
@@ -206,8 +206,8 @@ msgstr "O aplikaci"
 msgid "Version {0}"
 msgstr "Verze {0}"
 
-msgid "Quit Minimalistic Radio"
-msgstr "Ukončit Minimalistic Radio"
+msgid "Stops the radio and removes it from the menu bar"
+msgstr "Zastaví rádio a odebere ho z řádku nabídek"
 
 msgid "Nothing collected yet"
 msgstr "Zatím nebylo nic nashromážděno"

@@ -101,11 +101,11 @@ msgstr "Налаштування"
 msgid "Back"
 msgstr "Назад"
 
-msgid "Stations"
-msgstr "Станції"
-
 msgid "Statistics"
 msgstr "Статистика"
+
+msgid "Stations"
+msgstr "Станції"
 
 msgid "Add by address"
 msgstr "Додати за адресою"
@@ -206,8 +206,8 @@ msgstr "Про програму"
 msgid "Version {0}"
 msgstr "Версія {0}"
 
-msgid "Quit Minimalistic Radio"
-msgstr "Вийти з Minimalistic Radio"
+msgid "Stops the radio and removes it from the menu bar"
+msgstr "Зупиняє радіо й прибирає його зі смуги меню"
 
 msgid "Nothing collected yet"
 msgstr "Поки нічого не зібрано"

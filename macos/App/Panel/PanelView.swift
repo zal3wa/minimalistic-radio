@@ -63,8 +63,8 @@ struct PanelDivider: View {
 }
 
 /// The panel's top bar. On the stations page: [+ Station] [History], then the green update button while an update
-/// is ready, and Settings. On the other pages: ‹ and the page's title. The panel hides with a click elsewhere, Esc,
-/// ⌘W or the menu bar icon, so there is no close button.
+/// is ready, and Settings. On the other pages: ‹ and the page's title, and on Song history [Statistics] on the right.
+/// The panel hides with a click elsewhere, Esc, ⌘W or the menu bar icon, so there is no close button.
 struct HeaderView: View {
     @ObservedObject var model: PanelModel
 
@@ -102,6 +102,12 @@ struct HeaderView: View {
                     .font(.system(size: 13, weight: .bold))
                     .lineLimit(1)
                 Spacer()
+                if model.page == .history {
+                    Button { model.openStatistics() } label: {
+                        Label { Text(L("Statistics")) } icon: { Image(systemName: "chart.bar").imageScale(.medium) }
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
         .imageScale(.large)
