@@ -228,3 +228,7 @@ jobs:
       - name: HE-AAC check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_aac.py'
+
+      - name: HLS check in the snap
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_stream.py'

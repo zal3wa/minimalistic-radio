@@ -61,12 +61,29 @@ parts:
       - gettext
       - desktop-file-utils
       - appstream
-    # gnome-core26 has no gst-libav, and its avdec_aac decodes AAC and HE-AAC.
-    stage-packages:
-      - gstreamer1.0-libav
     parse-info:
       - usr/share/metainfo/io.github.zal3wa.minimalistic-radio.metainfo.xml
     override-build: |
       craftctl default
       # Meson wrote the build's python3 (the SDK's) into the launcher. In the snap, PATH finds the platform's.
       sed -i '1s|^#!.*|#!/usr/bin/env python3|' "$CRAFT_PART_INSTALL/usr/bin/minimalistic-radio"
+
+  # The GStreamer plugins radio needs that the GNOME platform lacks: avdec_aac from gst-libav (AAC and HE-AAC)
+  # and tsdemux from gst-plugins-bad (HLS sends MPEG-TS segments; hlsdemux2 is in the platform).
+  # prune.py (in snap/local) keeps only these plugins and the libraries they link to that the platform doesn't have.
+  gstreamer-plugins:
+    plugin: nil
+    source: snap/local
+    stage-packages:
+      - gstreamer1.0-libav
+      - gstreamer1.0-plugins-bad
+    build-snaps:
+      - gnome-core26
+    override-build: |
+      craftctl default
+      platform=/snap/gnome-core26/current
+      plugins="libgstlibav.so libgstmpegtsdemux.so"
+      if [ ! -e "$platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0/libgstadaptivedemux2.so" ]; then
+        plugins="$plugins libgsthls.so"   # no hlsdemux2 in the platform: gst-plugins-bad's hlsdemux
+      fi
+      python3 "$CRAFT_PART_SRC/prune.py" "$CRAFT_PART_INSTALL" "$platform" "$CRAFT_ARCH_TRIPLET_BUILD_FOR" $plugins
