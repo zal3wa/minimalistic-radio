@@ -491,3 +491,6 @@ msgstr "Zatím nic není shromážděno"
 
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Vypne rádio a odebere ho z oznamovací oblasti"

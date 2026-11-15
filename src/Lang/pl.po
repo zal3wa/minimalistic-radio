@@ -491,3 +491,6 @@ msgstr "Jeszcze nic nie zebrano"
 
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Wyłącza radio i usuwa je z obszaru powiadomień"

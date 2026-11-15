@@ -490,3 +490,6 @@ msgstr "Ще нічого не зібрано"
 
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "Статистику вимкнено. Нічого нового не записується."
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Вимикає радіо й прибирає його з області сповіщень"

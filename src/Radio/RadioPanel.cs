@@ -1344,12 +1344,10 @@ internal sealed partial class Radio
                 L("Version {0}", Updater.Current.ToString(3)) + " · MIT · " + L("Lucide icons"), Link("GitHub", Updater.Page), appIcon)));
 
             // Quitting is rare and stops the music, so it lives here and in the tray menu, not next to Play.
-            var quit = RowButton(L("Quit Minimalistic Radio"));
+            var quit = RowButton(L("Quit"));
             quit.SetResourceReference(Control.ForegroundProperty, "Danger");
-            quit.HorizontalAlignment = HorizontalAlignment.Left;
-            quit.Margin = new Thickness(14, 12, 14, 12);
             quit.Click += (_, _) => Shutdown();
-            Border quitCard = SettingsCard(quit);
+            Border quitCard = SettingsCard(SettingRow(L("Quit"), L("Stops the radio and removes it from the tray"), quit));
             quitCard.Margin = new Thickness(0, 18, 0, 0);
             settings.Children.Add(quitCard);
             return settings;

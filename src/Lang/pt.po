@@ -490,3 +490,6 @@ msgstr "Ainda não foi recolhido nada"
 
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "As estatísticas estão desativadas. Nada de novo é registado."
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Para o rádio e remove-o da área de notificação"

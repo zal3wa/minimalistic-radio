@@ -493,3 +493,6 @@ msgstr "Rien de collecté pour l'instant"
 
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "Les statistiques sont désactivées. Rien de nouveau n'est enregistré."
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Arrête la radio et la retire de la zone de notification"
