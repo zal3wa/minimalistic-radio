@@ -9,7 +9,7 @@ from .models import HistoryEntry, Preferences, Station
 from .streams import is_web_url
 
 _DIR = "minimalistic-radio"
-_LANGUAGES = ("auto", "pl", "en")
+_LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
 HISTORY_LIMIT = 100
 
 

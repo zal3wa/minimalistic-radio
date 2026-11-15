@@ -1,0 +1,320 @@
+# Spanish translation of Minimalistic Radio.
+# Shared strings follow the Windows version. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Project-Id-Version: minimalistic-radio 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/zal3wa/minimalistic-radio/issues\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "Internet radio that lives next to the clock"
+msgstr "Radio por internet que vive junto al reloj"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "radio;internet radio;stream;station;"
+msgstr "radio;radio por internet;stream;emisora;"
+
+#: data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in
+msgid "A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry."
+msgstr "Una diminuta radio por internet de código abierto que vive en la bandeja del sistema. Haz clic en el icono, elige una emisora y escucha. El panel muestra lo que suena con su carátula, el volumen, un temporizador de apagado y el historial de canciones. Las emisoras se pueden buscar en el directorio radio-browser.info, añadir a mano, exportar e importar. Las teclas multimedia y los controles multimedia del escritorio funcionan, y no hay telemetría."
+
+msgid "Play"
+msgstr "Reproducir"
+
+msgid "Start hidden, as when the session starts"
+msgstr "Iniciar oculta, como al empezar la sesión"
+
+msgid "Started again after an update"
+msgstr "Iniciada de nuevo tras una actualización"
+
+msgid "Start, check that the window opens, and exit"
+msgstr "Iniciar, comprobar que se abre la ventana y salir"
+
+msgid "Save screenshots of the pages in DIR and exit"
+msgstr "Guardar capturas de las páginas en DIR y salir"
+
+msgid "Couldn't save the station list."
+msgstr "No se pudo guardar la lista de emisoras."
+
+msgid "Couldn't save the file."
+msgstr "No se pudo guardar el archivo."
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "No es una lista de emisoras de Minimalistic Radio."
+
+msgid "The broadcast has ended"
+msgstr "La emisión ha terminado"
+
+msgid "Connection lost. Retrying in {n} s…"
+msgstr "Conexión perdida. Reintentando en {n} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Detenido por el temporizador"
+
+msgid "The station's server refused access ({code})."
+msgstr "El servidor de la emisora denegó el acceso ({code})."
+
+msgid "The station's server returned error {code}."
+msgstr "El servidor de la emisora devolvió el error {code}."
+
+msgid "The station's server refused access."
+msgstr "El servidor de la emisora denegó el acceso."
+
+msgid "This station uses a format that can't be played."
+msgstr "Esta emisora usa un formato que no se puede reproducir."
+
+msgid "The connection to the station was lost."
+msgstr "Se perdió la conexión con la emisora."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "No se pudo conectar con la emisora. Comprueba tu conexión a internet."
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Station"
+msgstr "Emisora"
+
+msgid "Volume"
+msgstr "Volumen"
+
+msgid "Up 5%"
+msgstr "Subir un 5%"
+
+msgid "Down 5%"
+msgstr "Bajar un 5%"
+
+msgid "Mute"
+msgstr "Silenciar"
+
+msgid "Sleep timer"
+msgstr "Temporizador de apagado"
+
+msgid "Stops at {time}"
+msgstr "Se detiene a las {time}"
+
+msgid "Off"
+msgstr "Desactivado"
+
+msgid "Settings"
+msgstr "Configuración"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Add a station"
+msgstr "Añadir emisora"
+
+msgid "Song history"
+msgstr "Historial de canciones"
+
+msgid "Your station list couldn't be read. It was saved as stations.json.bad."
+msgstr "No se pudo leer tu lista de emisoras. Se guardó como stations.json.bad."
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Station options"
+msgstr "Opciones de la emisora"
+
+msgid "No stations yet"
+msgstr "Aún no hay emisoras"
+
+msgid "Now playing"
+msgstr "Sonando ahora"
+
+msgid "Copy title"
+msgstr "Copiar título"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Press Copy to copy the song"
+msgstr "Pulsa Copiar para copiar la canción"
+
+msgid "The station doesn't send song titles"
+msgstr "La emisora no envía los títulos"
+
+msgid "Ready to play"
+msgstr "Listo para reproducir"
+
+msgid "Connecting to the station…"
+msgstr "Conectando con la emisora…"
+
+msgid "Stopped"
+msgstr "Detenido"
+
+msgid "Unmute"
+msgstr "Activar sonido"
+
+msgid "{n} min"
+msgstr "{n} min"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "Add by address"
+msgstr "Añadir por dirección"
+
+msgid "Searching…"
+msgstr "Buscando…"
+
+msgid "No results."
+msgstr "No hay resultados."
+
+msgid "Couldn't reach the station directory. Try again."
+msgstr "No se pudo acceder al directorio de emisoras. Inténtalo de nuevo."
+
+msgid "Loading suggestions…"
+msgstr "Cargando sugerencias…"
+
+msgid "Recommended"
+msgstr "Recomendadas"
+
+msgid "Popular in your country"
+msgstr "Populares en tu país"
+
+msgid "Popular worldwide"
+msgstr "Populares en el mundo"
+
+msgid "Already on your list"
+msgstr "Ya está en tu lista"
+
+msgid "Add to your stations"
+msgstr "Añadir a tus emisoras"
+
+msgid "Edit station"
+msgstr "Editar emisora"
+
+msgid "Station name"
+msgstr "Nombre de la emisora"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Dirección del stream (HTTP o HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Dirección del logotipo (opcional)"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "This address is already on the list."
+msgstr "Esta dirección ya está en la lista."
+
+msgid "Check the name and the addresses."
+msgstr "Comprueba el nombre y las direcciones."
+
+msgid "Songs the radio plays will show up here."
+msgstr "Aquí aparecerán las canciones que ponga la radio."
+
+msgid "Clear history"
+msgstr "Borrar historial"
+
+msgid "More"
+msgstr "Más"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Search on Spotify"
+msgstr "Buscar en Spotify"
+
+msgid "Search on YouTube"
+msgstr "Buscar en YouTube"
+
+msgid "General"
+msgstr "General"
+
+msgid "Same as system"
+msgstr "Igual que el sistema"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Start with the system"
+msgstr "Iniciar con el sistema"
+
+msgid "Waits in the tray, doesn't play by itself"
+msgstr "Espera en la bandeja, no suena por sí sola"
+
+msgid "Show station changes"
+msgstr "Mostrar cambios de emisora"
+
+msgid "A notification after a media key or menu switch"
+msgstr "Una notificación tras cambiar con una tecla multimedia o el menú"
+
+msgid "Stations"
+msgstr "Emisoras"
+
+msgid "Station list"
+msgstr "Lista de emisoras"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Una copia en un archivo, p. ej. para amigos"
+
+msgid "Export…"
+msgstr "Exportar…"
+
+msgid "Import…"
+msgstr "Importar…"
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Version"
+msgstr "Versión"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Salir de Minimalistic Radio"
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Detiene la radio y la quita de la bandeja"
+
+msgid "Stations saved: {n}."
+msgstr "Emisoras guardadas: {n}."
+
+msgid "Stations added: {n}."
+msgstr "Emisoras añadidas: {n}."
+
+msgid "All stations from this file are already on the list."
+msgstr "Todas las emisoras de este archivo ya están en la lista."
+
+msgid "stations"
+msgstr "emisoras"
+
+msgid "Icons: Lucide (ISC)"
+msgstr "Iconos: Lucide (ISC)"
+
+msgid "Connecting…"
+msgstr "Conectando…"
+
+msgid "Playing internet radio"
+msgstr "Reproduciendo radio por internet"
+
+msgid "The radio keeps playing"
+msgstr "La radio sigue sonando"
+
+msgid "Open it again from your apps, or control it from the clock menu."
+msgstr "Ábrela de nuevo desde tus aplicaciones o contrólala desde el menú del reloj."
+
+msgid "Update"
+msgstr "Actualizar"
+
+msgid "Restart to update"
+msgstr "Reinicia para actualizar"
+
+msgid "Updated to version {VERSION}."
+msgstr "Actualizada a la versión {VERSION}."
+
+msgid "Couldn't update. Try again later."
+msgstr "No se pudo actualizar. Inténtalo más tarde."

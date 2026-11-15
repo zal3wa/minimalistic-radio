@@ -1,0 +1,320 @@
+# Ukrainian translation of Minimalistic Radio.
+# Shared strings follow the Windows version. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Project-Id-Version: minimalistic-radio 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/zal3wa/minimalistic-radio/issues\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "Internet radio that lives next to the clock"
+msgstr "Інтернет-радіо, що живе біля годинника"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "radio;internet radio;stream;station;"
+msgstr "радіо;інтернет-радіо;потік;станція;"
+
+#: data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in
+msgid "A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry."
+msgstr "Крихітне інтернет-радіо з відкритим кодом, що живе в системному лотку. Натисніть значок, виберіть станцію та слухайте. Панель показує, що грає, з обкладинкою, гучність, таймер сну й історію пісень. Станції можна шукати в каталозі radio-browser.info, додавати вручну, експортувати та імпортувати. Мультимедійні клавіші й керування медіа на стільниці працюють, а телеметрії немає."
+
+msgid "Play"
+msgstr "Відтворити"
+
+msgid "Start hidden, as when the session starts"
+msgstr "Запустити приховано, як на початку сеансу"
+
+msgid "Started again after an update"
+msgstr "Запущено знову після оновлення"
+
+msgid "Start, check that the window opens, and exit"
+msgstr "Запустити, перевірити, що вікно відкривається, і вийти"
+
+msgid "Save screenshots of the pages in DIR and exit"
+msgstr "Зберегти знімки екрана сторінок у теці DIR і вийти"
+
+msgid "Couldn't save the station list."
+msgstr "Не вдалося зберегти список станцій."
+
+msgid "Couldn't save the file."
+msgstr "Не вдалося зберегти файл."
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Це не список станцій Minimalistic Radio."
+
+msgid "The broadcast has ended"
+msgstr "Трансляцію завершено"
+
+msgid "Connection lost. Retrying in {n} s…"
+msgstr "Зв’язок втрачено. Повтор через {n} с…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Зупинено таймером сну"
+
+msgid "The station's server refused access ({code})."
+msgstr "Сервер станції відмовив у доступі ({code})."
+
+msgid "The station's server returned error {code}."
+msgstr "Сервер станції повернув помилку {code}."
+
+msgid "The station's server refused access."
+msgstr "Сервер станції відмовив у доступі."
+
+msgid "This station uses a format that can't be played."
+msgstr "Ця станція мовить у форматі, який не вдається відтворити."
+
+msgid "The connection to the station was lost."
+msgstr "З’єднання зі станцією перервано."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Не вдалося підключитися до станції. Перевірте інтернет."
+
+msgid "Stop"
+msgstr "Зупинити"
+
+msgid "Station"
+msgstr "Станція"
+
+msgid "Volume"
+msgstr "Гучність"
+
+msgid "Up 5%"
+msgstr "Гучніше на 5%"
+
+msgid "Down 5%"
+msgstr "Тихіше на 5%"
+
+msgid "Mute"
+msgstr "Вимкнути звук"
+
+msgid "Sleep timer"
+msgstr "Таймер сну"
+
+msgid "Stops at {time}"
+msgstr "Вимкнеться о {time}"
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "Settings"
+msgstr "Налаштування"
+
+msgid "Quit"
+msgstr "Вийти"
+
+msgid "Add a station"
+msgstr "Додати станцію"
+
+msgid "Song history"
+msgstr "Історія пісень"
+
+msgid "Your station list couldn't be read. It was saved as stations.json.bad."
+msgstr "Не вдалося прочитати ваш список станцій. Його збережено як stations.json.bad."
+
+msgid "Edit"
+msgstr "Редагувати"
+
+msgid "Remove"
+msgstr "Видалити"
+
+msgid "Station options"
+msgstr "Параметри станції"
+
+msgid "No stations yet"
+msgstr "Станцій ще немає"
+
+msgid "Now playing"
+msgstr "Зараз грає"
+
+msgid "Copy title"
+msgstr "Скопіювати назву"
+
+msgid "Copied"
+msgstr "Скопійовано"
+
+msgid "Press Copy to copy the song"
+msgstr "Натисніть «Копіювати», щоб скопіювати пісню"
+
+msgid "The station doesn't send song titles"
+msgstr "Станція не передає назви пісень"
+
+msgid "Ready to play"
+msgstr "Готово до відтворення"
+
+msgid "Connecting to the station…"
+msgstr "Підключення до станції…"
+
+msgid "Stopped"
+msgstr "Зупинено"
+
+msgid "Unmute"
+msgstr "Увімкнути звук"
+
+msgid "{n} min"
+msgstr "{n} хв"
+
+msgid "Search"
+msgstr "Шукати"
+
+msgid "Add by address"
+msgstr "Додати за адресою"
+
+msgid "Searching…"
+msgstr "Пошук…"
+
+msgid "No results."
+msgstr "Нічого не знайдено."
+
+msgid "Couldn't reach the station directory. Try again."
+msgstr "Не вдалося зв’язатися з каталогом станцій. Спробуйте ще раз."
+
+msgid "Loading suggestions…"
+msgstr "Завантаження пропозицій…"
+
+msgid "Recommended"
+msgstr "Рекомендовані"
+
+msgid "Popular in your country"
+msgstr "Популярні у вашій країні"
+
+msgid "Popular worldwide"
+msgstr "Популярні у світі"
+
+msgid "Already on your list"
+msgstr "Уже у вашому списку"
+
+msgid "Add to your stations"
+msgstr "Додати до своїх станцій"
+
+msgid "Edit station"
+msgstr "Редагувати станцію"
+
+msgid "Station name"
+msgstr "Назва станції"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Адреса потоку (HTTP або HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Адреса логотипа (необов’язково)"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+msgid "Save"
+msgstr "Зберегти"
+
+msgid "This address is already on the list."
+msgstr "Ця адреса вже є у списку."
+
+msgid "Check the name and the addresses."
+msgstr "Перевірте назву та адреси."
+
+msgid "Songs the radio plays will show up here."
+msgstr "Тут з’являтимуться пісні, які зіграє радіо."
+
+msgid "Clear history"
+msgstr "Очистити історію"
+
+msgid "More"
+msgstr "Більше"
+
+msgid "Copy"
+msgstr "Копіювати"
+
+msgid "Search on Spotify"
+msgstr "Шукати в Spotify"
+
+msgid "Search on YouTube"
+msgstr "Шукати на YouTube"
+
+msgid "General"
+msgstr "Загальні"
+
+msgid "Same as system"
+msgstr "Як у системі"
+
+msgid "Language"
+msgstr "Мова"
+
+msgid "Start with the system"
+msgstr "Запускати із системою"
+
+msgid "Waits in the tray, doesn't play by itself"
+msgstr "Чекає в лотку, сам не грає"
+
+msgid "Show station changes"
+msgstr "Показувати зміну станції"
+
+msgid "A notification after a media key or menu switch"
+msgstr "Сповіщення після зміни клавішею чи з меню"
+
+msgid "Stations"
+msgstr "Станції"
+
+msgid "Station list"
+msgstr "Список станцій"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Копія у файлі, наприклад для друзів"
+
+msgid "Export…"
+msgstr "Експорт…"
+
+msgid "Import…"
+msgstr "Імпорт…"
+
+msgid "About"
+msgstr "Про програму"
+
+msgid "Version"
+msgstr "Версія"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Вийти з Minimalistic Radio"
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Зупиняє радіо та прибирає його з лотка"
+
+msgid "Stations saved: {n}."
+msgstr "Збережено станцій: {n}."
+
+msgid "Stations added: {n}."
+msgstr "Додано станцій: {n}."
+
+msgid "All stations from this file are already on the list."
+msgstr "Усі станції з цього файлу вже є у списку."
+
+msgid "stations"
+msgstr "станції"
+
+msgid "Icons: Lucide (ISC)"
+msgstr "Значки: Lucide (ISC)"
+
+msgid "Connecting…"
+msgstr "Підключення…"
+
+msgid "Playing internet radio"
+msgstr "Грає інтернет-радіо"
+
+msgid "The radio keeps playing"
+msgstr "Радіо грає далі"
+
+msgid "Open it again from your apps, or control it from the clock menu."
+msgstr "Відкрийте його знову зі списку програм або керуйте ним із меню біля годинника."
+
+msgid "Update"
+msgstr "Оновити"
+
+msgid "Restart to update"
+msgstr "Перезапустіть, щоб оновити"
+
+msgid "Updated to version {VERSION}."
+msgstr "Оновлено до версії {VERSION}."
+
+msgid "Couldn't update. Try again later."
+msgstr "Не вдалося оновити. Спробуйте пізніше."

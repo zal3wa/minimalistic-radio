@@ -327,7 +327,7 @@ def test_unmute_goes_back_to_before_a_quick_slide_to_zero(ctl):
         ctl.set_volume(level); ctl.scheduler.advance(0.1)
     ctl.toggle_mute()
     assert ctl.volume == 60
-def test_unknown_language_ignored(ctl): ctl.set_language("de"); assert ctl.prefs.language == "auto"
+def test_unknown_language_ignored(ctl): ctl.set_language("ru"); assert ctl.prefs.language == "auto"
 def test_language_and_station_popup_saved(ctl):
     seen = []; ctl.subscribe(seen.append)
     ctl.set_language("pl"); ctl.set_show_station_popup(False)

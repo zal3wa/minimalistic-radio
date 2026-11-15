@@ -63,7 +63,8 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     monkeypatch.setattr(window, "quit_app", lambda: rebuilt.append("quit"))
 
     options = [page.language_row.get_model().get_string(i) for i in range(page.language_row.get_model().get_n_items())]
-    assert options == ["Same as system", "Polski", "English"]
+    assert options == ["Same as system", "Polski", "English", "Deutsch", "Українська", "Čeština", "Español", "Français",
+                       "Italiano", "Português"]
     page.language_row.set_selected(2)
     assert controller.prefs.language == "en" and rebuilt == [True]
 

@@ -35,7 +35,7 @@ FADE_SECONDS = 30                            # the sleep timer fades out over it
 RADIO357_POLL_SECONDS = 10
 COVERS_KEPT = 200                            # pictures kept in the cover cache
 VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
-LANGUAGES = ("auto", "pl", "en")
+LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
 
 
 class ErrorKind(Enum):

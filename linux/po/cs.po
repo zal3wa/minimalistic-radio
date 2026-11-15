@@ -1,0 +1,320 @@
+# Czech translation of Minimalistic Radio.
+# Shared strings follow the Windows version. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Project-Id-Version: minimalistic-radio 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/zal3wa/minimalistic-radio/issues\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "Internet radio that lives next to the clock"
+msgstr "Internetové rádio, které bydlí vedle hodin"
+
+#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+msgid "radio;internet radio;stream;station;"
+msgstr "rádio;internetové rádio;stream;stanice;"
+
+#: data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in
+msgid "A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry."
+msgstr "Maličké internetové rádio s otevřeným kódem, které žije v oznamovací oblasti. Klikněte na ikonu, vyberte stanici a poslouchejte. Panel ukazuje, co hraje, s obalem, hlasitost, časovač vypnutí a historii skladeb. Stanice lze hledat v adresáři radio-browser.info, přidávat ručně, exportovat a importovat. Fungují multimediální klávesy i ovládání médií na ploše a žádná telemetrie neexistuje."
+
+msgid "Play"
+msgstr "Přehrát"
+
+msgid "Start hidden, as when the session starts"
+msgstr "Spustit skryté, jako při startu relace"
+
+msgid "Started again after an update"
+msgstr "Znovu spuštěno po aktualizaci"
+
+msgid "Start, check that the window opens, and exit"
+msgstr "Spustit, ověřit, že se otevře okno, a skončit"
+
+msgid "Save screenshots of the pages in DIR and exit"
+msgstr "Uložit snímky stránek do složky DIR a skončit"
+
+msgid "Couldn't save the station list."
+msgstr "Seznam stanic se nepodařilo uložit."
+
+msgid "Couldn't save the file."
+msgstr "Soubor se nepodařilo uložit."
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Toto není seznam stanic Minimalistic Radio."
+
+msgid "The broadcast has ended"
+msgstr "Vysílání skončilo"
+
+msgid "Connection lost. Retrying in {n} s…"
+msgstr "Spojení se přerušilo. Další pokus za {n} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Zastaveno časovačem vypnutí"
+
+msgid "The station's server refused access ({code})."
+msgstr "Server stanice odepřel přístup ({code})."
+
+msgid "The station's server returned error {code}."
+msgstr "Server stanice vrátil chybu {code}."
+
+msgid "The station's server refused access."
+msgstr "Server stanice odepřel přístup."
+
+msgid "This station uses a format that can't be played."
+msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
+
+msgid "The connection to the station was lost."
+msgstr "Spojení se stanicí bylo přerušeno."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
+
+msgid "Stop"
+msgstr "Zastavit"
+
+msgid "Station"
+msgstr "Stanice"
+
+msgid "Volume"
+msgstr "Hlasitost"
+
+msgid "Up 5%"
+msgstr "Zvýšit o 5%"
+
+msgid "Down 5%"
+msgstr "Snížit o 5%"
+
+msgid "Mute"
+msgstr "Ztlumit"
+
+msgid "Sleep timer"
+msgstr "Časovač vypnutí"
+
+msgid "Stops at {time}"
+msgstr "Zastaví se v {time}"
+
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Quit"
+msgstr "Ukončit"
+
+msgid "Add a station"
+msgstr "Přidat stanici"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Your station list couldn't be read. It was saved as stations.json.bad."
+msgstr "Váš seznam stanic se nepodařilo přečíst. Byl uložen jako stations.json.bad."
+
+msgid "Edit"
+msgstr "Upravit"
+
+msgid "Remove"
+msgstr "Odebrat"
+
+msgid "Station options"
+msgstr "Možnosti stanice"
+
+msgid "No stations yet"
+msgstr "Zatím žádné stanice"
+
+msgid "Now playing"
+msgstr "Právě hraje"
+
+msgid "Copy title"
+msgstr "Kopírovat název"
+
+msgid "Copied"
+msgstr "Zkopírováno"
+
+msgid "Press Copy to copy the song"
+msgstr "Stisknutím Kopírovat zkopírujete skladbu"
+
+msgid "The station doesn't send song titles"
+msgstr "Stanice neposílá názvy skladeb"
+
+msgid "Ready to play"
+msgstr "Připraveno k přehrávání"
+
+msgid "Connecting to the station…"
+msgstr "Připojování ke stanici…"
+
+msgid "Stopped"
+msgstr "Zastaveno"
+
+msgid "Unmute"
+msgstr "Zrušit ztlumení"
+
+msgid "{n} min"
+msgstr "{n} min"
+
+msgid "Search"
+msgstr "Hledat"
+
+msgid "Add by address"
+msgstr "Přidat podle adresy"
+
+msgid "Searching…"
+msgstr "Hledání…"
+
+msgid "No results."
+msgstr "Žádné výsledky."
+
+msgid "Couldn't reach the station directory. Try again."
+msgstr "Adresář stanic není dostupný. Zkuste to znovu."
+
+msgid "Loading suggestions…"
+msgstr "Načítání návrhů…"
+
+msgid "Recommended"
+msgstr "Doporučené"
+
+msgid "Popular in your country"
+msgstr "Oblíbené ve vaší zemi"
+
+msgid "Popular worldwide"
+msgstr "Oblíbené ve světě"
+
+msgid "Already on your list"
+msgstr "Už je ve vašem seznamu"
+
+msgid "Add to your stations"
+msgstr "Přidat do stanic"
+
+msgid "Edit station"
+msgstr "Upravit stanici"
+
+msgid "Station name"
+msgstr "Název stanice"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Adresa streamu (HTTP nebo HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Adresa loga (nepovinné)"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "This address is already on the list."
+msgstr "Tato adresa už je v seznamu."
+
+msgid "Check the name and the addresses."
+msgstr "Zkontrolujte název a adresy."
+
+msgid "Songs the radio plays will show up here."
+msgstr "Zde se objeví skladby, které rádio zahraje."
+
+msgid "Clear history"
+msgstr "Vymazat historii"
+
+msgid "More"
+msgstr "Další"
+
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "Search on Spotify"
+msgstr "Hledat na Spotify"
+
+msgid "Search on YouTube"
+msgstr "Hledat na YouTube"
+
+msgid "General"
+msgstr "Obecné"
+
+msgid "Same as system"
+msgstr "Podle systému"
+
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Start with the system"
+msgstr "Spouštět se systémem"
+
+msgid "Waits in the tray, doesn't play by itself"
+msgstr "Čeká v oznamovací oblasti, sám nehraje"
+
+msgid "Show station changes"
+msgstr "Zobrazovat změnu stanice"
+
+msgid "A notification after a media key or menu switch"
+msgstr "Oznámení po přepnutí klávesou nebo z nabídky"
+
+msgid "Stations"
+msgstr "Stanice"
+
+msgid "Station list"
+msgstr "Seznam stanic"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopie v souboru, např. pro přátele"
+
+msgid "Export…"
+msgstr "Exportovat…"
+
+msgid "Import…"
+msgstr "Importovat…"
+
+msgid "About"
+msgstr "O aplikaci"
+
+msgid "Version"
+msgstr "Verze"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Ukončit Minimalistic Radio"
+
+msgid "Stops the radio and removes it from the tray"
+msgstr "Zastaví rádio a odebere ho z oznamovací oblasti"
+
+msgid "Stations saved: {n}."
+msgstr "Uloženo stanic: {n}."
+
+msgid "Stations added: {n}."
+msgstr "Přidáno stanic: {n}."
+
+msgid "All stations from this file are already on the list."
+msgstr "Všechny stanice z tohoto souboru už jsou v seznamu."
+
+msgid "stations"
+msgstr "stanice"
+
+msgid "Icons: Lucide (ISC)"
+msgstr "Ikony: Lucide (ISC)"
+
+msgid "Connecting…"
+msgstr "Připojování…"
+
+msgid "Playing internet radio"
+msgstr "Hraje internetové rádio"
+
+msgid "The radio keeps playing"
+msgstr "Rádio hraje dál"
+
+msgid "Open it again from your apps, or control it from the clock menu."
+msgstr "Otevřete ho znovu mezi aplikacemi nebo ho ovládejte z nabídky u hodin."
+
+msgid "Update"
+msgstr "Aktualizovat"
+
+msgid "Restart to update"
+msgstr "Aktualizujte restartem"
+
+msgid "Updated to version {VERSION}."
+msgstr "Aktualizováno na verzi {VERSION}."
+
+msgid "Couldn't update. Try again later."
+msgstr "Aktualizace se nezdařila. Zkuste to později."

@@ -23,6 +23,13 @@ LANGUAGE_OPTIONS: list[tuple[str, str | None]] = [
     ("auto", None),
     ("pl", "Polski"),
     ("en", "English"),
+    ("de", "Deutsch"),
+    ("uk", "Українська"),
+    ("cs", "Čeština"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("it", "Italiano"),
+    ("pt", "Português"),
 ]
 
 

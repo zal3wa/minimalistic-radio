@@ -44,7 +44,7 @@ def test_missing_files_give_defaults(tmp_path):
 
 def test_preferences_are_clamped_and_validated(tmp_path):
     f = tmp_path / "p.json"
-    f.write_text('{"Volume": 150, "Language": "de", "LastPlayed": "http://a/b", "ShowStationPopup": false}', "utf-8")
+    f.write_text('{"Volume": 150, "Language": "ru", "LastPlayed": "http://a/b", "ShowStationPopup": false}', "utf-8")
     assert load_preferences(f) == Preferences(volume=100, last_played="http://a/b", language="auto", show_station_popup=False)
 
 

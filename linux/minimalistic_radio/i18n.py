@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import gettext as _gettext
 import os
+import re
 from typing import Callable
 
 DOMAIN = "minimalistic-radio"
@@ -23,10 +24,19 @@ def system_languages() -> list[str]:
     return []
 
 
+SUPPORTED = ("pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
+
+
 def languages_for(setting: str, system: list[str]) -> list[str]:
-    if setting in ("pl", "en"):
+    """[the language to use]: the chosen one, or for "auto" the first supported language of `system`
+    (["uk_UA", "en"] gives ["uk"]), else English."""
+    if setting in SUPPORTED:
         return [setting]
-    return list(system)
+    for entry in system:
+        code = re.split(r"[_.@-]", entry, maxsplit=1)[0].lower()
+        if code in SUPPORTED:
+            return [code]
+    return ["en"]
 
 
 def gettext(message: str) -> str:

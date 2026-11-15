@@ -86,7 +86,13 @@ jobs:
       # Pictures of the window for review (the owner has no Linux). Never fails the job.
       - name: Take the screenshots
         continue-on-error: true
-        run: cd linux && dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 -m minimalistic_radio.main --screenshot ../linux-screenshots
+        run: |
+          cd linux
+          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 -m minimalistic_radio.main --screenshot ../linux-screenshots
+          # The installed app has the compiled catalogs: German and Ukrainian show whether the longer words fit.
+          for lang in de uk; do
+            LANGUAGE=$lang dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" "$PWD/../_installed/bin/minimalistic-radio" --screenshot ../linux-screenshots/$lang
+          done
 
       - name: Upload the screenshots
         continue-on-error: true
