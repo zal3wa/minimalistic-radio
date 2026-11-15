@@ -161,6 +161,7 @@ internal static class Theme
     internal const string ExternalIcon = "M15 3 H21 V9 M10 14 L21 3 M18 13 V19 A2 2 0 0 1 16 21 H5 A2 2 0 0 1 3 19 V8 A2 2 0 0 1 5 6 H11";
     internal const string UpdateReadyIcon ="M12 3 V15 M6 9 L12 15 L18 9 M5 20 H19";   // arrow down to a line, like Discord's
     internal const string HistoryIcon = "M3 12 A9 9 0 1 0 12 3 A9.75 9.75 0 0 0 5.26 5.74 L3 8 M3 3 V8 H8 M12 7 V12 L16 14";   // Lucide history
+    internal const string ChartIcon = "M3 3 V19 A2 2 0 0 0 5 21 H21 M18 17 V9 M13 17 V5 M8 17 V14";   // Lucide chart-column
     internal const string MoonIcon = "M12 3 A6 6 0 0 0 21 12 A9 9 0 1 1 12 3 Z";
     internal const string DownloadIcon = "M21 15 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V15 M7 10 L12 15 L17 10 M12 15 V3";
 }

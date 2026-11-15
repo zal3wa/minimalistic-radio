@@ -421,6 +421,17 @@ internal sealed partial class Radio
                 Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                 if (!backToSettings || !Titled(L("History")))
                     throw new InvalidOperationException("Strzałka wstecz nie wraca ze statystyk do ustawień i do stacji.");
+                // Song history's [Statistics] opens the page, and ← goes back to the history.
+                Descendants(playerPanel).OfType<Button>().First(button => Descendants(button).OfType<TextBlock>().Any(text => text.Text == L("History")))
+                    .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                Titled(L("Song history"));
+                Descendants(playerPanel).OfType<Button>().First(button => button.IsVisible && Descendants(button).OfType<TextBlock>().Any(text => text.Text == L("Statistics")))
+                    .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                bool statisticsFromHistory = Titled(L("Statistics"));
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                if (!statisticsFromHistory || !Titled(L("Song history")))
+                    throw new InvalidOperationException("Przycisk Statystyki w historii nie otwiera statystyk albo strzałka nie wraca do historii.");
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                 if (preview)
                 {
                     // The other pages with a title in the bar: the station form (Edit) and Add a station.

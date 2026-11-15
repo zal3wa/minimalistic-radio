@@ -447,7 +447,10 @@ internal sealed partial class Radio
         var add = NewButton(null, IconText(Theme.PlusIcon, L("Station")));
         var historyButton = NewButton(null, IconText(Theme.HistoryIcon, L("History")));
         historyButton.Margin = new Thickness(4, 0, 0, 0);
-        foreach (Button button in new[] { add, historyButton })
+        // Song history's own button on the right of its bar: the Statistics page.
+        var statisticsButton = NewButton(null, IconText(Theme.ChartIcon, L("Statistics")));
+        statisticsButton.Margin = new Thickness(8, 0, 0, 0);
+        foreach (Button button in new[] { add, historyButton, statisticsButton })
         {
             button.Height = 32;
             button.Padding = new Thickness(10, 0, 12, 0);
@@ -471,7 +474,7 @@ internal sealed partial class Radio
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 2)
         };
         var stationsBar = Columns((add, Auto), (historyButton, Auto), (new Border(), Star), (updateButton, Auto), (settingsButton, Auto));
-        var pageBar = Columns((backButton, Auto), (pageTitle, Star));
+        var pageBar = Columns((backButton, Auto), (pageTitle, Star), (statisticsButton, Auto));
         var bar = new Grid { Margin = new Thickness(Gutter) };
         bar.Children.Add(stationsBar);
         bar.Children.Add(pageBar);
@@ -485,6 +488,7 @@ internal sealed partial class Radio
         var footer = new Border { Margin = new Thickness(Gutter, 10, Gutter, Gutter) };
         ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane();
         Action refreshCollected = null;   // Settings › Statistics' "Collected since", again after a clear
+        string statisticsFrom = "settings";   // where ← goes back to from Statistics: Settings or Song history
 
         int shownStation = station;
         void ShowActiveStation(bool centre)
@@ -664,6 +668,8 @@ internal sealed partial class Radio
             Visibility Shown(bool shown) => shown ? Visibility.Visible : Visibility.Collapsed;
             list.Visibility = footer.Visibility = stationsBar.Visibility = Shown(stations);
             pageBar.Visibility = Shown(!stations);
+            statisticsButton.Visibility = Shown(target == "history");
+            if (target == "statistics" && from != "statistics") statisticsFrom = from == "history" ? "history" : "settings";
             searchPane.Visibility = Shown(target == "search");
             fields.Visibility = Shown(target == "form");
             settingsPane.Visibility = Shown(target == "settings");
@@ -697,11 +703,11 @@ internal sealed partial class Radio
             if (stations) ShowActiveStationAfterLayout(false);
         }
 
-        // ← and Esc: the station form goes back to where it came from, Statistics to Settings, the rest to the stations.
+        // ← and Esc: the station form and Statistics go back to where they were opened from, the rest to the stations.
         void GoBack()
         {
             if (page == "form") CancelForm();
-            else if (page == "statistics") SetPage("settings");
+            else if (page == "statistics") SetPage(statisticsFrom);
             else SetPage("stations");
         }
 
@@ -722,6 +728,7 @@ internal sealed partial class Radio
         manual.Click += (_, _) => Edit(null);
         settingsButton.Click += (_, _) => SetPage("settings");
         historyButton.Click += (_, _) => SetPage("history");
+        statisticsButton.Click += (_, _) => SetPage("statistics");
         backButton.Click += (_, _) => GoBack();
 
         // Adding goes back to the search, editing to the stations.
