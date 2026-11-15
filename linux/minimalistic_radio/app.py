@@ -79,6 +79,8 @@ def fetch_file(url: str, path: Path, cb: Callable[[bool], None]) -> None:
 
 class RadioApplication(Adw.Application):
     def __init__(self, translate: Callable[[str], str] = lambda s: s, application_id: str = APP_ID) -> None:
+        if GLib.get_prgname() is None:
+            GLib.set_prgname("minimalistic-radio")   # GTK's inhibit crashes on a missing program name
         super().__init__(application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self._ = translate
         self.controller: RadioController | None = None
