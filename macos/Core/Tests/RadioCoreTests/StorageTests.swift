@@ -11,6 +11,7 @@ import Testing
     #expect(p.stationsFile == p.support.appendingPathComponent("stations.json"))
     #expect(p.preferencesFile == p.support.appendingPathComponent("preferences.json"))
     #expect(p.historyFile == p.support.appendingPathComponent("history.json"))
+    #expect(p.statisticsFile == p.support.appendingPathComponent("statistics.json"))
     #expect(p.logosFolder == p.cache.appendingPathComponent("logos"))
     #expect(p.coversFolder == p.cache.appendingPathComponent("covers"))
 }
