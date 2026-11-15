@@ -5,8 +5,8 @@ import pytest
 
 from minimalistic_radio.core.models import ListeningSession, SongPlay, Station, Statistics
 from minimalistic_radio.core.statistics import (
-    Period, Recorder, artist_of, count, enough_titles, find_logo, format_count, format_duration, format_hours,
-    period_label, plays_text, since_label,
+    Period, Recorder, artist_of, collected_since, count, enough_titles, find_logo, format_count, format_duration,
+    format_hours, period_label, plays_text, since_label,
 )
 from minimalistic_radio.core.storage import load_statistics, save_statistics
 
@@ -405,6 +405,18 @@ def test_period_labels():
     assert period_label(Period.MONTH, date(2026, 11, 15)) == "November 2026"
     assert period_label(Period.YEAR, date(2026, 11, 15)) == "2026"
     assert since_label(date(2025, 3, 2)) == "Since 2 March 2025"
+
+
+def test_collected_since():
+    stats = stats_of(session(at(2026, 3, 2, 22, 30), at(2026, 3, 2, 23, 30)),
+                     session(at(2025, 3, 1, 23, 30), at(2025, 3, 2, 0, 30)))
+    assert collected_since(stats, UTC) == "Collected since 1 March 2025"
+    assert collected_since(stats, WARSAW_WINTER) == "Collected since 2 March 2025"   # already the 2nd there
+    assert collected_since(Statistics(), UTC) == "Nothing collected yet"
+    in_a_date = {"March": "marca"}
+    texts = {"Collected since {date}": "Zbierane od {date}", "{day} {month} {year}": "{day} {month} {year}"}
+    assert collected_since(stats, UTC, texts.get, lambda _context, month: in_a_date.get(month, month)) == \
+        "Zbierane od 1 marca 2025"
 
 
 def test_period_labels_are_translated():

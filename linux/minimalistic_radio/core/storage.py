@@ -104,7 +104,7 @@ def load_preferences(path: Path) -> Preferences:
     if data.get("Language") in _LANGUAGES:
         prefs.language = data["Language"]
     for key, attr in (("ShowStationPopup", "show_station_popup"), ("Autostart", "autostart"),
-                      ("NoTrayHintShown", "no_tray_hint_shown")):
+                      ("NoTrayHintShown", "no_tray_hint_shown"), ("CollectStatistics", "collect_statistics")):
         if isinstance(data.get(key), bool):
             setattr(prefs, attr, data[key])
     return prefs
@@ -118,6 +118,7 @@ def save_preferences(path: Path, prefs: Preferences) -> None:
         "ShowStationPopup": prefs.show_station_popup,
         "Autostart": prefs.autostart,
         "NoTrayHintShown": prefs.no_tray_hint_shown,
+        "CollectStatistics": prefs.collect_statistics,
     })
 
 

@@ -306,7 +306,20 @@ def period_label(period: Period, today: date, _: Callable[[str], str] = _same,
     return text[:1].upper() + text[1:]
 
 
+def long_date(day: date, _: Callable[[str], str] = _same, C_: Callable[[str, str], str] = _same_in) -> str:
+    """"2 March 2025", in the UI language's order and forms."""
+    return _("{day} {month} {year}").format(day=day.day, month=_month_in_date(day.month, C_), year=day.year)
+
+
 def since_label(first: date, _: Callable[[str], str] = _same, C_: Callable[[str, str], str] = _same_in) -> str:
     """"Since 2 March 2025"."""
-    when = _("{day} {month} {year}").format(day=first.day, month=_month_in_date(first.month, C_), year=first.year)
-    return _("Since {date}").format(date=when)
+    return _("Since {date}").format(date=long_date(first, _, C_))
+
+
+def collected_since(stats: Statistics, tz: tzinfo | None = None, _: Callable[[str], str] = _same,
+                    C_: Callable[[str, str], str] = _same_in) -> str:
+    """Settings: "Collected since 2 March 2025" (the first session's day), or "Nothing collected yet"."""
+    if not stats.sessions:
+        return _("Nothing collected yet")
+    first = min(s.start for s in stats.sessions).astimezone(tz).date()
+    return _("Collected since {date}").format(date=long_date(first, _, C_))

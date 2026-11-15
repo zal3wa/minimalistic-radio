@@ -50,9 +50,13 @@ def test_preferences_are_clamped_and_validated(tmp_path):
 
 def test_preferences_round_trip_and_corrupt_fallback(tmp_path):
     f = tmp_path / "p.json"
-    prefs = Preferences(volume=55, last_played="http://a/b", language="pl", autostart=True, no_tray_hint_shown=True)
+    prefs = Preferences(volume=55, last_played="http://a/b", language="pl", autostart=True, no_tray_hint_shown=True,
+                        collect_statistics=False)
     save_preferences(f, prefs)
     assert load_preferences(f) == prefs
+    assert '"CollectStatistics": false' in f.read_text("utf-8")
+    f.write_text('{"Volume": 40}', "utf-8")
+    assert load_preferences(f).collect_statistics is True   # on unless switched off
     f.write_text("{oops", "utf-8")
     assert load_preferences(f) == Preferences()
     assert f.exists()

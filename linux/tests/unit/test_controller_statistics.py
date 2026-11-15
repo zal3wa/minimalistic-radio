@@ -3,8 +3,8 @@ from datetime import timedelta, timezone
 
 from fakes import A, B
 from minimalistic_radio.controller import Change, ErrorKind, Status
-from minimalistic_radio.core.models import ListeningSession, SongPlay, Statistics
-from minimalistic_radio.core.storage import load_history, load_statistics, save_statistics
+from minimalistic_radio.core.models import ListeningSession, Preferences, SongPlay, Statistics
+from minimalistic_radio.core.storage import load_history, load_preferences, load_statistics, save_statistics
 
 
 def utc(ctl, seconds=0):
@@ -180,6 +180,36 @@ def test_statistics_load_and_a_corrupt_file_is_kept(ctl_factory):
     bad.start(autostart=True)
     assert bad.statistics == Statistics()
     assert (bad.paths.data / "statistics.json.bad").read_text(encoding="utf-8") == "{oops"
+
+
+def test_switched_off_nothing_new_is_recorded(ctl_factory):
+    c = ctl_factory(prefs=Preferences(collect_statistics=False))
+    c.start(autostart=True)
+    start_playing(c)
+    c.on_player_title("Queen - A Kind Of Magic")
+    c.scheduler.advance(600)
+    c.stop()
+    assert c.statistics == Statistics() and not (c.paths.data / "statistics.json").exists()
+    assert [h.title for h in c.history] == ["Queen - A Kind Of Magic"]   # the history doesn't depend on it
+
+
+def test_switching_off_ends_the_running_session_and_keeps_the_data(ctl):
+    seen = []
+    ctl.subscribe(seen.append)
+    start_playing(ctl)
+    ctl.scheduler.advance(120)
+    ctl.set_collect_statistics(False)
+    assert Change.PREFERENCES in seen[-1] and Change.STATISTICS in seen[-1]
+    assert load_preferences(ctl.paths.config / "preferences.json").collect_statistics is False
+    assert saved(ctl).sessions == [ListeningSession("Alpha", A.url, utc(ctl, 0), utc(ctl, 120))]
+    ctl.on_player_title("Queen - A Kind Of Magic")
+    ctl.scheduler.advance(600)
+    assert saved(ctl).sessions[0].end == utc(ctl, 120) and saved(ctl).songs == []
+    ctl.set_collect_statistics(True)                 # on again while playing: counts from now
+    ctl.scheduler.advance(60)
+    ctl.stop()
+    assert [(s.start, s.end) for s in saved(ctl).sessions] == [(utc(ctl, 0), utc(ctl, 120)),
+                                                             (utc(ctl, 720), utc(ctl, 780))]
 
 
 def test_saving_failures_keep_the_radio_playing(ctl, monkeypatch):

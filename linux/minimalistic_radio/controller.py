@@ -457,9 +457,10 @@ class RadioController:
         self.history.insert(0, HistoryEntry(title, station, self.scheduler.now()))
         del self.history[HISTORY_LIMIT:]
         self._save_history()
-        self._recorder.song(station, title, self._statistics_now())   # saved with the session
-        self._statistics_unsaved = True
-        self._pending |= Change.STATISTICS
+        if self.prefs.collect_statistics:
+            self._recorder.song(station, title, self._statistics_now())   # saved with the session
+            self._statistics_unsaved = True
+            self._pending |= Change.STATISTICS
         return True
 
     def clear_history(self) -> None:
@@ -474,6 +475,8 @@ class RadioController:
 
     def _listening_started(self) -> None:
         """The sound started: a statistics session begins (or a reconnect continues the last one)."""
+        if not self.prefs.collect_statistics:
+            return
         self._recorder.started(self.station_name or APP_NAME, self._url, self._statistics_now())
         self._save_statistics()
         if self._statistics_timer is not None:
@@ -495,7 +498,8 @@ class RadioController:
     def _keep_listening(self) -> None:
         """The running session goes on until now; after the computer slept, a new one starts now."""
         now = self._statistics_now()
-        if not self._recorder.alive(now) and self.status is Status.PLAYING and self._switch_timer is None:
+        if not self._recorder.alive(now) and self.status is Status.PLAYING and self._switch_timer is None \
+                and self.prefs.collect_statistics:
             self._recorder.started(self.station_name or APP_NAME, self._url, now)
 
     def _statistics_tick(self) -> None:
@@ -807,6 +811,20 @@ class RadioController:
         self.prefs.show_station_popup = on
         self._save_preferences()
         self._emit(Change.PREFERENCES)
+
+    def set_collect_statistics(self, on: bool) -> None:
+        """Settings › Statistics. Off: nothing new is recorded and a running session ends now; what was collected
+        stays. On while a station plays: it counts from now."""
+        if on == self.prefs.collect_statistics:
+            return
+        self.prefs.collect_statistics = on
+        self._save_preferences()
+        if on:
+            if self.status is Status.PLAYING and self._switch_timer is None:
+                self._listening_started()
+        else:
+            self._listening_ended()
+        self._emit(Change.PREFERENCES | Change.STATISTICS)
 
     def set_no_tray_hint_shown(self) -> None:
         if not self.prefs.no_tray_hint_shown:

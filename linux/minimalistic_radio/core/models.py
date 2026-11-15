@@ -17,6 +17,7 @@ class Preferences:
     show_station_popup: bool = True
     autostart: bool = False
     no_tray_hint_shown: bool = False   # "The radio keeps playing", shown the first time the window is closed
+    collect_statistics: bool = True    # off: nothing new goes into statistics.json
 
 
 @dataclass
