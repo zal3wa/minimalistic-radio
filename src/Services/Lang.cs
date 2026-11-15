@@ -42,6 +42,33 @@ internal static class Lang
     internal static string Lc(string context, string english, params object[] values) =>
         Format(Translate(context + "\u0004" + english, english), english, values);
 
+    // A text with a number, in the form the language needs for it: Ln("{0} play", "{0} plays", 3) is "3 plays", in
+    // Polish "3 odtworzenia". {0} is the number, written the language's way ("1,288", "1 288"). The catalog has the
+    // forms as msgstr[0], msgstr[1]…
+    internal static string Ln(string singular, string plural, long count)
+    {
+        string english = count == 1 ? singular : plural;
+        string text = Code != "en" && Catalog(Code).TryGetValue(singular + "\u0001" + PluralForm(Code, count), out string found) ? found : english;
+        return Format(text, english, new object[] { count.ToString("N0", Culture) });
+    }
+
+    // Which msgstr[n] a number takes, as each catalog's Plural-Forms header says.
+    internal static int PluralForm(string code, long count)
+    {
+        long n = Math.Abs(count);
+        bool few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20);
+        switch (code)
+        {
+            case "pl": return n == 1 ? 0 : few ? 1 : 2;
+            case "uk": return n % 10 == 1 && n % 100 != 11 ? 0 : few ? 1 : 2;
+            case "cs": return n == 1 ? 0 : n >= 2 && n <= 4 ? 1 : 2;
+            case "fr": return n > 1 ? 1 : 0;
+            default: return n == 1 ? 0 : 1;   // English, German, Spanish, Italian, Portuguese
+        }
+    }
+
+    internal static int PluralForms(string code) => code == "pl" || code == "uk" || code == "cs" ? 3 : 2;
+
     // A language's name in the radio's language ("In Windows: German").
     internal static string LanguageName(string code)
     {
@@ -92,32 +119,39 @@ internal static class Lang
     }
 
     // A gettext catalog: msgid (after its msgctxt, if any) → msgstr, with strings over several lines and the usual
-    // escapes; no plural forms. Empty and fuzzy translations are left out, so those texts show in English.
+    // escapes. A text with plural forms (msgid_plural) has its msgstr[n] under msgid + "\u0001" + n. Empty and fuzzy
+    // translations are left out, so those texts show in English.
     private static Dictionary<string, string> Read(TextReader reader)
     {
         var catalog = new Dictionary<string, string>();
-        StringBuilder context = null, id = null, text = null, part = null;
+        StringBuilder context = null, id = null, part = null;
+        var texts = new SortedDictionary<int, StringBuilder>();   // msgstr (-1), or each msgstr[n]
         bool fuzzy = false;
+        void Keep()
+        {
+            if (id?.Length > 0 && !fuzzy)
+                foreach (var text in texts.Where(item => item.Value.Length > 0))
+                    catalog[(context == null ? "" : context + "\u0004") + id + (text.Key < 0 ? "" : "\u0001" + text.Key)] = text.Value.ToString();
+            context = id = part = null;
+            texts.Clear();
+            fuzzy = false;
+        }
         for (string line; (line = reader.ReadLine()) != null;)
         {
             line = line.Trim();
-            // The msgstr ends at the first line that doesn't go on with it.
-            if (text != null && !line.StartsWith("\""))
-            {
-                if (id?.Length > 0 && text.Length > 0 && !fuzzy)
-                    catalog[(context == null ? "" : context + "\u0004") + id] = text.ToString();
-                context = id = text = part = null;
-                fuzzy = false;
-            }
+            // The translation ends at the first line that doesn't go on with it (or with its next plural form).
+            if (texts.Count > 0 && !line.StartsWith("\"") && !line.StartsWith("msgstr[")) Keep();
+            int close = line.IndexOf(']');
             if (line.StartsWith("#,")) fuzzy |= line.Contains("fuzzy");
             else if (line.StartsWith("msgctxt ")) part = context = new StringBuilder(Unquote(line.Substring(8)));
             else if (line.StartsWith("msgid ")) part = id = new StringBuilder(Unquote(line.Substring(6)));
-            else if (line.StartsWith("msgstr ")) part = text = new StringBuilder(Unquote(line.Substring(7)));
+            else if (line.StartsWith("msgstr ")) part = texts[-1] = new StringBuilder(Unquote(line.Substring(7)));
+            else if (line.StartsWith("msgstr[") && close > 7 && int.TryParse(line.Substring(7, close - 7), out int form) && form >= 0)
+                part = texts[form] = new StringBuilder(Unquote(line.Substring(close + 1)));
             else if (line.StartsWith("\"")) part?.Append(Unquote(line));
             else part = null;   // a comment, a blank line, msgid_plural…
         }
-        if (text != null && id?.Length > 0 && text.Length > 0 && !fuzzy)
-            catalog[(context == null ? "" : context + "\u0004") + id] = text.ToString();
+        Keep();
         return catalog;
     }
 
@@ -165,23 +199,36 @@ internal static class Lang
         var assembly = typeof(Lang).Assembly;
         const string quoted = "\"((?:[^\"\\\\]|\\\\.)*)\"";
         var used = new HashSet<string>();
+        var plurals = new HashSet<string>();   // Ln's texts: each needs every plural form of each language
         foreach (string name in assembly.GetManifestResourceNames().Where(name => name.StartsWith("Source/")))
             using (var reader = new StreamReader(assembly.GetManifestResourceStream(name)))
-                foreach (Match call in Regex.Matches(reader.ReadToEnd(), @"\bL(c?)\(" + quoted + @"(?:\s*,\s*" + quoted + ")?"))
+            {
+                string source = reader.ReadToEnd();
+                foreach (Match call in Regex.Matches(source, @"\bL(c?)\(" + quoted + @"(?:\s*,\s*" + quoted + ")?"))
                     used.Add(call.Groups[1].Length == 0 ? Regex.Unescape(call.Groups[2].Value)
                         : Regex.Unescape(call.Groups[2].Value) + "\u0004" + Regex.Unescape(call.Groups[3].Value));
-        if (used.Count < 100)
-            throw new InvalidOperationException("Za mało tekstów do tłumaczenia w kodzie: " + used.Count);
+                foreach (Match call in Regex.Matches(source, @"\bLn\(" + quoted + @"\s*,\s*" + quoted))
+                    plurals.Add(Regex.Unescape(call.Groups[1].Value));
+            }
+        if (used.Count < 100 || plurals.Count == 0)
+            throw new InvalidOperationException("Za mało tekstów do tłumaczenia w kodzie: " + used.Count + " + " + plurals.Count);
         var missing = new List<string>();
         foreach (var (code, _) in Languages.Where(item => item.Code != "en"))
         {
             Dictionary<string, string> catalog = Catalog(code);
             if (catalog.Count == 0) missing.Add(code + ": nie wczytał się katalog");
-            else missing.AddRange(used.Where(text => !catalog.ContainsKey(text)).OrderBy(text => text)
-                .Select(text => code + ": " + text.Replace("\u0004", " | ")));
+            else missing.AddRange(used.Concat(plurals.SelectMany(text => Enumerable.Range(0, PluralForms(code)).Select(form => text + "\u0001" + form)))
+                .Where(text => !catalog.ContainsKey(text)).OrderBy(text => text)
+                .Select(text => code + ": " + text.Replace("\u0004", " | ").Replace("\u0001", " [") + (text.Contains("\u0001") ? "]" : "")));
         }
         if (missing.Count > 0)
             throw new InvalidOperationException("Brakujące tłumaczenia (" + missing.Count + "):\n" + string.Join("\n", missing));
+        // Plural forms as each catalog's Plural-Forms header says.
+        foreach (var (code, numbers) in new (string, string)[] { ("pl", "1:0 2:1 4:1 5:2 0:2 12:2 22:1 25:2 102:1 112:2"),
+            ("uk", "1:0 21:0 11:2 3:1 13:2 24:1 5:2"), ("cs", "1:0 2:1 4:1 5:2 0:2"), ("fr", "0:0 1:0 2:1"), ("de", "1:0 0:1 2:1"), ("en", "1:0 2:1") })
+            foreach (string pair in numbers.Split(' '))
+                if (PluralForm(code, long.Parse(pair.Split(':')[0])) != int.Parse(pair.Split(':')[1]))
+                    throw new InvalidOperationException($"Błędna forma liczby mnogiej: {code} {pair}.");
         string saved = Setting;
         try
         {
@@ -189,6 +236,12 @@ internal static class Lang
             string unknown = "Self-test " + Guid.NewGuid();
             if (L(unknown) != unknown || L("Settings") != "Einstellungen")
                 throw new InvalidOperationException("Błędne wyszukiwanie w katalogu lub brak powrotu do angielskiego.");
+            Setting = "pl";
+            string polish = string.Join("|", new[] { 1, 3, 5, 22 }.Select(count => Ln("{0} play", "{0} plays", count)));
+            Setting = "en";
+            string english = string.Join("|", new[] { 1, 14, 1288 }.Select(count => Ln("{0} play", "{0} plays", count)));
+            if (polish != "1 odtworzenie|3 odtworzenia|5 odtworzeń|22 odtworzenia" || english != "1 play|14 plays|1,288 plays")
+                throw new InvalidOperationException("Błędna liczba mnoga: " + polish + ", " + english);
         }
         finally { Setting = saved; }
     }

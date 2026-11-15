@@ -7,6 +7,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 msgid "The station doesn't send song titles"
 msgstr "Станція не передає назви пісень"
@@ -405,3 +406,87 @@ msgstr "португальська"
 
 msgid "English"
 msgstr "англійська"
+
+msgid "{0} h {1} min"
+msgstr "{0} год {1} хв"
+
+msgid "{0} h"
+msgstr "{0} год"
+
+msgid "{0} play"
+msgid_plural "{0} plays"
+msgstr[0] "{0} прослуховування"
+msgstr[1] "{0} прослуховування"
+msgstr[2] "{0} прослуховувань"
+
+msgid "Statistics"
+msgstr "Статистика"
+
+msgid "Show"
+msgstr "Показати"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Збирається лише на цьому комп’ютері, нікуди не надсилається"
+
+msgid "All"
+msgstr "Усе"
+
+msgid "Year"
+msgstr "Рік"
+
+msgid "Month"
+msgstr "Місяць"
+
+msgid "Listening time"
+msgstr "Час слухання"
+
+msgid "Since {0}"
+msgstr "З {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} на день"
+
+msgid "Song titles"
+msgstr "Назви пісень"
+
+msgid "Longest"
+msgstr "Найдовше без перерви"
+
+msgid "Top stations"
+msgstr "Найпопулярніші станції"
+
+msgid "Top artists"
+msgstr "Найпопулярніші виконавці"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "За назвами пісень, які надсилають станції · {0} часу слухання"
+
+msgid "Not enough song titles yet"
+msgstr "Поки що замало назв пісень"
+
+msgid "When you listen"
+msgstr "Коли ви слухаєте"
+
+msgid "Most often {0}"
+msgstr "Найчастіше {0}"
+
+msgid "Clear statistics"
+msgstr "Очистити статистику"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Очистити всю статистику? Цю дію не можна скасувати."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Тут поки нічого немає. Послухайте радіо трохи й поверніться."
+
+msgid "Automatic updates"
+msgstr "Автоматичні оновлення"
+
+msgid "Collected since {0}"
+msgstr "Збирається з {0}"
+
+msgid "Nothing collected yet"
+msgstr "Ще нічого не зібрано"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Статистику вимкнено. Нічого нового не записується."

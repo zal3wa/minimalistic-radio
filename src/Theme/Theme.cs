@@ -69,6 +69,8 @@ internal static class Theme
         Set(app, "Subtle", Dark ? "#B4B4B4" : "#5C5C5C");
         Set(app, "Selected", Dark ? "#2F2F2F" : "#EAEAEA");
         Set(app, "Success", Dark ? "#6CCB5F" : "#0F7B0F");
+        Set(app, "SuccessFg", Dark ? "#1C1C1C" : "#FFFFFF");   // the arrow on the green update badge
+        Set(app, "Danger", Dark ? "#FF99A4" : "#C42B1C");      // Windows 11's critical text: Quit
         Set(app, "MenuHover", "#09AAFF");
         Set(app, "MenuHoverFg", "#000000");
         Color accent = Accent(Dark);
@@ -112,6 +114,31 @@ internal static class Theme
         return new Viewbox { Width = size, Height = size, Child = path };
     }
 
+    // The same outline, filled: the play triangle and the stop square.
+    internal static FrameworkElement Solid(string data, double size, string color)
+    {
+        var glyph = (Viewbox)Glyph(data, size, color);
+        ((Path)glyph.Child).SetResourceReference(System.Windows.Shapes.Shape.FillProperty, color);
+        return glyph;
+    }
+
+    // "Update ready": a green disc with an arrow down.
+    internal static FrameworkElement UpdateBadge(double size)
+    {
+        var disc = new System.Windows.Shapes.Ellipse { Width = 20, Height = 20, Margin = new Thickness(2) };
+        disc.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Success");
+        var arrow = new Path
+        {
+            Data = Geometry.Parse("M12 7 V16 M8 12.5 L12 16.5 L16 12.5"), StrokeThickness = 2,
+            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round
+        };
+        arrow.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "SuccessFg");
+        var badge = new Grid { Width = 24, Height = 24 };
+        badge.Children.Add(disc);
+        badge.Children.Add(arrow);
+        return new Viewbox { Width = size, Height = size, Child = badge };
+    }
+
     internal const string PlayIcon = "M5 3 L19 12 L5 21 Z";
     internal const string StopIcon = "M6 6 H18 V18 H6 Z";
     internal const string RadioIcon = "M3 10 L3 6 A2 2 0 0 1 5 4 H19 A2 2 0 0 1 21 6 V18 A2 2 0 0 1 19 20 H5 A2 2 0 0 1 3 18 Z M3 10 H21 M7 15 H7.01 M11 15 H17";
@@ -131,15 +158,9 @@ internal static class Theme
     internal const string CopyIcon = "M8 8h12v12H8z M16 8V4H4v12h4";
     internal const string SettingsIcon = "M21 4H14 M10 4H3 M21 12H12 M8 12H3 M21 20H16 M12 20H3 M14 2V6 M8 10V14 M16 18V22";
     internal const string BackIcon = "M19 12 H5 M12 19 L5 12 L12 5";
-    internal const string CloseIcon = "M18 6 L6 18 M6 6 L18 18";
-    internal const string GlobeIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 2 A14.5 14.5 0 0 0 12 22 A14.5 14.5 0 0 0 12 2 M2 12 H22";
     internal const string ExternalIcon = "M15 3 H21 V9 M10 14 L21 3 M18 13 V19 A2 2 0 0 1 16 21 H5 A2 2 0 0 1 3 19 V8 A2 2 0 0 1 5 6 H11";
-    internal const string PopupIcon = "M3 5 A2 2 0 0 1 5 3 H19 A2 2 0 0 1 21 5 V13 A2 2 0 0 1 19 15 H5 A2 2 0 0 1 3 13 Z M8 19 H16 M12 15 V19";
     internal const string UpdateReadyIcon ="M12 3 V15 M6 9 L12 15 L18 9 M5 20 H19";   // arrow down to a line, like Discord's
-    internal const string HistoryIcon = "M2 12 A10 10 0 1 0 22 12 A10 10 0 1 0 2 12 Z M12 6 V12 L16 14";
+    internal const string HistoryIcon = "M3 12 A9 9 0 1 0 12 3 A9.75 9.75 0 0 0 5.26 5.74 L3 8 M3 3 V8 H8 M12 7 V12 L16 14";   // Lucide history
     internal const string MoonIcon = "M12 3 A6 6 0 0 0 21 12 A9 9 0 1 1 12 3 Z";
-    internal const string UpdateIcon = "M21 12 A9 9 0 1 1 18.36 5.64 M21 3 V9 H15";
     internal const string DownloadIcon = "M21 15 V19 A2 2 0 0 1 19 21 H5 A2 2 0 0 1 3 19 V15 M7 10 L12 15 L17 10 M12 15 V3";
-    internal const string PowerIcon = "M12 2 V12 M18.4 6.6 A9 9 0 1 1 5.63 6.64";
-    internal const string ListIcon = "M8 6 H21 M8 12 H21 M8 18 H21 M3 6 H3.01 M3 12 H3.01 M3 18 H3.01";
 }

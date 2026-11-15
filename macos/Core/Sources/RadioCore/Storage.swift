@@ -26,6 +26,7 @@ public struct Paths: Equatable, Sendable {
     public var stationsFile: URL { support.appendingPathComponent("stations.json") }
     public var preferencesFile: URL { support.appendingPathComponent("preferences.json") }
     public var historyFile: URL { support.appendingPathComponent("history.json") }
+    public var statisticsFile: URL { support.appendingPathComponent("statistics.json") }
     public var logosFolder: URL { cache.appendingPathComponent("logos") }
     public var coversFolder: URL { cache.appendingPathComponent("covers") }
 }
@@ -72,7 +73,7 @@ public func loadStations(_ url: URL) -> (stations: [Station], wasCorrupt: Bool) 
     return (stations, false)
 }
 
-private func moveAside(_ url: URL) {
+func moveAside(_ url: URL) {
     let bad = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".bad")
     try? FileManager.default.removeItem(at: bad)
     try? FileManager.default.moveItem(at: url, to: bad)
@@ -98,6 +99,7 @@ public func loadPreferences(_ url: URL) -> Preferences {
     if let value = data["ShowStationPopup"] as? NSNumber, isBool(value) { prefs.showStationPopup = value.boolValue }
     if let value = data["CheckUpdates"] as? NSNumber, isBool(value) { prefs.checkUpdates = value.boolValue }
     if let value = data["UpdateByDownload"] as? NSNumber, isBool(value) { prefs.updateByDownload = value.boolValue }
+    if let value = data["CollectStatistics"] as? NSNumber, isBool(value) { prefs.collectStatistics = value.boolValue }
     if let text = data["LastUpdateCheck"] as? String { prefs.lastUpdateCheck = parseTime(text) }
     return prefs
 }
@@ -111,6 +113,7 @@ public func savePreferences(_ url: URL, _ prefs: Preferences) throws {
         "CheckUpdates": prefs.checkUpdates,
         "LastUpdateCheck": prefs.lastUpdateCheck.map(formatTime) ?? NSNull(),
         "UpdateByDownload": prefs.updateByDownload,
+        "CollectStatistics": prefs.collectStatistics,
     ]
     try writeJSON(url, data)
 }
@@ -134,7 +137,7 @@ public func saveHistory(_ url: URL, _ entries: [HistoryEntry]) throws {
 }
 
 /// JSON booleans come back as NSNumber too; this tells them apart from numbers.
-private func isBool(_ number: NSNumber) -> Bool {
+func isBool(_ number: NSNumber) -> Bool {
     CFGetTypeID(number) == CFBooleanGetTypeID()
 }
 

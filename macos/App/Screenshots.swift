@@ -45,6 +45,8 @@ extension AppDelegate {
         localizer.setting = "en"
         setUp(paths: paths, player: SilentPlayer(), fetch: Network.fetchJSON, fetchFile: Network.fetchFile)
         panel.screenshotMode = true
+        panel.model.showsUpdatesAlways = true                          // Settings as in a release
+        panel.model.sampleStatistics = Self.sampleStatistics(now: now)  // in memory only
         controller.start(autostart: true)
         controller.select(Self.shotPlaying)
         controller.play()
@@ -52,16 +54,29 @@ extension AppDelegate {
         controller.onPlayerTitle(Self.shotSongs.last!.0)
     }
 
+    /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update, and
+    /// Statistics switched off.
+    private static let shots: [(page: PanelModel.Page, name: String, toEnd: Bool, update: Bool, off: Bool)] = [
+        (.stations, "stations", false, false, false), (.search, "search", false, false, false),
+        (.history, "history", false, false, false), (.settings, "settings", false, false, false),
+        (.settings, "settings-end", true, false, false), (.statistics, "statistics", false, false, false),
+        (.statistics, "statistics-end", true, false, false), (.stations, "stations-update", false, true, false),
+        (.statistics, "statistics-off", false, false, true),
+    ]
+
     private func takePanelPictures(into output: URL) async -> Int32 {
         let model = panel.model
         var written = 0
         for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
             NSApp.appearance = NSAppearance(named: appearance)
-            for (page, name) in [(PanelModel.Page.stations, "stations"), (.search, "search"), (.history, "history"), (.settings, "settings")] {
+            for (page, name, toEnd, update, off) in Self.shots {
                 if page == .search {
                     model.lastResults = nil
                     model.pendingSearch = "jazz"
                 }
+                model.sampleUpdate = update ? L("Update") : nil
+                controller.setCollectStatistics(!off)   // temporary files: nothing of the user's
+                model.refresh()
                 panel.show(page: page, anchor: nil)
                 await wait(seconds: 20) {
                     switch page {
@@ -81,14 +96,72 @@ extension AppDelegate {
                     await wait(seconds: 20) { model.lastResults.map { $0.allSatisfy { self.logos.lookup($0.logo).known } } ?? false }
                 }
                 try? await Task.sleep(nanoseconds: 800_000_000)
+                if toEnd, let view = panel.contentView {
+                    scrollToEnd(view)
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                }
                 if let view = panel.contentView, render(view, to: output.appendingPathComponent("macos-\(name)-\(look).png")) {
                     written += 1
                 }
             }
         }
+        model.sampleUpdate = nil
         panel.close()
         print("wrote \(written) screenshots to \(output.path)")
-        return written == 8 ? 0 : 1
+        return written == Self.shots.count * 2 ? 0 : 1
+    }
+
+    /// Statistics for the pictures: evenings over about a year and a half with the pictures' stations and songs.
+    /// Made up the same way on every run, kept in memory only.
+    static func sampleStatistics(now: Date) -> StatisticsLog {
+        var random = SampleRandom(seed: 357)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        // (index in shotStations, weight, sends song titles)
+        let stations: [(Int, Int, Bool)] = [(2, 36, true), (3, 24, true), (5, 17, true), (1, 12, false), (0, 7, true), (4, 4, false)]
+        let songs = ["Leonard Cohen - Everybody Knows", "Editors - Shadow", "Queen - A Kind Of Magic", "Leonard Cohen - Suzanne",
+                     "Dawid Podsiadło - Małomiasteczkowy", "Queen - Radio Ga Ga", "Daughtry - What About Now", "Editors - Papillon",
+                     "Metallica - One", "Kult - Arahja", "Myslovitz - Długość dźwięku samotności", "Dżingiel"]
+        var log = StatisticsLog()
+        for back in stride(from: 620, through: 0, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -back, to: today) else { continue }
+            var hours = [7, 12, 17, 18, 19, 19, 20, 20, 20, 20, 21, 21, 21, 22]   // evenings most often
+            var picked: [Int] = []
+            for _ in 0..<(random.next(upTo: 3) + (back < 40 ? 1 : 0)) {
+                let hour = hours.remove(at: random.next(upTo: hours.count))
+                hours.removeAll { $0 == hour }
+                picked.append(hour)
+            }
+            picked.sort()
+            for (number, hour) in picked.enumerated() {
+                let start = day.addingTimeInterval(Double(hour * 60 + random.next(upTo: 30)) * 60)
+                var end = start.addingTimeInterval(Double(20 + random.next(upTo: 100) + random.next(upTo: 100)) * 60)
+                if number + 1 < picked.count { end = min(end, day.addingTimeInterval(Double(picked[number + 1]) * 3600 - 600)) }
+                guard end > start, end < now else { continue }
+                var pick = random.next(upTo: stations.map(\.1).reduce(0, +))
+                let (index, _, titles) = stations.first { pick -= $0.1; return pick < 0 } ?? stations[0]
+                let station = shotStations[index]
+                log.sessions.append(ListeningSession(station: station.name, url: station.url, start: start, end: end, titles: titles))
+                var time = start.addingTimeInterval(90)
+                while titles && time < end {
+                    let song = min(random.next(upTo: songs.count), random.next(upTo: songs.count))
+                    log.songs.append(PlayedSong(station: station.name, title: songs[song], time: time))
+                    time.addTimeInterval(Double(190 + random.next(upTo: 90)))
+                }
+            }
+        }
+        return log
+    }
+
+    /// Scrolls every list and scroll view in `view` to its end (the bottom of Settings and Statistics).
+    private func scrollToEnd(_ view: NSView) {
+        if let scroll = view as? NSScrollView, let document = scroll.documentView {
+            let clip = scroll.contentView
+            let end = document.isFlipped ? max(0, document.frame.height - clip.bounds.height + scroll.contentInsets.bottom) : 0
+            clip.scroll(to: NSPoint(x: clip.bounds.minX, y: end))
+            scroll.reflectScrolledClipView(clip)
+        }
+        for subview in view.subviews { scrollToEnd(subview) }
     }
 
     /// `--menu-picture DIR`: the menu bar with the radio's open menu, light and dark (macos-menu-<look>.png),
@@ -165,5 +238,23 @@ extension AppDelegate {
         view.cacheDisplay(in: view.bounds, to: rep)
         guard let png = rep.representation(using: .png, properties: [:]) else { return false }
         return (try? png.write(to: url)) != nil
+    }
+}
+
+/// SplitMix64: the same made-up statistics on every run.
+private struct SampleRandom {
+    var state: UInt64
+
+    init(seed: UInt64) {
+        state = seed
+    }
+
+    mutating func next(upTo bound: Int) -> Int {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        z ^= z >> 31
+        return Int(z % UInt64(max(bound, 1)))
     }
 }

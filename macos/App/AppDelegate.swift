@@ -1,4 +1,5 @@
 import AppKit
+import AVKit
 import RadioCore
 import UniformTypeIdentifiers
 
@@ -94,11 +95,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    /// Quit (the menu, ⌘Q, Settings, an update, logging out): the listening statistics are saved.
+    func applicationWillTerminate(_ notification: Notification) {
+        controller?.willQuit()
+    }
+
     // MARK: - Panel and card (Tasks 15 and 18)
 
-    /// Opens the panel, on `page` ("search", "history", "settings") or the stations.
+    /// Opens the panel, on `page` ("search", "history", "settings", "statistics") or the stations.
     func openPanel(page: String? = nil) {
-        let pages: [String: PanelModel.Page] = ["search": .search, "history": .history, "settings": .settings]
+        let pages: [String: PanelModel.Page] = ["search": .search, "history": .history, "settings": .settings,
+                                                "statistics": .statistics]
         panel.show(page: page.flatMap { pages[$0] }, anchor: statusItem.buttonFrameOnScreen)
     }
 
@@ -167,6 +174,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
+        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min"] where L(text) == text {
+            failures.append("\"\(text)\" isn't translated into Polish")
+        }
         localizer.setting = saved
 
         let pixels = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 16, bitsPerSample: 8,
@@ -178,18 +188,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)
         if !panel.isVisible { failures.append("the panel doesn't open") }
-        panel.model.page = .settings
+        panel.model.page = .statistics
+        panel.model.back()
+        if panel.model.page != .settings { failures.append("Esc on Statistics doesn't go back to Settings") }
         panel.model.back()
         if panel.model.page != .stations { failures.append("Esc on a page doesn't go back to the stations") }
         panel.model.back()
         if panel.isVisible { failures.append("Esc on the stations doesn't close the panel") }
-        for (page, plays) in [(PanelModel.Page.search, false), (.station(nil), false), (.stations, true)] {
+        for (page, plays) in [(PanelModel.Page.search, false), (.station(nil), false), (.stations, true),
+                              (.history, true), (.statistics, true)] {
             panel.model.page = page
             if panel.model.spacePlays != plays { failures.append("Space on \(page) should \(plays ? "" : "not ")play") }
         }
         panel.model.addStation()
         if panel.model.page != .search { failures.append("+ Station doesn't open the search") }
+        failures += checkPanelLayout()
         panel.model.page = .stations
+
+        // Statistics: a session from the start of audio, its song, saved on quitting; the page draws them.
+        controller.select(0)
+        controller.play()
+        controller.onPlayerStarted()
+        controller.onPlayerTitle("Queen - A Kind Of Magic")
+        controller.willQuit()
+        controller.stop()
+        let statistics = loadStatistics(paths.statisticsFile)
+        if statistics.sessions.count != 1 || statistics.songs.map(\.title) != ["Queen - A Kind Of Magic"] {
+            failures.append("the statistics weren't saved to statistics.json (\(statistics.sessions.count) sessions, \(statistics.songs.count) songs)")
+        }
+        if summarizeStatistics(Self.sampleStatistics(now: Date()), period: .month, now: Date()).isEmpty {
+            failures.append("the sample statistics show nothing this month")
+        }
 
         if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
         let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
@@ -213,5 +242,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? FileManager.default.removeItem(at: folder)
         for failure in failures { FileHandle.standardError.write(Data("self-test failed: \(failure)\n".utf8)) }
         exit(failures.isEmpty ? 0 : 1)
+    }
+
+    /// The panel's pages as drawn, as far as AppKit shows them (SwiftUI draws the rest itself): the player only on
+    /// the stations page, and the Statistics page's All / Year / Month switch.
+    private func checkPanelLayout() -> [String] {
+        var failures: [String] = []
+        for page in [PanelModel.Page.stations, .history, .settings, .statistics] {
+            panel.show(page: page, anchor: nil)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+            guard let view = panel.contentView else { continue }
+            // The player's AirPlay button is an AppKit view: there exactly when the player is.
+            if !views(of: AVRoutePickerView.self, in: view).isEmpty != (page == .stations) {
+                failures.append("the player \(page == .stations ? "doesn't show" : "shows") on \(page)")
+            }
+            if page == .statistics {
+                let control = views(of: NSSegmentedControl.self, in: view).first
+                let labels = control.map { control in (0..<control.segmentCount).compactMap { control.label(forSegment: $0) } }
+                if labels != [L("All"), L("Year"), L("Month")] {
+                    failures.append("Statistics has no All / Year / Month switch (\(labels ?? []))")
+                } else if control?.selectedSegment != 2 {
+                    failures.append("Statistics doesn't open on Month")
+                }
+            }
+        }
+        panel.close()
+        return failures
+    }
+
+    private func views<T: NSView>(of type: T.Type, in view: NSView) -> [T] {
+        ((view as? T).map { [$0] } ?? []) + view.subviews.flatMap { views(of: type, in: $0) }
     }
 }

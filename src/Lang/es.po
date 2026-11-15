@@ -7,6 +7,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "The station doesn't send song titles"
 msgstr "La emisora no envía los títulos"
@@ -408,3 +409,86 @@ msgstr "portugués"
 
 msgid "English"
 msgstr "inglés"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
+
+msgid "{0} play"
+msgid_plural "{0} plays"
+msgstr[0] "{0} reproducción"
+msgstr[1] "{0} reproducciones"
+
+msgid "Statistics"
+msgstr "Estadísticas"
+
+msgid "Show"
+msgstr "Ver"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Se recopilan solo en este equipo y nunca se envían a ninguna parte"
+
+msgid "All"
+msgstr "Todo"
+
+msgid "Year"
+msgstr "Año"
+
+msgid "Month"
+msgstr "Mes"
+
+msgid "Listening time"
+msgstr "Tiempo de escucha"
+
+msgid "Since {0}"
+msgstr "Desde el {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} al día"
+
+msgid "Song titles"
+msgstr "Títulos de canciones"
+
+msgid "Longest"
+msgstr "Sesión más larga"
+
+msgid "Top stations"
+msgstr "Emisoras más escuchadas"
+
+msgid "Top artists"
+msgstr "Artistas más escuchados"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Según los títulos que envían las emisoras · {0} del tiempo de escucha"
+
+msgid "Not enough song titles yet"
+msgstr "Aún no hay suficientes títulos de canciones"
+
+msgid "When you listen"
+msgstr "Cuándo escuchas"
+
+msgid "Most often {0}"
+msgstr "Más a menudo: {0}"
+
+msgid "Clear statistics"
+msgstr "Borrar estadísticas"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "¿Borrar todas las estadísticas? No se puede deshacer."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Aún no hay nada. Escucha un rato y vuelve."
+
+msgid "Automatic updates"
+msgstr "Actualizaciones automáticas"
+
+msgid "Collected since {0}"
+msgstr "Recopiladas desde el {0}"
+
+msgid "Nothing collected yet"
+msgstr "Aún no se ha recopilado nada"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Las estadísticas están desactivadas. No se registra nada nuevo."

@@ -3,8 +3,8 @@ import RadioCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings, as on Windows, in the Mac's grouped style: language, open at login, the station card, the station
-/// list's export and import, updates, about, quit.
+/// Settings, the same on every system, in the Mac's grouped style: General (language, open at login, the station
+/// card), Stations (export and import), Statistics, Updates, About, Quit.
 struct SettingsPage: View {
     @ObservedObject var model: PanelModel
     @State private var listMessage: String?
@@ -38,35 +38,72 @@ struct SettingsPage: View {
             }
             Section(L("Stations")) {
                 LabeledContent {
-                    HStack {
-                        Button(L("Export…"), action: exportStations)
-                        Button(L("Import…"), action: importStations)
-                    }
+                    EmptyView()
                 } label: {
                     Text(L("Station list"))
                     Text(listMessage ?? L("A copy in a file, e.g. for friends"))
                 }
+                HStack {
+                    Spacer()
+                    Button(L("Export…"), action: exportStations)
+                    Button(L("Import…"), action: importStations)
+                }
             }
-            if AppDelegate.shared?.updater?.enabled == true {
+            Section {
+                Toggle(isOn: Binding(get: { controller.prefs.collectStatistics },
+                                     set: { controller.setCollectStatistics($0) })) {
+                    Text(L("Statistics"))
+                    Text(L("Collected only on this computer, never sent anywhere"))
+                }
+                LabeledContent {
+                    Button(L("Show")) { model.page = .statistics }
+                } label: {
+                    Text(collectedSince).font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            if model.showsUpdates {
                 Section(L("Updates")) {
                     Toggle(isOn: Binding(get: { controller.prefs.checkUpdates }, set: { controller.setCheckUpdates($0) })) {
-                        Text(L("Updates"))
+                        Text(L("Automatic updates"))
                         Text(L("Looks for a new version every few hours"))
                     }
                     LabeledContent {
                         Button(L("Check now"), action: checkNow)
                     } label: {
-                        Text(updateMessage ?? lastCheck)
+                        Text(updateMessage ?? lastCheck).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
             }
             Section(L("About")) {
-                LabeledContent(appName, value: version)
-                Link("github.com/zal3wa/minimalistic-radio", destination: URL(string: "https://github.com/zal3wa/minimalistic-radio")!)
-                Text("MIT License").foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    // The icon itself: the system's application icon is drawn inside a grey tile on macOS 26.
+                    Image(nsImage: NSImage(named: "AppIcon") ?? NSApp.applicationIconImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 38, height: 38)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(appName)
+                        Text(L("Version {0}").replacingOccurrences(of: "{0}", with: version) + " · MIT")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 4)
+                    Link(destination: URL(string: "https://github.com/zal3wa/minimalistic-radio")!) {
+                        HStack(spacing: 2) {
+                            Text("GitHub")
+                            Image(systemName: "arrow.up.right").imageScale(.small)
+                        }
+                    }
+                    .help("github.com/zal3wa/minimalistic-radio")
+                }
             }
             Section {
-                Button(L("Quit Minimalistic Radio"), role: .destructive) { NSApp.terminate(nil) }
+                HStack {
+                    Button(role: .destructive) { NSApp.terminate(nil) } label: {
+                        Text(L("Quit Minimalistic Radio")).foregroundStyle(.red)
+                    }
+                    Spacer()
+                }
             }
         }
         .formStyle(.grouped)
@@ -78,9 +115,20 @@ struct SettingsPage: View {
         return tag.hasPrefix("macos-v") ? String(tag.dropFirst(7)) : appVersion
     }
 
+    /// "Collected since 2 March 2025" (the first session's day, the UI language's long date), or "Nothing collected yet".
+    private var collectedSince: String {
+        guard let since = model.statistics.since else { return L("Nothing collected yet") }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: localizer.language)
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        return L("Collected since {0}").replacingOccurrences(of: "{0}", with: formatter.string(from: since))
+    }
+
     private var lastCheck: String {
         guard let last = controller.prefs.lastUpdateCheck else { return L("Not checked yet.") }
-        return DateFormatter.localizedString(from: last, dateStyle: .short, timeStyle: .short)
+        return L("Last checked: {0}").replacingOccurrences(
+            of: "{0}", with: DateFormatter.localizedString(from: last, dateStyle: .short, timeStyle: .short))
     }
 
     private func setOpenAtLogin(_ on: Bool) {
