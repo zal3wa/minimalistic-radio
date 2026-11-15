@@ -24,9 +24,9 @@ class StationDialog(Adw.Dialog):
         self._ = _
         self.on_save = on_save
 
-        self.name_row = Adw.EntryRow(title=_("Station name"), max_length=100)
-        self.url_row = Adw.EntryRow(title=_("Stream address (HTTP or HTTPS)"), max_length=2048)
-        self.logo_row = Adw.EntryRow(title=_("Logo address (optional)"), max_length=2048)
+        self.name_row = Adw.EntryRow(title=_("Station name"))
+        self.url_row = Adw.EntryRow(title=_("Stream address (HTTP or HTTPS)"))
+        self.logo_row = Adw.EntryRow(title=_("Logo address (optional)"))
         if station is not None:
             self.name_row.set_text(station.name)
             self.url_row.set_text(station.url)
