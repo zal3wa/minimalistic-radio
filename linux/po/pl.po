@@ -380,10 +380,6 @@ msgid "Version"
 msgstr "Wersja"
 
 #: minimalistic_radio/ui/settings_page.py
-msgid "Quit Minimalistic Radio"
-msgstr "Zakończ Minimalistic Radio"
-
-#: minimalistic_radio/ui/settings_page.py
 #, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Zapisano stacje: {n}."
@@ -702,3 +698,7 @@ msgstr "Na razie nic nie zebrano"
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Statistics are off. Nothing new is recorded."
 msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Stops the radio and removes it from the tray"
+msgstr "Wyłącza radio i usuwa ikonę z zasobnika"

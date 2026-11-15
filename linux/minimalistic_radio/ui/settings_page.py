@@ -110,14 +110,13 @@ class SettingsPage(Adw.NavigationPage):
         self.about_row.add_suffix(self.website_button)
         about_group.add(self.about_row)
 
-        # Quit: a card with only the button
+        # Quit: a card of its own, one row
         quit_group = Adw.PreferencesGroup()
-        self.quit_button = Gtk.Button(label=_("Quit Minimalistic Radio"), halign=Gtk.Align.START,
-                                      css_classes=["destructive-action"])
+        self.quit_row = Adw.ActionRow(title=_("Quit"), subtitle=_("Stops the radio and removes it from the tray"))
+        self.quit_button = Gtk.Button(label=_("Quit"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
         self.quit_button.connect("clicked", lambda _button: window.quit_app())
-        quit_box = Gtk.Box(margin_top=8, margin_bottom=8, margin_start=12, margin_end=12)
-        quit_box.append(self.quit_button)
-        quit_group.add(Adw.PreferencesRow(child=quit_box, activatable=False, focusable=False))
+        self.quit_row.add_suffix(self.quit_button)
+        quit_group.add(self.quit_row)
 
         for widget, name in ((self.language_row, "language-row"), (self.autostart_row, "autostart-row"),
                              (self.popup_row, "popup-row"), (self.export_button, "export-button"),

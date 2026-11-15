@@ -272,12 +272,13 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     assert page.website_button.get_uri() == "https://github.com/zal3wa/minimalistic-radio"
     assert not page.about_row.get_activatable()
 
-    # The groups: General, Stations, the statistics card, About, the Quit card; the last two cards have no heading.
+    # The groups: General, Stations, the statistics card, About, the Quit card; two cards have no heading.
     groups = [w for w in descendants(page) if isinstance(w, Adw.PreferencesGroup)]
     assert [g.get_title() for g in groups] == ["General", "Stations", "", "About", ""]
     assert "Collected only on this computer, never sent anywhere" in texts(groups[2])
-    assert [text for text in texts(groups[4]) if text] == ["Quit Minimalistic Radio"]
-    assert page.quit_button.has_css_class("destructive-action")
+    assert (page.quit_row.get_title(), page.quit_row.get_subtitle(), page.quit_button.get_label()) == (
+        "Quit", "Stops the radio and removes it from the tray", "Quit")
+    assert page.quit_row in descendants(groups[4]) and page.quit_button.has_css_class("destructive-action")
 
     page.statistics_button.emit("clicked")
     assert wait_for(lambda: window.shown_pages() == ["stations", "settings", "statistics"])
