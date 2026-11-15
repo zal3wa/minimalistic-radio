@@ -54,12 +54,14 @@ extension AppDelegate {
         controller.onPlayerTitle(Self.shotSongs.last!.0)
     }
 
-    /// The README pictures, plus for review: the ends of Settings and Statistics, and the top bar with an update.
-    private static let shots: [(page: PanelModel.Page, name: String, toEnd: Bool, update: Bool)] = [
-        (.stations, "stations", false, false), (.search, "search", false, false), (.history, "history", false, false),
-        (.settings, "settings", false, false), (.settings, "settings-end", true, false),
-        (.statistics, "statistics", false, false), (.statistics, "statistics-end", true, false),
-        (.stations, "stations-update", false, true),
+    /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update, and
+    /// Statistics switched off.
+    private static let shots: [(page: PanelModel.Page, name: String, toEnd: Bool, update: Bool, off: Bool)] = [
+        (.stations, "stations", false, false, false), (.search, "search", false, false, false),
+        (.history, "history", false, false, false), (.settings, "settings", false, false, false),
+        (.settings, "settings-end", true, false, false), (.statistics, "statistics", false, false, false),
+        (.statistics, "statistics-end", true, false, false), (.stations, "stations-update", false, true, false),
+        (.statistics, "statistics-off", false, false, true),
     ]
 
     private func takePanelPictures(into output: URL) async -> Int32 {
@@ -67,12 +69,13 @@ extension AppDelegate {
         var written = 0
         for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
             NSApp.appearance = NSAppearance(named: appearance)
-            for (page, name, toEnd, update) in Self.shots {
+            for (page, name, toEnd, update, off) in Self.shots {
                 if page == .search {
                     model.lastResults = nil
                     model.pendingSearch = "jazz"
                 }
                 model.sampleUpdate = update ? L("Update") : nil
+                controller.setCollectStatistics(!off)   // temporary files: nothing of the user's
                 model.refresh()
                 panel.show(page: page, anchor: nil)
                 await wait(seconds: 20) {

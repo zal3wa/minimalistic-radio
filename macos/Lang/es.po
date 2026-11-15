@@ -14,32 +14,17 @@ msgstr "Salir"
 msgid "Add a station first."
 msgstr "Primero añade una emisora."
 
-msgid "Station"
-msgstr "Emisora"
+msgid "All"
+msgstr "Todo"
 
-msgid "History"
-msgstr "Historial"
+msgid "Year"
+msgstr "Año"
 
-msgid "Settings"
-msgstr "Configuración"
+msgid "Month"
+msgstr "Mes"
 
 msgid "Now playing"
 msgstr "Sonando ahora"
-
-msgid "Back"
-msgstr "Atrás"
-
-msgid "Song history"
-msgstr "Historial de canciones"
-
-msgid "Statistics"
-msgstr "Estadísticas"
-
-msgid "Show"
-msgstr "Mostrar"
-
-msgid "Nothing here yet. Listen for a while and come back."
-msgstr "Aún no hay nada aquí. Escucha la radio un rato y vuelve."
 
 msgid "Copied"
 msgstr "Copiado"
@@ -101,8 +86,26 @@ msgstr "Más"
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Mueve Minimalistic Radio a Aplicaciones para recibir actualizaciones."
 
+msgid "Station"
+msgstr "Emisora"
+
+msgid "History"
+msgstr "Historial"
+
+msgid "Song history"
+msgstr "Historial de canciones"
+
+msgid "Settings"
+msgstr "Configuración"
+
+msgid "Back"
+msgstr "Atrás"
+
 msgid "Stations"
 msgstr "Emisoras"
+
+msgid "Statistics"
+msgstr "Estadísticas"
 
 msgid "Add by address"
 msgstr "Añadir por dirección"
@@ -182,8 +185,14 @@ msgstr "Importar…"
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Se recopilan solo en este ordenador y nunca se envían a ningún sitio"
 
+msgid "Show"
+msgstr "Mostrar"
+
 msgid "Updates"
 msgstr "Actualizaciones"
+
+msgid "Automatic updates"
+msgstr "Actualizaciones automáticas"
 
 msgid "Looks for a new version every few hours"
 msgstr "Busca una nueva versión cada pocas horas"
@@ -199,6 +208,12 @@ msgstr "Versión {0}"
 
 msgid "Quit Minimalistic Radio"
 msgstr "Salir de Minimalistic Radio"
+
+msgid "Nothing collected yet"
+msgstr "Aún no se ha recopilado nada"
+
+msgid "Collected since {0}"
+msgstr "Recopiladas desde el {0}"
 
 msgid "Not checked yet."
 msgstr "Aún no se ha comprobado."
@@ -248,14 +263,11 @@ msgstr "Quitar"
 msgid "Station options"
 msgstr "Opciones de la emisora"
 
-msgid "All"
-msgstr "Todo"
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Las estadísticas están desactivadas. No se registra nada nuevo."
 
-msgid "Year"
-msgstr "Año"
-
-msgid "Month"
-msgstr "Mes"
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Aún no hay nada aquí. Escucha la radio un rato y vuelve."
 
 msgid "Clear statistics"
 msgstr "Borrar estadísticas"

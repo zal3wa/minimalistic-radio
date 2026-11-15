@@ -14,32 +14,17 @@ msgstr "Вийти"
 msgid "Add a station first."
 msgstr "Спершу додайте станцію."
 
-msgid "Station"
-msgstr "Станція"
+msgid "All"
+msgstr "Усе"
 
-msgid "History"
-msgstr "Історія"
+msgid "Year"
+msgstr "Рік"
 
-msgid "Settings"
-msgstr "Налаштування"
+msgid "Month"
+msgstr "Місяць"
 
 msgid "Now playing"
 msgstr "Зараз грає"
-
-msgid "Back"
-msgstr "Назад"
-
-msgid "Song history"
-msgstr "Історія пісень"
-
-msgid "Statistics"
-msgstr "Статистика"
-
-msgid "Show"
-msgstr "Показати"
-
-msgid "Nothing here yet. Listen for a while and come back."
-msgstr "Тут поки нічого немає. Послухайте радіо деякий час і поверніться."
 
 msgid "Copied"
 msgstr "Скопійовано"
@@ -101,8 +86,26 @@ msgstr "Більше"
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Перемістіть Minimalistic Radio в «Програми», щоб отримувати оновлення."
 
+msgid "Station"
+msgstr "Станція"
+
+msgid "History"
+msgstr "Історія"
+
+msgid "Song history"
+msgstr "Історія пісень"
+
+msgid "Settings"
+msgstr "Налаштування"
+
+msgid "Back"
+msgstr "Назад"
+
 msgid "Stations"
 msgstr "Станції"
+
+msgid "Statistics"
+msgstr "Статистика"
 
 msgid "Add by address"
 msgstr "Додати за адресою"
@@ -182,8 +185,14 @@ msgstr "Імпорт…"
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Збирається лише на цьому комп’ютері й нікуди не надсилається"
 
+msgid "Show"
+msgstr "Показати"
+
 msgid "Updates"
 msgstr "Оновлення"
+
+msgid "Automatic updates"
+msgstr "Автоматичні оновлення"
 
 msgid "Looks for a new version every few hours"
 msgstr "Кожні кілька годин перевіряє, чи є нова версія"
@@ -199,6 +208,12 @@ msgstr "Версія {0}"
 
 msgid "Quit Minimalistic Radio"
 msgstr "Вийти з Minimalistic Radio"
+
+msgid "Nothing collected yet"
+msgstr "Поки нічого не зібрано"
+
+msgid "Collected since {0}"
+msgstr "Збирається з {0}"
 
 msgid "Not checked yet."
 msgstr "Ще не перевірялося."
@@ -248,14 +263,11 @@ msgstr "Видалити"
 msgid "Station options"
 msgstr "Параметри станції"
 
-msgid "All"
-msgstr "Усе"
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Статистику вимкнено. Нічого нового не записується."
 
-msgid "Year"
-msgstr "Рік"
-
-msgid "Month"
-msgstr "Місяць"
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Тут поки нічого немає. Послухайте радіо деякий час і поверніться."
 
 msgid "Clear statistics"
 msgstr "Очистити статистику"

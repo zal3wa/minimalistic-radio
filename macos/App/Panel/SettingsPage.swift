@@ -50,23 +50,27 @@ struct SettingsPage: View {
                 }
             }
             Section {
+                Toggle(isOn: Binding(get: { controller.prefs.collectStatistics },
+                                     set: { controller.setCollectStatistics($0) })) {
+                    Text(L("Statistics"))
+                    Text(L("Collected only on this computer, never sent anywhere"))
+                }
                 LabeledContent {
                     Button(L("Show")) { model.page = .statistics }
                 } label: {
-                    Text(L("Statistics"))
-                    Text(L("Collected only on this computer, never sent anywhere"))
+                    Text(collectedSince).font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             if model.showsUpdates {
                 Section(L("Updates")) {
                     Toggle(isOn: Binding(get: { controller.prefs.checkUpdates }, set: { controller.setCheckUpdates($0) })) {
-                        Text(L("Updates"))
+                        Text(L("Automatic updates"))
                         Text(L("Looks for a new version every few hours"))
                     }
                     LabeledContent {
                         Button(L("Check now"), action: checkNow)
                     } label: {
-                        Text(updateMessage ?? lastCheck)
+                        Text(updateMessage ?? lastCheck).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -109,6 +113,16 @@ struct SettingsPage: View {
     private var version: String {
         let tag = Bundle.main.object(forInfoDictionaryKey: "MRReleaseTag") as? String ?? "dev"
         return tag.hasPrefix("macos-v") ? String(tag.dropFirst(7)) : appVersion
+    }
+
+    /// "Collected since 2 March 2025" (the first session's day, the UI language's long date), or "Nothing collected yet".
+    private var collectedSince: String {
+        guard let since = model.statistics.since else { return L("Nothing collected yet") }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: localizer.language)
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        return L("Collected since {0}").replacingOccurrences(of: "{0}", with: formatter.string(from: since))
     }
 
     private var lastCheck: String {

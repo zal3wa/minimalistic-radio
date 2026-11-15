@@ -15,6 +15,11 @@ struct StatisticsPage: View {
             VStack(alignment: .leading, spacing: 12) {
                 PeriodSwitch(period: $period, labels: [(.all, L("All")), (.year, L("Year")), (.month, L("Month"))])
                     .frame(maxWidth: .infinity)
+                if !model.controller.prefs.collectStatistics {
+                    Text(L("Statistics are off. Nothing new is recorded."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
                 if summary.isEmpty {
                     Text(L("Nothing here yet. Listen for a while and come back."))
                         .foregroundStyle(.secondary)

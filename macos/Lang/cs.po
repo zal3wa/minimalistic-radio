@@ -14,32 +14,17 @@ msgstr "Ukončit"
 msgid "Add a station first."
 msgstr "Nejdřív přidejte stanici."
 
-msgid "Station"
-msgstr "Stanice"
+msgid "All"
+msgstr "Vše"
 
-msgid "History"
-msgstr "Historie"
+msgid "Year"
+msgstr "Rok"
 
-msgid "Settings"
-msgstr "Nastavení"
+msgid "Month"
+msgstr "Měsíc"
 
 msgid "Now playing"
 msgstr "Právě hraje"
-
-msgid "Back"
-msgstr "Zpět"
-
-msgid "Song history"
-msgstr "Historie skladeb"
-
-msgid "Statistics"
-msgstr "Statistiky"
-
-msgid "Show"
-msgstr "Zobrazit"
-
-msgid "Nothing here yet. Listen for a while and come back."
-msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
 
 msgid "Copied"
 msgstr "Zkopírováno"
@@ -101,8 +86,26 @@ msgstr "Další"
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Přesuňte Minimalistic Radio do Aplikací, abyste dostávali aktualizace."
 
+msgid "Station"
+msgstr "Stanice"
+
+msgid "History"
+msgstr "Historie"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Back"
+msgstr "Zpět"
+
 msgid "Stations"
 msgstr "Stanice"
+
+msgid "Statistics"
+msgstr "Statistiky"
 
 msgid "Add by address"
 msgstr "Přidat podle adresy"
@@ -182,8 +185,14 @@ msgstr "Importovat…"
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Shromažďuje se jen v tomto počítači a nikam se neodesílá"
 
+msgid "Show"
+msgstr "Zobrazit"
+
 msgid "Updates"
 msgstr "Aktualizace"
+
+msgid "Automatic updates"
+msgstr "Automatické aktualizace"
 
 msgid "Looks for a new version every few hours"
 msgstr "Každých pár hodin hledá novou verzi"
@@ -199,6 +208,12 @@ msgstr "Verze {0}"
 
 msgid "Quit Minimalistic Radio"
 msgstr "Ukončit Minimalistic Radio"
+
+msgid "Nothing collected yet"
+msgstr "Zatím nebylo nic nashromážděno"
+
+msgid "Collected since {0}"
+msgstr "Shromažďováno od {0}"
 
 msgid "Not checked yet."
 msgstr "Zatím nekontrolováno."
@@ -248,14 +263,11 @@ msgstr "Odebrat"
 msgid "Station options"
 msgstr "Možnosti stanice"
 
-msgid "All"
-msgstr "Vše"
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."
 
-msgid "Year"
-msgstr "Rok"
-
-msgid "Month"
-msgstr "Měsíc"
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
 
 msgid "Clear statistics"
 msgstr "Vymazat statistiky"
