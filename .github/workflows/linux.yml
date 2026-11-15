@@ -93,3 +93,16 @@ jobs:
           meson setup _build linux
           meson compile -C _build
           meson test -C _build --print-errorlogs
+
+      # Pictures of the window for review (the owner has no Linux). Never fails the job.
+      - name: Render a preview of the window
+        continue-on-error: true
+        run: cd linux && dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 tools/preview_window.py ../window-preview
+
+      - name: Upload the preview
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: window-preview
+          path: window-preview/
+          if-no-files-found: ignore
