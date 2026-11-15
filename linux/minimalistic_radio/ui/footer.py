@@ -56,7 +56,7 @@ class Footer(Gtk.Box):
         text.append(self.now_label)
         self.copy_button = Gtk.Button(icon_name="edit-copy-symbolic", tooltip_text=_("Copy title"),
                                       valign=Gtk.Align.CENTER, css_classes=["flat"])
-        self.copy_button.connect("clicked", self._copy)
+        self.copy_button.connect("clicked", lambda _button: self.copy_track())
         card = Gtk.Box(spacing=10, css_classes=["card", "now-playing"])
         card.append(self.cover)
         card.append(text)
@@ -192,7 +192,8 @@ class Footer(Gtk.Box):
 
     # ---- From the user ----
 
-    def _copy(self, _button: Gtk.Button) -> None:
+    def copy_track(self) -> None:
+        """Copies the song title, with the toast "Copied" (the copy button, and the tray menu via the window)."""
         track = self.controller.track
         if not track:
             return

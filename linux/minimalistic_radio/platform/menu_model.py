@@ -68,7 +68,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
     if name is not None:
         items.append(MenuItem("now:station", name, enabled=False))
         if c.track:
-            items.append(MenuItem("now:track", _shorten(c.track), enabled=False))
+            items.append(MenuItem("now:track", _shorten(c.track)))   # a click copies it, like Windows
     items.append(_separator(2))
     if update:
         items.append(MenuItem("update", update, icon="software-update-available-symbolic"))

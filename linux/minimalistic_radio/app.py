@@ -24,6 +24,7 @@ from .core import net  # noqa: E402
 from .core.storage import default_paths  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
+from .platform.tray import TrayIcon  # noqa: E402
 from .ui.window import RadioWindow  # noqa: E402
 
 COVER_LIMIT = 5_000_000
@@ -79,7 +80,7 @@ class RadioApplication(Adw.Application):
         self._ = translate
         self.controller: RadioController | None = None
         self.window: RadioWindow | None = None
-        self.tray = None      # Task 10
+        self.tray: TrayIcon | None = None
         self.mpris: MprisService | None = None
         self.updated = False
         self.screenshot_dir: str | None = None
@@ -128,6 +129,8 @@ class RadioApplication(Adw.Application):
         self.controller.start(autostart=autostart)
         self.mpris = MprisService(self)
         self.mpris.publish()
+        self.tray = TrayIcon(self)
+        self.tray.start()
 
     def do_handle_local_options(self, options: GLib.VariantDict) -> int:
         # A self-test or screenshot run is its own instance: never handed to (and quitting) a running radio.
@@ -159,6 +162,8 @@ class RadioApplication(Adw.Application):
         # A clean exit, like Shutdown on Windows: the stream is closed before the process ends.
         if self.mpris is not None:
             self.mpris.unpublish()
+        if self.tray is not None:
+            self.tray.stop()
         if self.controller is not None:
             self.controller.player.stop()
         Adw.Application.do_shutdown(self)

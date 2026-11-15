@@ -116,6 +116,10 @@ class RadioWindow(Adw.ApplicationWindow):
         else:
             self.navigation.replace_with_tags(["stations", tag])
 
+    def copy_track(self) -> None:
+        """Copies the song title and shows "Copied" (the tray menu's song item calls it)."""
+        self.footer.copy_track()
+
     def toast(self, text: str) -> None:
         """Shows `text` at the bottom of the window, in place of the previous toast."""
         if self._toast is not None:
