@@ -14,10 +14,16 @@ private let hard = Station(name: "Antyradio Hard", url: "https://an05.cdn.euroze
     #expect(shareAppLink(hard) == "minimalistic-radio://add?n=Antyradio+Hard&u=https%3A%2F%2Fan05.cdn.eurozet.pl%2FANTHAR.mp3")
 }
 
-@Test func logoIsAddedOnlyWhenThereIsOne() {
+@Test func logoIsAddedOnlyWhenThereIsAGoodOne() {
     let withLogo = Station(name: "B", url: "http://b.example/live", logo: "https://b.example/logo.png")
     #expect(shareLink(withLogo).hasSuffix("&l=https%3A%2F%2Fb.example%2Flogo.png"))
+    let httpLogo = Station(name: "My Radios", url: "http://b.example/live", logo: "http://www.my-radios.com/favicon.ico")
+    #expect(shareLink(httpLogo).hasSuffix("&l=http%3A%2F%2Fwww.my-radios.com%2Ffavicon.ico"))   // http logos too
     #expect(!shareLink(hard).contains("&l="))
+    for bad in ["ftp://b.example/logo.png", "logo.png", "javascript:alert(1)", "https://b.example/" + String(repeating: "x", count: 2040)] {
+        #expect(!shareLink(Station(name: "B", url: "http://b.example/live", logo: bad)).contains("&l="),
+                Comment(rawValue: String(bad.prefix(30))))
+    }
 }
 
 @Test func encodingIsWhatURLSearchParamsWrites() {
@@ -86,11 +92,21 @@ func invalidLinks(link: String) {
 @Test func badLogoIsDroppedSilently() {
     let base = "minimalistic-radio://add?n=A&u=http%3A%2F%2Fa.example%2F1&l="
     let expected = StationLink.station(SharedStation(name: "A", url: "http://a.example/1", logo: nil))
-    #expect(readShareLink(base + "http%3A%2F%2Fa.example%2Flogo.png") == expected)          // not https
-    #expect(readShareLink(base + "logo.png") == expected)
+    #expect(readShareLink(base + "ftp%3A%2F%2Fa.example%2Flogo.png") == expected)           // not http(s)
+    #expect(readShareLink(base + "javascript%3Aalert(1)") == expected)
+    #expect(readShareLink(base + "logo.png") == expected)                                     // not absolute
     #expect(readShareLink(base + "https%3A%2F%2Fa.example%2F" + String(repeating: "x", count: 2040)) == expected)
     #expect(readShareLink(base + "https%3A%2F%2Fa.example%2Flogo.png")
             == .station(SharedStation(name: "A", url: "http://a.example/1", logo: "https://a.example/logo.png")))
+}
+
+@Test func httpLogoIsKept() {
+    // The owner's my-radios.com station: its logo is http; the page shows such logos through https.
+    let station = Station(name: "My Radios", url: "http://a.example/1", logo: "http://www.my-radios.com/favicon.ico")
+    let expected = StationLink.station(SharedStation(name: station.name, url: station.url, logo: station.logo))
+    #expect(readShareLink(shareLink(station)) == expected)
+    #expect(readShareLink("minimalistic-radio://add?n=My+Radios&u=http%3A%2F%2Fa.example%2F1&l=http%3A%2F%2Fwww.my-radios.com%2Ffavicon.ico")
+            == expected)
 }
 
 @Test(arguments: [
