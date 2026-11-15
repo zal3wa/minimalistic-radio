@@ -76,7 +76,7 @@ The same radio for Linux, made with GTK and libadwaita: a tray icon (where the d
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-tray-menu-dark.png">
         <img src="docs/screenshots/linux-tray-menu-light.png" width="778" alt="The tray menu on Ubuntu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
       </picture></a>
-      <br>The tray menu on Ubuntu, next to the clock
+      <br>The tray menu on Ubuntu
     </td>
   </tr>
 </table>

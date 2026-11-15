@@ -58,7 +58,3 @@ python.install_sources(
 
 # Loaded by ui/window.py from next to the module.
 install_data('ui/style.css', install_dir: python.get_install_dir() / 'minimalistic_radio' / 'ui')
-
-# The screenshot mode's search results, found next to the module by selftest.py.
-install_data('selftest_data/search-jazz.json',
-             install_dir: python.get_install_dir() / 'minimalistic_radio' / 'selftest_data')

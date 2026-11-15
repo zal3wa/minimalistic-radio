@@ -48,7 +48,7 @@ Full-size pictures of Minimalistic Radio. [Back to the README](../../README.md)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="linux-tray-menu-dark.png">
-  <img src="linux-tray-menu-light.png" alt="The tray menu on Ubuntu, next to the clock">
+  <img src="linux-tray-menu-light.png" alt="The tray menu on Ubuntu">
 </picture>
 
 ## Linux: stations
