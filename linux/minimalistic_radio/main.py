@@ -12,6 +12,15 @@ LOCALEDIR = "/usr/share/locale"
 PKGDATADIR = "/usr/share/minimalistic-radio"
 
 
+def load_bans() -> None:
+    """The list of stations never shown: the installed one, else the source tree's."""
+    from .core import directory
+    for folder in (Path(PKGDATADIR), Path(__file__).resolve().parents[1] / "data"):
+        if (folder / "banned-stations.json").is_file():
+            directory.use_bans(directory.load_banned(folder / "banned-stations.json"))
+            return
+
+
 def main(argv: list[str]) -> int:
     from gi.repository import GLib
 
@@ -24,11 +33,7 @@ def main(argv: list[str]) -> int:
     except OSError:
         language = "auto"
     translate = i18n.install(language, LOCALEDIR)
-    from .core import directory
-    for folder in (Path(PKGDATADIR), Path(__file__).resolve().parents[1] / "data"):   # installed, else the source tree
-        if (folder / "banned-stations.json").is_file():
-            directory.use_bans(directory.load_banned(folder / "banned-stations.json"))
-            break
+    load_bans()
     return RadioApplication(translate=translate).run(argv)
 
 

@@ -13,6 +13,7 @@ gi.require_version("Adw", "1")
 
 from minimalistic_radio import main  # noqa: E402
 from minimalistic_radio.app import RadioApplication  # noqa: E402
+from minimalistic_radio.core import directory  # noqa: E402
 from minimalistic_radio.selftest import run_self_test, take_screenshots  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]   # linux/
@@ -36,6 +37,9 @@ def test_self_test_passes(tmp_path, monkeypatch, capsys):
     target.mkdir(parents=True)
     subprocess.run([msgfmt, "-o", str(target / "minimalistic-radio.mo"), str(ROOT / "po" / "pl.po")], check=True)
     monkeypatch.setattr(main, "LOCALEDIR", str(tmp_path / "locale"))
+    monkeypatch.setattr(main, "PKGDATADIR", str(ROOT / "data"))   # as installed
+    monkeypatch.setattr(directory, "_active_bans", directory.NO_BANS)
+    main.load_bans()   # what main() does before the application runs
     monkeypatch.delenv("LANGUAGE", raising=False)
     assert run_self_test(RadioApplication(application_id="io.github.zal3wa.minimalistic-radio-selftest")) == 0, \
         capsys.readouterr().err

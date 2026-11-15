@@ -113,7 +113,8 @@ def is_hidden(entry: DirectoryStation, bans: BanList | None = None) -> bool:
         host = ""
     if any(host == h or host.endswith("." + h) for h in bans.hosts):
         return True
-    return (entry.country_code.upper(), name_key(entry.name)) in bans.names
+    key = name_key(entry.name)   # "Radio" alone has no key: it never matches a name
+    return bool(key) and (entry.country_code.upper(), key) in bans.names
 
 
 def subtitle(entry: DirectoryStation) -> str:

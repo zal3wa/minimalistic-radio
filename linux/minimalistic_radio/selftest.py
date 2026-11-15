@@ -78,10 +78,21 @@ def _check_polish() -> None:
         i18n._translation = saved
 
 
+def _check_bans() -> None:
+    """main() loaded the ban list (the installed one): Radio Republika is hidden by its address and by its name."""
+    by_host = directory.DirectoryStation("Republika Live", "Poland", "https://stream.radiotvrepublika.pl/live",
+                                         None, "MP3", 128, "", country_code="PL")
+    by_name = directory.DirectoryStation("Radio Republika", "Poland", "https://stream.example/republika",
+                                         None, "MP3", 128, "", country_code="PL")
+    _check(directory.is_hidden(by_host) and directory.is_hidden(by_name),
+           "the banned-stations list is not loaded: Radio Republika would be shown")
+
+
 def run_self_test(app: Any) -> int:
-    """0 when the window and every page, the tray menu, the MPRIS object and the Polish catalogue work."""
+    """0 when the window and every page, the tray menu, the MPRIS object, the ban list and the Polish catalogue work."""
     try:
         Adw.init()
+        _check_bans()
         translate = getattr(app, "_", lambda s: s)
         with tempfile.TemporaryDirectory() as folder:
             controller = _controller(Path(folder), STATIONS[:2])
@@ -128,6 +139,7 @@ def _prepare(window: RadioWindow, page: str) -> None:
 
 def take_screenshots(app: Any, folder: Path) -> int:
     """Writes linux-<page>-<light|dark>.png for the stations, search, history and settings pages."""
+    styles = None
     try:
         Adw.init()
         translate = getattr(app, "_", lambda s: s)
@@ -153,4 +165,7 @@ def take_screenshots(app: Any, folder: Path) -> int:
     except Exception as error:
         print(f"screenshots failed: {error!r}", file=sys.stderr)
         return 1
+    finally:
+        if styles is not None:
+            styles.set_color_scheme(Adw.ColorScheme.DEFAULT)   # the system's light or dark again
     return 0

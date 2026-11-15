@@ -4,7 +4,7 @@ on:
   push:
     branches: ['**']
     tags: ['linux-v*']
-    paths: ['linux/**', '.github/workflows/linux.yml']
+    paths: ['linux/**', '.github/workflows/linux.yml', 'data/banned-stations.json']
   pull_request:
   workflow_dispatch:
 
