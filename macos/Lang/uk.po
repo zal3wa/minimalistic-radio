@@ -7,3 +7,12 @@ msgstr ""
 
 msgid "Quit"
 msgstr "Вийти"
+
+msgid "Couldn't save the station list."
+msgstr "Не вдалося зберегти список станцій."
+
+msgid "The broadcast has ended"
+msgstr "Трансляцію завершено"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Це не список станцій Minimalistic Radio."

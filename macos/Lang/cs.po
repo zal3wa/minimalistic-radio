@@ -7,3 +7,12 @@ msgstr ""
 
 msgid "Quit"
 msgstr "Ukončit"
+
+msgid "Couldn't save the station list."
+msgstr "Seznam stanic se nepodařilo uložit."
+
+msgid "The broadcast has ended"
+msgstr "Vysílání skončilo"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Toto není seznam stanic Minimalistic Radio."

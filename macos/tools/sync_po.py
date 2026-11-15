@@ -2,7 +2,7 @@
 
 Run it after changing texts in macos/App (Python 3, any system): python macos/tools/sync_po.py
 
-- The texts are the English literals in L("...") calls under macos/App.
+- The texts are the English literals in L("...") calls under macos/App and macos/Core/Sources.
 - Each translation comes from, in order: the Mac catalogue itself, the Windows one (src/Lang/<code>.po), then the
   Linux one (linux/po/<code>.po). Texts the Mac no longer uses are dropped.
 - Whatever is still untranslated is printed per language; translate it in macos/Lang/<code>.po by hand.
@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "macos" / "App"
+CORE = ROOT / "macos" / "Core" / "Sources"
 LANG = ROOT / "macos" / "Lang"
 CODES = ("pl", "de", "uk", "cs", "es", "fr", "it", "pt")
 LITERAL = re.compile(r'\bL\(\s*"((?:[^"\\]|\\.)*)"')
@@ -73,7 +74,7 @@ def read_po(path: Path) -> dict[str, str]:
 
 def used_texts() -> list[str]:
     seen: dict[str, None] = {}
-    for path in sorted(APP.rglob("*.swift")):
+    for path in sorted(APP.rglob("*.swift")) + sorted(CORE.rglob("*.swift")):
         for match in LITERAL.finditer(path.read_text(encoding="utf-8")):
             seen.setdefault(swift_unescape(match.group(1)), None)
     return list(seen)

@@ -7,3 +7,12 @@ msgstr ""
 
 msgid "Quit"
 msgstr "Sair"
+
+msgid "Couldn't save the station list."
+msgstr "Não foi possível guardar a lista de estações."
+
+msgid "The broadcast has ended"
+msgstr "A transmissão terminou"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Isto não é uma lista de estações do Minimalistic Radio."
