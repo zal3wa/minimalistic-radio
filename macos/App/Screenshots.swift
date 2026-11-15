@@ -66,6 +66,12 @@ extension AppDelegate {
                         return true
                     }
                 }
+                // The directory sometimes doesn't answer: try the search again, twice at most.
+                for _ in 0..<2 where page == .search && model.lastResults?.isEmpty != false {
+                    model.lastResults = nil
+                    model.pendingSearch = "jazz"
+                    await wait(seconds: 20) { model.lastResults.map { $0.allSatisfy { self.logos.lookup($0.logo).known } } ?? false }
+                }
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 if let view = panel.contentView, render(view, to: output.appendingPathComponent("macos-\(name)-\(look).png")) {
                     written += 1

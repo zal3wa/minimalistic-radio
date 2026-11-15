@@ -58,13 +58,17 @@ struct SearchPage: View {
         .padding(.top, 8)
         .onAppear {
             focused = true
-            if let pending = model.pendingSearch {
-                model.pendingSearch = nil
-                query = pending
-                search()
-            }
+            runPending()
         }
+        .onChange(of: model.pendingSearch) { _ in runPending() }
         .task { await loadSuggestions() }
+    }
+
+    private func runPending() {
+        guard let pending = model.pendingSearch else { return }
+        model.pendingSearch = nil
+        query = pending
+        search()
     }
 
     private func search() {

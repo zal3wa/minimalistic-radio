@@ -75,7 +75,7 @@ struct SettingsPage: View {
 
     private var version: String {
         let tag = Bundle.main.object(forInfoDictionaryKey: "MRReleaseTag") as? String ?? "dev"
-        return tag.hasPrefix("macos-v") ? String(tag.dropFirst(7)) : "\(appVersion) (dev)"
+        return tag.hasPrefix("macos-v") ? String(tag.dropFirst(7)) : appVersion
     }
 
     private var lastCheck: String {
