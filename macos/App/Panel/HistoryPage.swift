@@ -24,7 +24,6 @@ struct HistoryPage: View {
                 }
                 .listStyle(.inset)
                 .scrollContentBackground(.hidden)
-                .panelScrollBars(model)
                 Button(L("Clear history")) { model.controller.clearHistory() }
                     .buttonStyle(.link)
                     .padding(.horizontal, 16)

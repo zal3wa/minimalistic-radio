@@ -38,7 +38,6 @@ struct StatisticsPage: View {
             }
             .padding(EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20))
         }
-        .panelScrollBars(model)
     }
 
     // MARK: - Parts

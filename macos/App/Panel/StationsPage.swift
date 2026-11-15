@@ -29,7 +29,6 @@ struct StationsPage: View {
             }
             .listStyle(.inset)
             .scrollContentBackground(.hidden)
-            .panelScrollBars(model)   // 16 pt from the right edge, as from the left one
             .background(alignment: .bottom) {
                 // ⌘⌥↑/↓: the keyboard way to move the selected station.
                 HStack {

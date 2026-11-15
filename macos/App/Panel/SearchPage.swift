@@ -53,7 +53,6 @@ struct SearchPage: View {
             }
             .listStyle(.inset)
             .scrollContentBackground(.hidden)
-            .panelScrollBars(model)
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
