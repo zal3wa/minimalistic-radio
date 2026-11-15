@@ -35,6 +35,24 @@ msgstr "Le serveur de la station a renvoyé l'erreur {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Impossible de se connecter à la station. Vérifiez votre connexion Internet."
 
+msgid "Download update"
+msgstr "Télécharger la mise à jour"
+
+msgid "Update"
+msgstr "Mettre à jour"
+
+msgid "You have the latest version."
+msgstr "Vous avez la dernière version."
+
+msgid "Couldn't check for updates."
+msgstr "Impossible de rechercher les mises à jour."
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "macOS peut demander une fois l'autorisation de mettre à jour la radio."
+
+msgid "Drag Minimalistic Radio to Applications to finish the update."
+msgstr "Faites glisser Minimalistic Radio dans Applications pour terminer la mise à jour."
+
 msgid "Couldn't save the station list."
 msgstr "Impossible d'enregistrer la liste des stations."
 

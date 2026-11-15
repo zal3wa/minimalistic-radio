@@ -2,6 +2,8 @@ name: macOS
 
 # The Mac app (macos/): core tests, a universal build, checks of the built app, and a DMG.
 # The development PC is Windows, so this is where the Mac app is built and tested.
+# A tag macos-vX.Y.Z (or -beta.N) also signs it with the project's self-signed certificate and publishes a
+# release that is never "latest" (that stays the Windows one), plus the DMG behind the README's download button.
 on:
   push:
     branches: ['**']
@@ -21,6 +23,7 @@ jobs:
     env:
       APP: build/Build/Products/Release/Minimalistic Radio.app
       TAG: ${{ startsWith(github.ref, 'refs/tags/macos-v') && github.ref_name || '' }}
+      IDENTITY: Minimalistic Radio (self-signed)
     steps:
       - uses: actions/checkout@v7
 
@@ -52,14 +55,101 @@ jobs:
           size=$(du -sk "$APP" | cut -f1); echo "app size: ${size} KB"; test "$size" -lt 10240
           "$binary" --self-test
 
-      - name: DMG
+      # Only for a release tag: the version in project.yml must match the tag.
+      - name: Check the version
+        if: env.TAG != ''
+        run: |
+          version=$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.plist")
+          base=${TAG#macos-v}; base=${base%%-beta.*}
+          echo "tag $TAG, app version $version"
+          test "$base" = "$version" || { echo "::error::The tag says $base but MARKETING_VERSION in macos/project.yml is $version"; exit 1; }
+
+      # The same certificate for every release: macOS then sees each version as the same app (no new permission
+      # prompts), and the updater accepts only an update signed with it.
+      - name: Sign with the project's certificate
+        if: env.TAG != ''
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_SIGNING_CERTIFICATE }}
+          PASSWORD: ${{ secrets.MACOS_SIGNING_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(uuidgen)
+          echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$PASSWORD" -T /usr/bin/codesign -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/signing.p12"
+          if ! codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP" 2> sign.log; then
+            cat sign.log
+            echo "Trusting the certificate for code signing in this runner, then signing again."
+            security find-certificate -c "$IDENTITY" -p "$keychain" > "$RUNNER_TEMP/cert.pem"
+            sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+            codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP"
+          fi
+          codesign --verify --deep --strict "$APP"
+          requirement=$(codesign -d -r- "$APP" 2>&1); echo "$requirement"
+          echo "$requirement" | grep -q 'certificate leaf = H"' || { echo "::error::Not signed with the project's certificate"; exit 1; }
+          "$APP/Contents/MacOS/Minimalistic Radio" --self-test
+
+      - name: DMG and update zip
         run: |
           mkdir dmg
           cp -R "$APP" dmg/
           ln -s /Applications dmg/Applications
           hdiutil create -volname "Minimalistic Radio" -srcfolder dmg -ov -format UDZO Minimalistic-Radio.dmg
+          ditto -c -k --keepParent "$APP" Minimalistic-Radio-macOS.zip
+          ls -l Minimalistic-Radio.dmg Minimalistic-Radio-macOS.zip
 
       - uses: actions/upload-artifact@v7
         with:
           name: Minimalistic-Radio-dmg
-          path: Minimalistic-Radio.dmg
+          path: |
+            Minimalistic-Radio.dmg
+            Minimalistic-Radio-macOS.zip
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/macos-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: Minimalistic-Radio-dmg
+
+      - name: Publish the release
+        run: |
+          version=${TAG#macos-v}
+          flags=(--title "Minimalistic Radio for macOS $version" --notes-from-tag --latest=false --verify-tag)
+          case "$TAG" in *-beta.*) flags+=(--prerelease) ;; esac
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" Minimalistic-Radio.dmg Minimalistic-Radio-macOS.zip --clobber
+          else
+            gh release create "$TAG" Minimalistic-Radio.dmg Minimalistic-Radio-macOS.zip "${flags[@]}"
+          fi
+
+      # The README's "Download for macOS" points here, so it always gets the newest Mac version: betas until the
+      # first full release, then only full releases.
+      - name: Update the download link
+        run: |
+          stable=$(gh release list --limit 100 --json tagName,isPrerelease \
+            --jq '[.[] | select((.tagName | startswith("macos-v")) and (.isPrerelease | not))] | length')
+          case "$TAG" in *-beta.*) if [ "$stable" -gt 0 ]; then echo "A full release exists: the link stays on it."; exit 0; fi ;; esac
+          if ! gh release view macos-download > /dev/null 2>&1; then
+            gh release create macos-download --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Minimalistic Radio for macOS (download link)" \
+              --notes "The newest Minimalistic Radio for macOS, for the README's download button. Every version and its notes: the macos-v releases."
+          fi
+          gh release upload macos-download Minimalistic-Radio.dmg --clobber
+          echo "latest: $(gh release view --json tagName --jq .tagName)"

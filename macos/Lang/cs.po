@@ -35,6 +35,24 @@ msgstr "Server stanice vrátil chybu {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
 
+msgid "Download update"
+msgstr "Stáhnout aktualizaci"
+
+msgid "Update"
+msgstr "Aktualizovat"
+
+msgid "You have the latest version."
+msgstr "Máte nejnovější verzi."
+
+msgid "Couldn't check for updates."
+msgstr "Aktualizace se nepodařilo zkontrolovat."
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "macOS se může jednou zeptat na povolení aktualizovat rádio."
+
+msgid "Drag Minimalistic Radio to Applications to finish the update."
+msgstr "Dokončete aktualizaci přetažením Minimalistic Radio do Aplikací."
+
 msgid "Couldn't save the station list."
 msgstr "Seznam stanic se nepodařilo uložit."
 

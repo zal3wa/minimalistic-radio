@@ -35,6 +35,24 @@ msgstr "El servidor de la emisora devolvió el error {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "No se pudo conectar con la emisora. Comprueba tu conexión a internet."
 
+msgid "Download update"
+msgstr "Descargar actualización"
+
+msgid "Update"
+msgstr "Actualizar"
+
+msgid "You have the latest version."
+msgstr "Tienes la versión más reciente."
+
+msgid "Couldn't check for updates."
+msgstr "No se pudieron buscar actualizaciones."
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "Puede que macOS pida permiso una vez para actualizar la radio."
+
+msgid "Drag Minimalistic Radio to Applications to finish the update."
+msgstr "Arrastra Minimalistic Radio a Aplicaciones para terminar la actualización."
+
 msgid "Couldn't save the station list."
 msgstr "No se pudo guardar la lista de emisoras."
 

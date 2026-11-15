@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController!
     private var nowPlaying: NowPlaying?
     private var systemEvents: SystemEvents?
+    private(set) var updater: Updater!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
@@ -41,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         systemEvents = SystemEvents(controller: controller)
         controller.start(autostart: launchedAtLogin)
         if CommandLine.arguments.contains("--resume") { controller.play() }
+        updater.start()
     }
 
     /// The controller, the logo cache and the menu bar item, over the given player and network.
@@ -51,6 +53,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.openPanel() },
                                           perform: { [weak self] in self?.perform($0) })
         statusItem.extraItems = { [weak self] in self?.riskCheckItems() ?? [] }
+        updater = Updater(controller: controller)
+        updater.onChange = { [weak self] in self?.statusItem.refresh() }
+        updater.showCard = { [weak self] in self?.showCard($0) }
+        statusItem.updateLabel = { [weak self] in self?.updater.label }
         controller.subscribe { [weak self] change in self?.changed(change) }
     }
 
@@ -90,6 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case ("sleep", _): if let minutes = Int(value) { c.setSleepTimer(minutes: minutes) }
         case ("now", "track"): copyTrack()
         case ("settings", _): openPanel(page: "settings")
+        case ("update", _): updater.install()
         case ("quit", _): NSApp.terminate(nil)
         default: break
         }
@@ -140,6 +147,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if !statusItem.hasIcon { failures.append("no menu bar icon") }
         if statusItem.makeMenu().items.count < 8 { failures.append("the menu bar menu is incomplete") }
+        if updater.enabled != (Bundle.main.object(forInfoDictionaryKey: "MRReleaseTag") as? String ?? "dev").hasPrefix("macos-v") {
+            failures.append("the updater doesn't follow the build's release tag")
+        }
         let model = buildMenu(controller, update: nil).map(\.id)
         for id in ["playback", "stations", "volume", "sleep", "settings", "quit"] where !model.contains(id) {
             failures.append("the menu has no \(id)")
