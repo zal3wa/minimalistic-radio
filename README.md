@@ -117,9 +117,17 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
   </tr>
 </table>
 
-<!-- The tray menu is drawn by the desktop, so its picture has to come from a real desktop (a beta tester).
-Add it here, with the same light/dark <picture> pattern as above:
-docs/screenshots/linux-tray-menu-light.png and linux-tray-menu-dark.png -->
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-tray-menu-dark.png">
+        <img src="docs/screenshots/linux-tray-menu-light.png" width="778" alt="The tray menu on Ubuntu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
+      </picture>
+      <br>The tray menu on Ubuntu, next to the clock
+    </td>
+  </tr>
+</table>
 
 ## Languages
 
