@@ -84,6 +84,8 @@ def test_second_launch_opens_panel(app_id):
         if second.poll() is None:
             second.kill()
         first.quit()
+        if first.mpris is not None:   # never ran its main loop, so no shutdown: free the MPRIS object for later tests
+            first.mpris.unpublish()
 
 
 def test_autostart_stays_hidden(app_id, tmp_path):
