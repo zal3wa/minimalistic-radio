@@ -18,12 +18,14 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gdk, GLib, Gtk  # noqa: E402
+gi.require_version("Graphene", "1.0")
+from gi.repository import Adw, Gdk, GLib, Graphene, Gtk  # noqa: E402
 
 from . import i18n  # noqa: E402
 from .controller import RadioController  # noqa: E402
 from .core import directory  # noqa: E402
 from .core.models import HistoryEntry, ListeningSession, SongPlay, Station, Statistics  # noqa: E402
+from .core.share import WEB_LINK, SharedStation, share_link  # noqa: E402
 from .core.statistics import Period  # noqa: E402
 from .core.storage import Paths, save_history, save_stations  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
@@ -65,6 +67,8 @@ SAMPLE_SONGS = ["Leonard Cohen - Everybody Knows", "Editors - Shadow", "Queen - 
                 "Daughtry - What About Now", "Editors - Papillon", "Metallica - Nothing Else Matters",
                 "Leonard Cohen - Suzanne", "Kult - Arahja", "Radio jingle"]
 LONG_PAGES = ("settings", "statistics")   # pictured a second time, scrolled to the end
+SHOT_SHARED = SharedStation(SHOT_STATIONS[SHOT_PLAYING].name, SHOT_STATIONS[SHOT_PLAYING].url,
+                            SHOT_STATIONS[SHOT_PLAYING].logo)   # the Shared station picture, as on the canvas
 
 
 class SilentPlayer:
@@ -184,6 +188,37 @@ def _check_statistics(window: RadioWindow) -> None:
     _check(window.shown_pages() == ["stations", "history", "statistics"], "Statistics doesn't open over Song history")
 
 
+def _check_sharing(window: RadioWindow) -> None:
+    """Share, and links opened into the running radio: a new station asks first, Cancel changes nothing, Add and
+    play adds and plays it, a known one just plays, a link without a station says so."""
+    controller = window.controller
+    window.share_station(0)
+    _check(window._toast is not None and window._toast.get_title() == window._("Link copied"),
+           "Share doesn't say the link was copied")
+    before = list(controller.stations)
+    new = Station("Shared Radio", "https://shared.example/live")
+    _check(window.open_link(share_link(new)) and window.shown_pages() == ["stations", "shared"]
+           and window.shared_page.station == SharedStation(new.name, new.url), "a shared link doesn't open its page")
+    window.shared_page.cancel_button.emit("clicked")
+    pump(50)
+    _check(controller.stations == before and window.shown_pages() == ["stations"], "Cancel changed something")
+    window.open_link(share_link(new).replace(WEB_LINK, "minimalistic-radio://add?"))
+    window.shared_page.add_button.emit("clicked")
+    pump(50)
+    _check(controller.stations[-1] == new and controller.current == len(controller.stations) - 1 and controller.active
+           and window.shown_pages() == ["stations"], "Add and play didn't add and play the station")
+    window.open_link(share_link(before[0]))
+    pump(50)
+    _check(controller.current == 0 and controller.active and window.shown_pages() == ["stations"],
+           "a link to a station on the list doesn't just play it")
+    window.open_link(WEB_LINK + "n=Nothing")
+    pump(50)
+    _check(window.shown_pages() == ["stations", "shared"] and window.shared_page.invalid.get_visible(),
+           "a link without a station doesn't say so")
+    controller.stop()
+    window.show_page("stations")
+
+
 def _check_polish() -> None:
     from . import main
     saved = i18n._translation
@@ -231,6 +266,7 @@ def run_self_test(app: Any) -> int:
                 visible = window.navigation.get_visible_page()
                 _check(visible is not None and visible.get_tag() == tag, f"page {tag} did not open")
             _check_statistics(window)
+            _check_sharing(window)
             window.destroy()
             ids = [item.id for item in build_tray_menu(controller, translate, None)]
             _check({"playback", "stations", "volume", "sleep", "settings", "quit"} <= set(ids),
@@ -244,16 +280,43 @@ def run_self_test(app: Any) -> int:
     return 0
 
 
-def _render(window: Gtk.Window, path: Path) -> None:
-    """At the display's scale: with GDK_SCALE=2 (as CI takes them) the pictures are as sharp as on a 4K screen."""
+def _render(window: Gtk.Window, path: Path, popover: Gtk.Popover | None = None) -> None:
+    """At the display's scale: with GDK_SCALE=2 (as CI takes them) the pictures are as sharp as on a 4K screen.
+    An open popover (a menu) has a surface of its own: it is drawn in at its place over the window."""
     scale = window.get_scale_factor()
-    paintable = Gtk.WidgetPaintable.new(window)
     snapshot = Gtk.Snapshot()
     snapshot.scale(scale, scale)
-    paintable.snapshot(snapshot, window.get_width(), window.get_height())
-    texture = window.get_renderer().render_texture(snapshot.to_node(), None)
+    Gtk.WidgetPaintable.new(window).snapshot(snapshot, window.get_width(), window.get_height())
+    if popover is not None and popover.get_mapped():
+        # The popup's place on the window's surface, both widgets' origins inside their surfaces (the shadows).
+        surface = popover.get_surface()
+        own_x, own_y = popover.get_surface_transform()
+        window_x, window_y = window.get_surface_transform()
+        snapshot.save()
+        snapshot.translate(Graphene.Point().init(surface.get_position_x() + own_x - window_x,
+                                                 surface.get_position_y() + own_y - window_y))
+        Gtk.WidgetPaintable.new(popover).snapshot(snapshot, popover.get_width(), popover.get_height())
+        snapshot.restore()
+    area = Graphene.Rect().init(0, 0, window.get_width() * scale, window.get_height() * scale)   # the window only
+    texture = window.get_renderer().render_texture(snapshot.to_node(), area)
     texture.save_to_png(str(path))
     print("wrote", path)
+
+
+def _share_pictures(window: RadioWindow, folder: Path, look: str) -> None:
+    """The ⋯ menu with Share, and "Link copied" after it, on the playing station's row."""
+    button = window.stations_page.rows[SHOT_PLAYING].menu_button
+    button.popup()
+    pump(600)
+    _render(window, folder / f"linux-share-menu-{look}.png", button.get_popover())
+    button.popdown()
+    pump(300)
+    window.share_station(SHOT_PLAYING)
+    pump(700)
+    _render(window, folder / f"linux-share-copied-{look}.png")
+    if window._toast is not None:
+        window._toast.dismiss()
+    pump(500)
 
 
 def _scroll(page: Gtk.Widget, to_end: bool) -> None:
@@ -275,6 +338,8 @@ def _scroll(page: Gtk.Widget, to_end: bool) -> None:
 def _prepare(window: RadioWindow, page: str) -> None:
     if page == "search":
         window.search_page._suggested = ([], [], None)   # no suggestions: the search replaces them at once
+    if page == "shared":
+        window.shared_page.show_station(SHOT_SHARED)   # as a link to it shows it (it is on the list: shown anyway)
     window.show_page(page)
     if page == "search":
         window.search_page.entry.set_text(SHOT_SEARCH)
@@ -292,13 +357,15 @@ def _arrived(window: RadioWindow, page: str) -> bool:
         if search.status.get_visible() and search.status.get_label() == search._("Searching…"):
             return False
         return all(logos.lookup(row.entry.logo)[0] for row in search.rows)
+    if page == "shared":
+        return logos.lookup(SHOT_SHARED.logo)[0]
     return True
 
 
 def take_screenshots(app: Any, folder: Path) -> int:
-    """Writes linux-<page>-<light|dark>.png for every page (the stations, search, history, settings and statistics
-    pages), and linux-<page>-end-<light|dark>.png for the long ones scrolled to their end. The statistics are a
-    sample made up in memory."""
+    """Writes linux-<page>-<light|dark>.png for every page (the stations, search, history, settings, statistics
+    and shared station pages), linux-<page>-end-<light|dark>.png for the long ones scrolled to their end, and
+    linux-share-menu-/linux-share-copied-<light|dark>.png. The statistics are a sample made up in memory."""
     styles = None
     try:
         Adw.init()
@@ -328,6 +395,8 @@ def take_screenshots(app: Any, folder: Path) -> int:
                     _scroll(window.navigation.get_visible_page(), to_end=False)
                     pump(600)
                     _render(window, folder / f"linux-{page}-{look}.png")
+                    if page == "stations":
+                        _share_pictures(window, folder, look)
                     if page in LONG_PAGES:
                         _scroll(window.navigation.get_visible_page(), to_end=True)
                         pump(400)
