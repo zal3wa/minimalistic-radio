@@ -7,6 +7,16 @@ on:
     paths: ['linux/**', '.github/workflows/linux.yml', 'data/banned-stations.json']
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to rehearse, e.g. linux-v1.0.0-beta.1 (only used with dry_run)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Run the release checks and print the commands, without publishing anything'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -232,3 +242,100 @@ jobs:
       - name: HLS check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_stream.py'
+
+  # A release for a linux-v* tag. A manual run with dry_run and a tag does every check and prints the
+  # commands instead of running them. Linux releases are never marked latest (that stays with Windows).
+  release:
+    if: startsWith(github.ref, 'refs/tags/linux-v') || (github.event_name == 'workflow_dispatch' && inputs.dry_run)
+    needs: [unit, integration, flatpak, snap]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download the Flatpak and the Snap
+        uses: actions/download-artifact@v7
+        with:
+          pattern: minimalistic-radio*
+          path: release
+          merge-multiple: true
+
+      - name: Check the tag and the artifacts
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$EVENT" = workflow_dispatch ]; then tag="$INPUT_TAG"; else tag="$GITHUB_REF_NAME"; fi
+          case "$tag" in linux-v[0-9]*) ;; *) echo "::error::'$tag' is not a linux-vX.Y.Z tag"; exit 1 ;; esac
+          full="${tag#linux-v}"
+          version="${full%%-*}"   # the pre-release suffix is not part of the app version
+          if [ "$full" != "$version" ]; then prerelease=true; channel=beta; else prerelease=false; channel=stable; fi
+
+          code=$(sed -n 's/^VERSION = "\(.*\)"$//p' linux/minimalistic_radio/__init__.py)
+          meta=$(grep -o '<release version="[^"]*"' linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in | head -n 1 | cut -d'"' -f2)
+          echo "tag=$tag version=$version code=$code metainfo=$meta prerelease=$prerelease channel=$channel"
+          [ "$version" = "$code" ] || { echo "::error::Tag version $version differs from VERSION $code"; exit 1; }
+          [ "$version" = "$meta" ] || { echo "::error::Tag version $version differs from the newest metainfo release $meta"; exit 1; }
+
+          ls -l release
+          flatpak=release/minimalistic-radio.flatpak
+          snap=$(ls release/minimalistic-radio_*_amd64.snap | head -n 1)
+          test -s "$flatpak"
+          test -s "$snap"
+
+          args=(--title "Minimalistic Radio for Linux $version" --notes-from-tag --latest=false)
+          if [ "$prerelease" = true ]; then args+=(--prerelease); fi
+          {
+            echo "tag=$tag"
+            echo "channel=$channel"
+            echo "flatpak=$flatpak"
+            echo "snap=$snap"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$DRY_RUN" = true ]; then
+            echo "DRY RUN (nothing is published). Would run:"
+            echo "gh release create $tag $flatpak $snap ${args[*]@Q}"
+            echo "snapcore/action-publish: snap=$snap release=$channel"
+            {
+              echo "### Dry run for $tag"
+              echo '```'
+              echo "gh release create $tag $flatpak $snap ${args[*]@Q}"
+              echo "snap publish: $snap to the $channel channel"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Create the GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag='${{ steps.plan.outputs.tag }}'
+          version="${tag#linux-v}"; version="${version%%-*}"
+          args=(--title "Minimalistic Radio for Linux $version" --notes-from-tag --latest=false)
+          case "$tag" in *-*) args+=(--prerelease) ;; esac
+          gh release create "$tag" '${{ steps.plan.outputs.flatpak }}' '${{ steps.plan.outputs.snap }}' "${args[@]}"
+
+      - name: Check for the Snap Store credentials
+        id: store
+        if: ${{ !inputs.dry_run }}
+        env:
+          CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          if [ -n "$CREDENTIALS" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Snap Store upload skipped: the SNAPCRAFT_STORE_CREDENTIALS secret is not set." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publish to the Snap Store
+        if: ${{ !inputs.dry_run && steps.store.outputs.present == 'true' }}
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.plan.outputs.snap }}
+          release: ${{ steps.plan.outputs.channel }}
