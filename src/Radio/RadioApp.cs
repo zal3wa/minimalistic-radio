@@ -350,6 +350,7 @@ internal sealed partial class Radio
                 CloseMenu();
                 await VerifyStationDrag();
                 await VerifyVolumeRow();
+                await VerifyCopyFeedback(preview);
             }
         }
         catch (Exception error)
@@ -503,12 +504,7 @@ internal sealed partial class Radio
             trackLabel = new TextBlock { TextWrapping = TextWrapping.NoWrap, FontSize = 13 };
             trackViewport = new Canvas { Width = 300, ClipToBounds = true };
             trackViewport.Children.Add(trackLabel);
-            trackItem = Item("", null, () =>
-            {
-                string title = track;
-                if (title != null && !CopyText(title))
-                    tray.ShowBalloonTip(2500, AppName, T("Nie udało się skopiować tytułu.", "Couldn't copy the title."), Forms.ToolTipIcon.Warning);
-            }, false);
+            trackItem = Item("", null, CopyTrackFromMenu, false);
             trackItem.Header = trackViewport;
             menu.Items.Add(trackItem);
         }
@@ -530,6 +526,15 @@ internal sealed partial class Radio
         if (glyph != null) item.Icon = Theme.Glyph(glyph, 16);
         if (action != null) item.Click += (_, _) => action();
         return item;
+    }
+
+    // The menu closes on the click, so success is answered with the station card instead of a mark in the menu.
+    private void CopyTrackFromMenu()
+    {
+        string title = track;
+        if (title == null) return;
+        if (CopyText(title)) ShowCopiedCard(title);
+        else tray.ShowBalloonTip(2500, AppName, T("Nie udało się skopiować tytułu.", "Couldn't copy the title."), Forms.ToolTipIcon.Warning);
     }
 
     private static bool CopyText(string text)

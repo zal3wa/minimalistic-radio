@@ -295,6 +295,40 @@ internal sealed partial class Radio
         var logo = new TextBox { Tag = T("Adres logotypu (opcjonalnie)", "Logo address (optional)"), MaxLength = 2048 };
         SavedStation editing = null;
         var message = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        // The "Copied" bubble: one layer over the whole panel, so it can sit above any button (the copy button, a
+        // history row's more button), with the same bubble as the volume's. It goes after 1.5 s, and the copy
+        // button's check mark with it.
+        Grid notice = NewBubble(out TextBlock noticeText);
+        var noticeLayer = new Canvas { IsHitTestVisible = false, Tag = "notice" };
+        noticeLayer.Children.Add(notice);
+        var noticeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+        Action noticeEnd = null;
+        void EndNotice()
+        {
+            noticeTimer.Stop();
+            notice.Visibility = Visibility.Collapsed;
+            Action end = noticeEnd;
+            noticeEnd = null;
+            end?.Invoke();
+        }
+        noticeTimer.Tick += (_, _) => EndNotice();
+        panel.Closed += (_, _) => noticeTimer.Stop();
+        void ShowNotice(FrameworkElement anchor, Action end = null)
+        {
+            EndNotice();
+            noticeEnd = end;
+            noticeText.Text = T("Skopiowano", "Copied");
+            notice.Visibility = Visibility.Visible;
+            noticeLayer.UpdateLayout();
+            Point top = anchor.TranslatePoint(new Point(anchor.ActualWidth / 2, 0), noticeLayer);
+            double left = Math.Round(top.X - notice.ActualWidth / 2);
+            // Inside the panel's edges; the bubble would be cut off at its right otherwise.
+            left = Math.Max(ShadowMargin, Math.Min(left, noticeLayer.ActualWidth - ShadowMargin - notice.ActualWidth));
+            Canvas.SetLeft(notice, left);
+            Canvas.SetTop(notice, Math.Round(Math.Max(ShadowMargin, top.Y - notice.ActualHeight - 4)));
+            noticeTimer.Start();
+        }
+
         var add = NewButton(null, IconText(Theme.PlusIcon, T("Stacja", "Station")));
         add.HorizontalAlignment = HorizontalAlignment.Left;
         var save = NewButton("AccentButton", T("Zapisz", "Save"));
@@ -816,7 +850,11 @@ internal sealed partial class Radio
                 more.VerticalAlignment = VerticalAlignment.Center;
                 string query = Uri.EscapeDataString(entry.Title.Replace(" – ", " ").Replace(" - ", " "));
                 var menu = new ContextMenu { PlacementTarget = more, Placement = PlacementMode.Bottom };
-                menu.Items.Add(Item(T("Kopiuj", "Copy"), Theme.CopyIcon, () => CopyText(entry.Title)));
+                menu.Items.Add(Item(T("Kopiuj", "Copy"), Theme.CopyIcon, () =>
+                {
+                    if (CopyText(entry.Title)) ShowNotice(more);
+                    else message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                }));
                 menu.Items.Add(Item(T("Szukaj w Spotify", "Search on Spotify"), null,
                     () => OpenWebPage("https://open.spotify.com/search/" + query)));
                 menu.Items.Add(Item(T("Szukaj w YouTube", "Search on YouTube"), null,
@@ -1004,21 +1042,7 @@ internal sealed partial class Radio
         // The bubble lives in the panel (a layer over the slider that may draw above it), not in a popup window, so it
         // needs no window of its own, follows the theme like the rest, and shows in the self-test's pictures. It goes
         // a second after the last wheel turn or key, or when a drag lets go.
-        var bubbleText = new TextBlock { FontSize = 12 };
-        var bubbleFace = new Border
-        {
-            CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(8, 3, 8, 4), Child = bubbleText
-        };
-        bubbleFace.SetResourceReference(Border.BackgroundProperty, "Bg");
-        bubbleFace.SetResourceReference(Border.BorderBrushProperty, "Line");
-        var bubble = new Grid { Visibility = Visibility.Collapsed };
-        // Its shadow on a layer of its own, so the number keeps sharp ClearType text (like the panel's shadow).
-        bubble.Children.Add(new Border
-        {
-            CornerRadius = new CornerRadius(4), Background = Brushes.Black,
-            Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 1, Opacity = 0.25, Direction = 270 }
-        });
-        bubble.Children.Add(bubbleFace);
+        Grid bubble = NewBubble(out TextBlock bubbleText);
         var bubbleLayer = new Canvas { IsHitTestVisible = false };
         bubbleLayer.Children.Add(bubble);
         var sliderCell = new Grid();
@@ -1096,7 +1120,14 @@ internal sealed partial class Radio
         copy.VerticalAlignment = VerticalAlignment.Center;
         copy.Click += (_, _) =>
         {
-            if (track != null && !CopyText(track)) message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+            if (track == null) return;
+            if (!CopyText(track))
+            {
+                message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                return;
+            }
+            copy.Content = Theme.Glyph(Theme.CheckIcon);
+            ShowNotice(copy, () => copy.Content = Theme.Glyph(Theme.CopyIcon));
         };
 
         var sleepButton = NewButton("GhostButton", null, T("Wyłącznik czasowy", "Sleep timer"));
@@ -1173,6 +1204,7 @@ internal sealed partial class Radio
         var root = new Grid { Margin = new Thickness(ShadowMargin) };
         root.Children.Add(shadow);
         root.Children.Add(frame);
+        root.Children.Add(noticeLayer);
         panel.Content = root;
         FillList();
         SetPage(startPage);
@@ -1361,7 +1393,50 @@ internal sealed partial class Radio
         }
     }
 
+    // The small bubble with a shadow, used by the volume value and by "Copied". It starts hidden; the caller places it.
+    // The shadow is on a layer of its own, so the text keeps sharp ClearType rendering (like the panel's shadow).
+    private static Grid NewBubble(out TextBlock text)
+    {
+        text = new TextBlock { FontSize = 12 };
+        var face = new Border
+        {
+            CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(8, 3, 8, 4), Child = text
+        };
+        face.SetResourceReference(Border.BackgroundProperty, "Bg");
+        face.SetResourceReference(Border.BorderBrushProperty, "Line");
+        var bubble = new Grid { Visibility = Visibility.Collapsed };
+        bubble.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(4), Background = Brushes.Black,
+            Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 1, Opacity = 0.25, Direction = 270 }
+        });
+        bubble.Children.Add(face);
+        return bubble;
+    }
+
 #if SELFTEST
+    // Self-test of the copy feedback: the panel's bubble says "Copied" after the copy button, and the tray's card
+    // reads "Copied to clipboard" on its second line. A busy clipboard is not a failure of the app, so it is skipped.
+    private async Task VerifyCopyFeedback(bool preview)
+    {
+        track = "Test Artist - Test Song";
+        playerPanel?.Close();
+        OpenPlayer();
+        await Task.Delay(500);
+        string copied = T("Skopiowano", "Copied");
+        Button copyButton = Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == T("Kopiuj tytuł", "Copy title"));
+        copyButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        var notice = (FrameworkElement)Descendants(playerPanel).OfType<Canvas>().First(layer => layer.Tag as string == "notice").Children[0];
+        if (notice.IsVisible && Descendants(notice).OfType<TextBlock>().First().Text != copied)
+            throw new InvalidOperationException("Dymek kopiowania ma zły tekst.");
+        if (preview) await SavePreview(playerPanel, "copied");
+        playerPanel.Close();
+        CopyTrackFromMenu();
+        if (osd?.IsVisible == true && osdText.Text != T("Skopiowano do schowka", "Copied to clipboard"))
+            throw new InvalidOperationException("Karta kopiowania ma zły drugi wiersz.");
+        osd?.Hide();
+    }
+
     // Self-test of the volume row (--test-menu, from VerifyMenu): the speaker for 0, 20, 50 and 90%, mute and unmute,
     // and the number in the bubble on a wheel turn.
     private async Task VerifyVolumeRow()
