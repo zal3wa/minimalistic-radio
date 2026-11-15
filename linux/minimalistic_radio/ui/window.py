@@ -35,9 +35,12 @@ _styled_displays: list[Gdk.Display] = []
 
 
 def icon_folders() -> list[Path]:
-    """Where the app's own icons are: installed with the app, else in the source tree."""
+    """Where the app's own icons are: installed with the app, else in the source tree. The app icon (for About)
+    also from where it was installed, for a prefix the desktop doesn't look in."""
     source = Path(__file__).resolve().parents[2] / "data" / "icons" / "hicolor"
-    return [Path(main.PKGDATADIR) / "icons", source / "symbolic" / "actions", source / "scalable" / "apps"]
+    installed = Path(main.PKGDATADIR)
+    return [installed / "icons", installed.parent / "icons" / "hicolor" / "scalable" / "apps",
+            source / "symbolic" / "actions", source / "scalable" / "apps"]
 
 
 def _load_style() -> None:
