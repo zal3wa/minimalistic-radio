@@ -212,7 +212,8 @@ extension AppDelegate {
 
     /// Song history with the first song's ⋯ menu open (Copy, Search on Spotify, Search on YouTube, as HistoryRow's
     /// menu) and Search on Spotify under the pointer: the panel drawn as the other pictures (2×), and the menu, a
-    /// window of its own, captured from the screen and laid on at its place. Returns Search on Spotify's pixel centre.
+    /// window of its own, from screen captures: what changed on the screen when it opened (the menu and its shadow)
+    /// is laid on at its place, scaled to 2×. Returns Search on Spotify's pixel centre.
     private func takeSongMenuPicture(below dots: CGRect, file: URL, dark: Bool) async -> [Int]? {
         guard let window = panel.window, let content = panel.contentView else { return nil }
         let menu = NSMenu()
@@ -225,8 +226,25 @@ extension AppDelegate {
         let left = min(dots.midX - 12, content.bounds.width - 8 - menu.size.width)
         let place = NSPoint(x: left, y: content.isFlipped ? dots.maxY + 2 : content.bounds.height - dots.maxY - 2)
         let screenTop = NSScreen.screens.first?.frame.maxY ?? 0
-        let capture = FileManager.default.temporaryDirectory.appendingPathComponent("radio-menu-\(UUID().uuidString).png")
-        defer { try? FileManager.default.removeItem(at: capture) }
+        let panelFrame = window.frame
+        let folder = FileManager.default.temporaryDirectory
+        let before = folder.appendingPathComponent("radio-menu-before-\(UUID().uuidString).png")
+        let after = folder.appendingPathComponent("radio-menu-after-\(UUID().uuidString).png")
+        defer {
+            try? FileManager.default.removeItem(at: before)
+            try? FileManager.default.removeItem(at: after)
+        }
+        /// The panel's place on the screen, as screencapture takes it (from the top left of the main screen).
+        func capturePanel(_ file: URL) -> Bool {
+            let run = Process()
+            run.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            run.arguments = ["-x", "-R", "\(Int(panelFrame.minX)),\(Int(screenTop - panelFrame.maxY)),"
+                                + "\(Int(panelFrame.width)),\(Int(panelFrame.height))", file.path]
+            try? run.run()
+            run.waitUntilExit()
+            return run.terminationStatus == 0
+        }
+        guard capturePanel(before) else { return nil }
         var menuFrame: CGRect?
         var itemCentre: CGPoint?
         var captured = false
@@ -248,16 +266,7 @@ extension AppDelegate {
         }
         let shot = Timer(timeInterval: 1.4, repeats: false) { _ in
             MainActor.assumeIsolated {
-                if let number = NSApp.windows.first(where: {
-                    $0.isVisible && $0 !== window && String(describing: type(of: $0)).contains("Menu")
-                })?.windowNumber {
-                    let run = Process()
-                    run.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-                    run.arguments = ["-x", "-o", "-l\(number)", capture.path]
-                    try? run.run()
-                    run.waitUntilExit()
-                    captured = run.terminationStatus == 0
-                }
+                captured = capturePanel(after)
                 menu.cancelTracking()
             }
         }
@@ -267,25 +276,62 @@ extension AppDelegate {
         try? await Task.sleep(nanoseconds: 300_000_000)
 
         guard captured, let menuFrame, let itemCentre,
-              let menuImage = NSImage(contentsOf: capture)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let screenBefore = NSImage(contentsOf: before)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let screenAfter = NSImage(contentsOf: after)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
               let panelImage = renderImage(content) else {
             print("demo: the song menu picture wasn't taken")
             return nil
         }
-        let panelFrame = window.frame
-        let scale = CGFloat(panelImage.width) / content.bounds.width
-        guard let context = CGContext(data: nil, width: panelImage.width, height: panelImage.height, bitsPerComponent: 8,
-                                      bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-        context.interpolationQuality = .high
-        context.draw(panelImage, in: CGRect(x: 0, y: 0, width: panelImage.width, height: panelImage.height))
-        // Bottom-left origin: the menu's place in the panel, in pixels.
-        context.draw(menuImage, in: CGRect(x: (menuFrame.minX - panelFrame.minX) * scale, y: (menuFrame.minY - panelFrame.minY) * scale,
-                                           width: menuFrame.width * scale, height: menuFrame.height * scale))
-        guard let composed = context.makeImage(),
+        // The 2× panel, and where the screen changed when the menu opened (the menu and its shadow, around its
+        // frame) the screen as it was then, scaled to 2×.
+        let width = panelImage.width, height = panelImage.height
+        let smallWidth = screenAfter.width, smallHeight = screenAfter.height
+        guard var picture = rgba(panelImage, width, height), let big = rgba(screenAfter, width, height),
+              let small1 = rgba(screenBefore, smallWidth, smallHeight), let small2 = rgba(screenAfter, smallWidth, smallHeight) else {
+            return nil
+        }
+        let scale = CGFloat(width) / panelFrame.width
+        let margin: CGFloat = 30   // the shadow
+        let area = CGRect(x: (menuFrame.minX - panelFrame.minX - margin) * scale, y: (panelFrame.maxY - menuFrame.maxY - margin) * scale,
+                          width: (menuFrame.width + 2 * margin) * scale, height: (menuFrame.height + 2 * margin) * scale)
+            .intersection(CGRect(x: 0, y: 0, width: width, height: height))
+        guard !area.isNull, !area.isEmpty else { return nil }
+        for y in Int(area.minY)..<Int(area.maxY) {
+            for x in Int(area.minX)..<Int(area.maxX) {
+                let small = ((y * smallHeight / height) * smallWidth + x * smallWidth / width) * 4
+                let difference = (0..<3).reduce(0) { $0 + abs(Int(small1[small + $1]) - Int(small2[small + $1])) }
+                guard difference > 9 else { continue }
+                let index = (y * width + x) * 4
+                for channel in 0..<4 { picture[index + channel] = big[index + channel] }
+            }
+        }
+        guard let composed = image(picture, width, height),
               let png = NSBitmapImageRep(cgImage: composed).representation(using: .png, properties: [:]),
               (try? png.write(to: file)) != nil else { return nil }
         return [Int(((itemCentre.x - panelFrame.minX) * scale).rounded()), Int(((panelFrame.maxY - itemCentre.y) * scale).rounded())]
+    }
+
+    /// An image's pixels at a size, RGBA, rows from the top.
+    private func rgba(_ picture: CGImage, _ width: Int, _ height: Int) -> [UInt8]? {
+        var data = [UInt8](repeating: 0, count: width * height * 4)
+        let drawn = data.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                          bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.interpolationQuality = .high
+            context.draw(picture, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        return drawn ? data : nil
+    }
+
+    private func image(_ pixels: [UInt8], _ width: Int, _ height: Int) -> CGImage? {
+        var data = pixels
+        return data.withUnsafeMutableBytes { buffer in
+            CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?.makeImage()
+        }
     }
 
     /// A menu item's row in an open menu's window, found by its title, as a screen point (its centre).
