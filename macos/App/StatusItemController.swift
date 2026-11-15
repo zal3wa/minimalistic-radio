@@ -61,10 +61,19 @@ final class StatusItemController: NSObject {
         return menu
     }
 
+    private weak var openMenu: NSMenu?
+
     func showMenu() {
-        item.menu = makeMenu()
+        let menu = makeMenu()
+        openMenu = menu
+        item.menu = menu
         item.button?.performClick(nil)
         item.menu = nil
+    }
+
+    /// Closes the menu if it is open (the README's menu picture).
+    func closeMenu() {
+        openMenu?.cancelTracking()
     }
 }
 

@@ -14,6 +14,16 @@ settings:
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: minimal
     MACOSX_DEPLOYMENT_TARGET: "13.0"
+  configs:
+    Release:
+      # Small, like the Windows exe: optimised for size, unused code and debug symbols left out.
+      SWIFT_OPTIMIZATION_LEVEL: "-Osize"
+      DEAD_CODE_STRIPPING: YES
+      DEPLOYMENT_POSTPROCESSING: YES
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_STYLE: all
+      COPY_PHASE_STRIP: YES
+      DEBUG_INFORMATION_FORMAT: dwarf
 packages:
   RadioCore:
     path: Core

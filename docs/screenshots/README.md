@@ -79,6 +79,13 @@ Full-size pictures of Minimalistic Radio. [Back to the README](../../README.md)
   <img src="linux-settings-light.png" alt="Settings on Linux">
 </picture>
 
+## macOS: right click: the menu
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="macos-menu-dark.png">
+  <img src="macos-menu-light.png" alt="Right click on the menu bar icon opens the menu">
+</picture>
+
 ## macOS: click on the icon: the player
 
 <picture>

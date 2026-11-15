@@ -19,7 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var controller: RadioController!
     private(set) var player: StreamPlayer?
     private(set) var logos: LogoCache!
-    private var statusItem: StatusItemController!
+    private(set) var statusItem: StatusItemController!
     private var nowPlaying: NowPlaying?
     private var systemEvents: SystemEvents?
     private(set) var updater: Updater!
@@ -30,6 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppDelegate.shared = self
         if CommandLine.arguments.contains("--self-test") {
             selfTest()
+            return
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--menu-picture"), CommandLine.arguments.count > index + 1 {
+            let output = URL(fileURLWithPath: CommandLine.arguments[index + 1])
+            Task { @MainActor in exit(await self.takeMenuPictures(into: output)) }
             return
         }
         if let index = CommandLine.arguments.firstIndex(of: "--screenshot"), CommandLine.arguments.count > index + 1 {
