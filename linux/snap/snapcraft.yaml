@@ -68,15 +68,14 @@ parts:
       # Meson wrote the build's python3 (the SDK's) into the launcher. In the snap, PATH finds the platform's.
       sed -i '1s|^#!.*|#!/usr/bin/env python3|' "$CRAFT_PART_INSTALL/usr/bin/minimalistic-radio"
 
-  # The GStreamer plugins radio needs that the GNOME platform lacks: avdec_aac from gst-libav (AAC and HE-AAC),
-  # and from gst-plugins-bad hlsdemux and tsdemux (HLS, which sends MPEG-TS segments). The platform's hlsdemux2
-  # works only in playbin3, and the app plays with playbin.
+  # The GStreamer plugins radio needs that the GNOME platform lacks, all from gst-plugins-bad: faad (AAC and
+  # HE-AAC, through libfaad2; gst-libav would pull in most of FFmpeg), and hlsdemux and tsdemux (HLS, which sends
+  # MPEG-TS segments). The platform's hlsdemux2 works only in playbin3, and the app plays with playbin.
   # prune.py (in snap/local) keeps only these plugins and the libraries they link to that the platform doesn't have.
   gstreamer-plugins:
     plugin: nil
     source: snap/local
     stage-packages:
-      - gstreamer1.0-libav
       - gstreamer1.0-plugins-bad
     build-snaps:
       - gnome-core26
@@ -84,4 +83,4 @@ parts:
       craftctl default
       platform=/snap/gnome-core26/current
       python3 "$CRAFT_PART_SRC/prune.py" "$CRAFT_PART_INSTALL" "$platform" "$CRAFT_ARCH_TRIPLET_BUILD_FOR" \
-        libgstlibav.so libgsthls.so libgstmpegtsdemux.so
+        libgstfaad.so libgsthls.so libgstmpegtsdemux.so

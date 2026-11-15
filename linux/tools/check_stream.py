@@ -106,7 +106,7 @@ def probe(url):
 
 def main():
     Gst.init(None)
-    for factory in ("hlsdemux2", "hlsdemux", "tsdemux", "aacparse", "avdec_aac"):
+    for factory in ("hlsdemux2", "hlsdemux", "tsdemux", "aacparse", "avdec_aac", "faad"):
         print(f"{factory}: {'yes' if Gst.ElementFactory.find(factory) else 'no'}", flush=True)
     candidates = [("Polskie Radio Czworka (HLS)", CZWORKA)]
     tried_fallbacks = False
