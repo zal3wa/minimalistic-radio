@@ -89,6 +89,30 @@ internal sealed partial class Radio
         Theme.Apply(app);
     }
 
+    // The panel with one of its menus open over it (a menu is a window of its own, so it is drawn on where it is).
+    private async Task SaveWithMenu(Window window, ContextMenu menu, string name)
+    {
+        foreach (bool dark in new[] { false, true })
+        {
+            Theme.Apply(app, dark);
+            await Task.Delay(400);
+            double scale = VisualTreeHelper.GetDpi(window).DpiScaleX;
+            Point origin = window.PointToScreen(new Point()), at = menu.PointToScreen(new Point());
+            double x = (at.X - origin.X) / scale, y = (at.Y - origin.Y) / scale;
+            double width = Math.Max(window.ActualWidth, x + menu.ActualWidth), height = Math.Max(window.ActualHeight, y + menu.ActualHeight);
+            var drawing = new DrawingVisual();
+            using (DrawingContext context = drawing.RenderOpen())
+            {
+                context.DrawImage(Snapshot(window, scale), new Rect(0, 0, window.ActualWidth, window.ActualHeight));
+                context.DrawImage(Snapshot(menu, scale), new Rect(x, y, menu.ActualWidth, menu.ActualHeight));
+            }
+            var picture = new RenderTargetBitmap((int)Math.Ceiling(width * scale), (int)Math.Ceiling(height * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+            picture.Render(drawing);
+            SavePng(picture, name, dark);
+        }
+        Theme.Apply(app);
+    }
+
     private async Task SaveTrayShot(FrameworkElement opened, string name)
     {
         foreach (bool dark in new[] { false, true })

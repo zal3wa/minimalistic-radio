@@ -100,6 +100,126 @@ internal static class StartMenu
     }
 }
 
+// minimalistic-radio:// links (a shared station's "Open in Minimalistic Radio" on its page) start this exe with
+// --open "<link>". Registered for the current user only (no administrator rights needed), at every start, and written
+// again only when it differs (the exe may have moved). The test build doesn't register it.
+internal static class LinkHandler
+{
+    private const string Key = @"Software\Classes\" + ShareLink.Scheme;
+
+    internal static void Register(string exe)
+    {
+        string name = "URL:" + Radio.AppName, icon = "\"" + exe + "\",0", command = "\"" + exe + "\" --open \"%1\"";
+        try
+        {
+            using (Microsoft.Win32.RegistryKey root = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Key))
+            {
+                string Value(string path) => (root?.OpenSubKey(path)?.GetValue("") as string);
+                if (root?.GetValue("") as string == name && root.GetValue("URL Protocol") is string &&
+                    Value("DefaultIcon") == icon && Value(@"shell\open\command") == command)
+                    return;
+            }
+            using (Microsoft.Win32.RegistryKey root = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(Key))
+            {
+                root.SetValue("", name);
+                root.SetValue("URL Protocol", "");
+                using (Microsoft.Win32.RegistryKey key = root.CreateSubKey("DefaultIcon")) key.SetValue("", icon);
+                using (Microsoft.Win32.RegistryKey key = root.CreateSubKey(@"shell\open\command")) key.SetValue("", command);
+            }
+        }
+        catch (Exception error) when (error is UnauthorizedAccessException || error is System.Security.SecurityException || error is IOException)
+        {
+            Debug.WriteLine(error);
+        }
+    }
+}
+
+// A link given to a second start of the radio (--open, from a minimalistic-radio:// link) goes to the running one:
+// WM_COPYDATA to a message-only window of the running radio. Only programs on the same desktop, so in the same user
+// session, can find that window. The plain "open the panel" keeps its EventWaitHandle.
+internal sealed class LinkChannel : System.Windows.Forms.NativeWindow, IDisposable
+{
+    private const int CopyData = 0x004A, MessageOnly = -3, LongestLink = 16384;
+    private static readonly IntPtr Marker = (IntPtr)0x4D524C4B;   // "MRLK": a link for the radio, nothing else
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CopyDataStruct
+    {
+        public IntPtr Marker;
+        public int Size;
+        public IntPtr Data;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string title);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SendMessageTimeout(IntPtr window, int message, IntPtr wParam, ref CopyDataStruct data,
+        int flags, int timeout, out IntPtr result);
+
+    [DllImport("user32.dll")]
+    private static extern int GetWindowThreadProcessId(IntPtr window, out int process);
+
+    [DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(int process);
+
+    // The test build listens under a name of its own, so a test never takes the real radio's links.
+    internal static string WindowName(bool test) => Radio.AppName + (test ? " links (self-test)" : " links");
+
+    private readonly Action<string> received;
+
+    internal LinkChannel(string name, Action<string> received)
+    {
+        this.received = received;
+        CreateHandle(new System.Windows.Forms.CreateParams { Caption = name, Parent = (IntPtr)MessageOnly });
+    }
+
+    protected override void WndProc(ref System.Windows.Forms.Message message)
+    {
+        if (message.Msg == CopyData)
+        {
+            var data = (CopyDataStruct)Marshal.PtrToStructure(message.LParam, typeof(CopyDataStruct));
+            if (data.Marker == Marker && data.Size > 0 && data.Size <= LongestLink * 2 && data.Size % 2 == 0 && data.Data != IntPtr.Zero)
+            {
+                string link = Marshal.PtrToStringUni(data.Data, data.Size / 2);
+                // The sender waits for the answer: the link is handled after it, on the radio's own time.
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => received(link)));
+                message.Result = (IntPtr)1;
+                return;
+            }
+        }
+        base.WndProc(ref message);
+    }
+
+    // From the second start: gives the link to the running radio (which may still be starting: up to 5 s) and lets it
+    // bring its panel to the front. False if no running radio took it.
+    internal static bool Send(string name, string link)
+    {
+        if (string.IsNullOrEmpty(link) || link.Length > LongestLink) return false;
+        for (int attempt = 0; attempt < 50; attempt++)
+        {
+            IntPtr target = FindWindowEx((IntPtr)MessageOnly, IntPtr.Zero, null, name);
+            if (target != IntPtr.Zero)
+            {
+                GetWindowThreadProcessId(target, out int process);
+                AllowSetForegroundWindow(process);   // this start came from a click, so it may pass the front on
+                IntPtr text = Marshal.StringToHGlobalUni(link);
+                try
+                {
+                    var data = new CopyDataStruct { Marker = Marker, Size = link.Length * 2, Data = text };
+                    return SendMessageTimeout(target, CopyData, IntPtr.Zero, ref data, 0x0002, 5000, out IntPtr result) != IntPtr.Zero &&
+                        result == (IntPtr)1;   // SMTO_ABORTIFHUNG
+                }
+                finally { Marshal.FreeHGlobal(text); }
+            }
+            System.Threading.Thread.Sleep(100);
+        }
+        return false;
+    }
+
+    public void Dispose() => DestroyHandle();
+}
+
 // "Start with Windows": the current user's Run key, so no administrator rights are needed and the entry
 // also shows in Settings → Apps → Startup. "--autostart" starts the radio quietly next to the clock.
 internal static class Autostart

@@ -101,17 +101,23 @@ internal sealed partial class Radio
     private int updateVersion;
     private readonly DispatcherTimer updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
 
-    internal Radio(Application app, EventWaitHandle panelRequest, bool autostart, bool updated)
+    // Shared stations' links: the window that takes them from a second start, and the one this start was given.
+    private readonly string linkWindow, startLink;
+    private LinkChannel links;
+
+    internal Radio(Application app, EventWaitHandle panelRequest, bool autostart, bool updated, string linkWindow, string startLink)
     {
         this.app = app;
         this.panelRequest = panelRequest;
         this.autostart = autostart;
         this.updated = updated;
+        this.linkWindow = linkWindow;
+        this.startLink = startLink;
     }
 
 #if SELFTEST
-    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
-        : this(app, panelRequest, autostart, updated) => this.testMenu = testMenu;
+    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated, string linkWindow, string startLink)
+        : this(app, panelRequest, autostart, updated, linkWindow, startLink) => this.testMenu = testMenu;
 #endif
 
     private void Post(Action action) => app.Dispatcher.BeginInvoke(action);
@@ -135,6 +141,7 @@ internal sealed partial class Radio
             LoadHistory();
             LoadStatistics();
             StartMenu.Register(Exe);
+            LinkHandler.Register(Exe);
             Autostart.Refresh(Exe);
             Updater.CleanUp();
             Storage.RemoveOldFFmpeg();
@@ -155,6 +162,7 @@ internal sealed partial class Radio
         }
         panelListener = ThreadPool.RegisterWaitForSingleObject(panelRequest,
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
+        links = new LinkChannel(linkWindow, OpenShared);
         trackTimer.Tick += (_, _) => ScrollTrack();
         sleepTimer.Tick += (_, _) => SleepTick();
         statisticsTimer.Tick += (_, _) =>
@@ -166,7 +174,26 @@ internal sealed partial class Radio
         if (testMenu) Post(Environment.GetCommandLineArgs().Contains("--screenshot") ? (Action)TakeScreenshots : VerifyMenu);
         else
 #endif
-        if (station >= 0 && !autostart) Post(StartPlayback);
+        // Started by a shared station's link: the panel asks about that station, and nothing plays before the answer.
+        if (startLink != null) Post(() => OpenShared(startLink));
+        else if (station >= 0 && !autostart) Post(StartPlayback);
+    }
+
+    // A shared station's link (from --open, a second start, or pasted into + Station). A station already on the list
+    // just plays, on the stations page; any other opens the Shared station page, which asks first (or says the link
+    // carries no station). Nothing is added or played from a link without that click.
+    private void OpenShared(string link)
+    {
+        ShareLink.TryParse(link, out SharedStation shared);
+        int known = shared == null ? -1 : Stations.FindIndex(item => Storage.SameStream(item.Url, shared.Url));
+        if (known >= 0)
+        {
+            SelectStation(known);
+            if (session == null) StartPlayback();
+        }
+        if (playerPanel == null) OpenPlayer();
+        else playerPanel.Activate();
+        showInPanel?.Invoke(known >= 0 ? "stations" : "shared", shared);
     }
 
     // After sleep or hibernation the old connection is dead: start the station again.
@@ -465,6 +492,7 @@ internal sealed partial class Radio
                 await VerifyVolumeRow();
                 await VerifyCopyFeedback(preview);
                 await VerifyDismiss();
+                await VerifyShare(preview);
             }
         }
         catch (Exception error)
@@ -512,6 +540,22 @@ internal sealed partial class Radio
                     await SavePreview(playerPanel, "shot-" + page.Split(':')[0]);
                     playerPanel.Close();
                 }
+                // Sharing a station: its ⋯ menu, "Link copied", and the page a friend's radio shows for the link.
+                OpenPlayer();
+                await Task.Delay(2000);
+                Grid row = Descendants(playerPanel).OfType<ListBox>().First(list => list.IsVisible).Items.OfType<Grid>().ElementAt(2);
+                Button more = row.Children.OfType<Button>().Last();
+                var options = (ContextMenu)more.Tag;
+                more.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                await Task.Delay(500);
+                await SaveWithMenu(playerPanel, options, "shot-share-menu");
+                options.Items.OfType<MenuItem>().First(item => item.Header as string == L("Share")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                await Task.Delay(300);
+                await SavePreview(playerPanel, "shot-link-copied");
+                showInPanel?.Invoke("shared", new SharedStation { Name = ShotStations[2].Name, Url = ShotStations[2].Url, Logo = ShotStations[2].Logo });
+                await Task.Delay(1000);
+                await SavePreview(playerPanel, "shot-shared");
+                playerPanel.Close();
                 ShowStationPopup();
                 await Task.Delay(2000);
                 await SavePreview(osd, "shot-card");
@@ -1351,6 +1395,7 @@ internal sealed partial class Radio
         StopPlayback();
         CloseMenu();
         panelListener?.Unregister(null);
+        links?.Dispose();
         playerPanel?.Close();
         osdTimer.Stop();
         osd?.Close();

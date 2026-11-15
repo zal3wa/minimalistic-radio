@@ -494,3 +494,21 @@ msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."
 
 msgid "Stops the radio and removes it from the tray"
 msgstr "Wyłącza radio i usuwa je z obszaru powiadomień"
+
+msgid "Share"
+msgstr "Udostępnij"
+
+msgid "Link copied"
+msgstr "Skopiowano link"
+
+msgid "Shared station"
+msgstr "Udostępniona stacja"
+
+msgid "Add it to your stations and play it now?"
+msgstr "Dodać ją do twoich stacji i od razu włączyć?"
+
+msgid "Add and play"
+msgstr "Dodaj i włącz"
+
+msgid "This link doesn't contain a station."
+msgstr "Ten link nie zawiera stacji."

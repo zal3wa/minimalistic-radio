@@ -494,3 +494,21 @@ msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."
 
 msgid "Stops the radio and removes it from the tray"
 msgstr "Vypne rádio a odebere ho z oznamovací oblasti"
+
+msgid "Share"
+msgstr "Sdílet"
+
+msgid "Link copied"
+msgstr "Odkaz zkopírován"
+
+msgid "Shared station"
+msgstr "Sdílená stanice"
+
+msgid "Add it to your stations and play it now?"
+msgstr "Přidat ji k vašim stanicím a hned ji pustit?"
+
+msgid "Add and play"
+msgstr "Přidat a přehrát"
+
+msgid "This link doesn't contain a station."
+msgstr "Tento odkaz neobsahuje žádnou stanici."

@@ -123,13 +123,18 @@ internal static class Theme
     }
 
     // "Update ready": a green disc with an arrow down.
-    internal static FrameworkElement UpdateBadge(double size)
+    internal static FrameworkElement UpdateBadge(double size) => Badge("M12 7 V16 M8 12.5 L12 16.5 L16 12.5", size);
+
+    // "Link copied": a green disc with a tick.
+    internal static FrameworkElement TickBadge(double size) => Badge("M7.5 12.5 L10.5 15.5 L16.5 9", size);
+
+    private static FrameworkElement Badge(string mark, double size)
     {
         var disc = new System.Windows.Shapes.Ellipse { Width = 20, Height = 20, Margin = new Thickness(2) };
         disc.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Success");
         var arrow = new Path
         {
-            Data = Geometry.Parse("M12 7 V16 M8 12.5 L12 16.5 L16 12.5"), StrokeThickness = 2,
+            Data = Geometry.Parse(mark), StrokeThickness = 2,
             StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round
         };
         arrow.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "SuccessFg");

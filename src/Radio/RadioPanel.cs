@@ -90,6 +90,9 @@ internal sealed partial class Radio
     private static readonly GridLength Star = new GridLength(1, GridUnitType.Star);
     private const double Gutter = 12;   // the panel's padding: around the bar, at the sides of every page, under Play
 
+    // The open panel's way to show a shared station's link: ("shared", the station or null) or ("stations", …).
+    private Action<string, SharedStation> showInPanel;
+
     // A page that scrolls; its content keeps the gutter on both sides and the scroll bar floats over the right one.
     private ScrollViewer Pane()
     {
@@ -116,10 +119,49 @@ internal sealed partial class Radio
         return date.ToString(Regex.Replace(culture.DateTimeFormat.LongDatePattern, @"dddd[,.]?\s*", "").Trim(' ', ','), culture);
     }
 
-    // The Play/Stop button's content: a filled triangle or square, then the word.
-    private static FrameworkElement PlayLabel(bool play, string text)
+    // A row's ⋯ menu, opened under the button with its right edge at the button's, so it stays over the panel.
+    private static ContextMenu RowMenu(Button button) => new ContextMenu
     {
-        FrameworkElement glyph = Theme.Solid(play ? Theme.PlayIcon : Theme.StopIcon, play ? 16 : 18, "AccentFg");
+        PlacementTarget = button, Placement = PlacementMode.Custom,
+        CustomPopupPlacementCallback = (popup, target, offset) =>
+            new[] { new CustomPopupPlacement(new Point(target.Width - popup.Width, target.Height), PopupPrimaryAxis.Horizontal) }
+    };
+
+    // A card for a moment above the player ("Link copied"): a green tick and a line, with a shadow on a layer of its
+    // own (sharp ClearType text). It starts hidden.
+    private static Grid NewToast(out TextBlock text, out FrameworkElement tick)
+    {
+        tick = Theme.TickBadge(18);
+        tick.VerticalAlignment = VerticalAlignment.Center;
+        // Segoe UI sits low in its line: a pixel up puts the words level with the tick.
+        text = new TextBlock { FontSize = 14, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 2) };
+        var line = new StackPanel { Orientation = Orientation.Horizontal };
+        line.Children.Add(tick);
+        line.Children.Add(text);
+        var face = new Border
+        {
+            Height = 40, CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1), Padding = new Thickness(12, 0, 16, 0), Child = line
+        };
+        face.SetResourceReference(Border.BackgroundProperty, "Card");
+        face.SetResourceReference(Border.BorderBrushProperty, "Line");
+        var toast = new Grid
+        {
+            Visibility = Visibility.Collapsed, IsHitTestVisible = false, HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 10), Tag = "toast"
+        };
+        toast.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(6), Background = Brushes.Black,
+            Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 4, Opacity = 0.16, Direction = 270 }
+        });
+        toast.Children.Add(face);
+        return toast;
+    }
+
+    // The Play/Stop button's content: a filled triangle or square, then the word.
+    private static FrameworkElement PlayLabel(bool play, string text, double size = 0)
+    {
+        FrameworkElement glyph = Theme.Solid(play ? Theme.PlayIcon : Theme.StopIcon, size > 0 ? size : play ? 16 : 18, "AccentFg");
         glyph.VerticalAlignment = VerticalAlignment.Center;
         // Segoe UI sits low in its line: a pixel up puts the word level with the glyph.
         var label = new StackPanel { Orientation = Orientation.Horizontal };
@@ -408,6 +450,25 @@ internal sealed partial class Radio
             noticeTimer.Start();
         }
 
+        // "Link copied" after Share: a card centred above the player for two seconds (added over the pages below).
+        Grid linkCopied = NewToast(out TextBlock linkCopiedText, out FrameworkElement linkCopiedTick);
+        var linkCopiedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        linkCopiedTimer.Tick += (_, _) =>
+        {
+            linkCopiedTimer.Stop();
+            linkCopied.Visibility = Visibility.Collapsed;
+        };
+        panel.Closed += (_, _) => linkCopiedTimer.Stop();
+        void ShareStation(SavedStation item)
+        {
+            bool copied = CopyText(ShareLink.Web(item.Name, item.Url, item.Logo));
+            linkCopiedText.Text = copied ? L("Link copied") : L("The clipboard is busy.");
+            linkCopiedTick.Visibility = copied ? Visibility.Visible : Visibility.Collapsed;
+            linkCopied.Visibility = Visibility.Visible;
+            linkCopiedTimer.Stop();
+            linkCopiedTimer.Start();
+        }
+
         // The station form (Add by address, Edit) is a page of its own.
         var save = NewButton("AccentButton", L("Save"));
         var cancelForm = NewButton(null, L("Cancel"));
@@ -486,7 +547,8 @@ internal sealed partial class Radio
         header.Children.Add(barLine);
         // The player (now playing, volume, Play/Stop) is only on the stations page; it is filled in further down.
         var footer = new Border { Margin = new Thickness(Gutter, 10, Gutter, Gutter) };
-        ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane();
+        ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane(), sharedPane = Pane();
+        SharedStation shownShared = null;   // the Shared station page's station (none: the link carried none)
         Action refreshCollected = null;   // Settings › Statistics' "Collected since", again after a clear
         string statisticsFrom = "settings";   // where ← goes back to from Statistics: Settings or Song history
 
@@ -557,6 +619,11 @@ internal sealed partial class Radio
         {
             string query = searchBox.Text?.Trim();
             if (string.IsNullOrEmpty(query) || !searchButton.IsEnabled) return;
+            if (ShareLink.TryParse(query, out _))   // a shared station's link typed in and searched for
+            {
+                OpenShared(query);
+                return;
+            }
             using (var request = new CancellationTokenSource())
             {
                 activeSearch = request;
@@ -657,7 +724,8 @@ internal sealed partial class Radio
             resetting = false;
         }
 
-        // Pages: "stations", "search" (Add a station), "form" (Add by address, Edit), "history", "settings", "statistics".
+        // Pages: "stations", "search" (Add a station), "form" (Add by address, Edit), "history", "settings", "statistics",
+        // "shared" (Shared station).
         void SetPage(string target)
         {
             if (target != "form") editing = null;
@@ -675,9 +743,11 @@ internal sealed partial class Radio
             settingsPane.Visibility = Shown(target == "settings");
             historyPane.Visibility = Shown(target == "history");
             statisticsPane.Visibility = Shown(target == "statistics");
+            sharedPane.Visibility = Shown(target == "shared");
             pageTitle.Text = target == "settings" ? L("Settings")
                 : target == "history" ? L("Song history")
                 : target == "statistics" ? L("Statistics")
+                : target == "shared" ? L("Shared station")
                 : target == "search" ? L("Add a station")
                 : target == "form" ? (editing == null ? L("Add by address") : L("Edit")) : "";
             if (target == "search")
@@ -700,6 +770,11 @@ internal sealed partial class Radio
                 FillStatistics(StatisticsPeriod.Month);   // the page opens on this month
                 statisticsPane.ScrollToTop();
             }
+            if (target == "shared")
+            {
+                FillShared();
+                sharedPane.ScrollToTop();
+            }
             if (stations) ShowActiveStationAfterLayout(false);
         }
 
@@ -712,6 +787,16 @@ internal sealed partial class Radio
         }
 
         add.Click += (_, _) => SetPage("search");
+        // A shared station's link pasted into the search box or the stream address: its Shared station page (also for
+        // systems or browsers where the link doesn't open the radio by itself).
+        void TakeLinks(TextBox box) => DataObject.AddPastingHandler(box, (sender, e) =>
+        {
+            if (!(e.DataObject.GetData(DataFormats.UnicodeText) is string text) || !ShareLink.TryParse(text, out SharedStation _)) return;
+            e.CancelCommand();
+            Post(() => OpenShared(text));
+        });
+        TakeLinks(searchBox);
+        TakeLinks(url);
         searchButton.Click += (_, _) => Search();
         searchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Search(); };
         // Clearing the box drops the results (and a running search) and brings the suggestions back.
@@ -755,6 +840,11 @@ internal sealed partial class Radio
             string label = name.Text?.Trim();
             string address = url.Text?.Trim();
             string logoAddress = logo.Text?.Trim();
+            if (ShareLink.TryParse(address, out _))   // a shared station's link typed in: its page, not a stream
+            {
+                OpenShared(address);
+                return;
+            }
             if (string.IsNullOrEmpty(label) || !Storage.IsWebUrl(address) ||
                 (!string.IsNullOrEmpty(logoAddress) && !Storage.IsWebUrl(logoAddress)))
             {
@@ -896,9 +986,10 @@ internal sealed partial class Radio
             var actions = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("Station options"));
             actions.Padding = new Thickness(8, 6, 8, 6);
             actions.Margin = new Thickness(4, 0, 0, 0);
-            var options = new ContextMenu { PlacementTarget = actions, Placement = PlacementMode.Bottom };
+            ContextMenu options = RowMenu(actions);
             // No Move up / Move down: the station is dragged instead (or moved with Alt+↑/↓).
             options.Items.Add(Item(L("Edit"), null, () => Edit(item)));
+            options.Items.Add(Item(L("Share"), null, () => ShareStation(item)));
             options.Items.Add(new Separator());
             options.Items.Add(Item(L("Remove"), null, () => Remove(item)));
             Hold(options);
@@ -944,7 +1035,7 @@ internal sealed partial class Radio
                 more.Padding = new Thickness(8, 6, 8, 6);
                 more.VerticalAlignment = VerticalAlignment.Center;
                 string query = Uri.EscapeDataString(entry.Title.Replace(" – ", " ").Replace(" - ", " "));
-                var menu = new ContextMenu { PlacementTarget = more, Placement = PlacementMode.Bottom };
+                ContextMenu menu = RowMenu(more);
                 menu.Items.Add(Item(L("Copy"), Theme.CopyIcon, () =>
                 {
                     if (CopyText(entry.Title)) ShowNotice(more);
@@ -968,6 +1059,72 @@ internal sealed partial class Radio
             clear.Click += (_, _) => { ClearHistory(); FillHistory(); };
             content.Children.Add(clear);
             historyPane.Content = content;
+        }
+
+        // Shared station page (a shared station's link): the station, the question, Add and play / Cancel. Nothing is
+        // added or played before the click; Cancel, ← and Esc change nothing.
+        void FillShared()
+        {
+            var content = new StackPanel { Margin = new Thickness(Gutter) };
+            sharedPane.Content = content;
+            SharedStation shared = shownShared;
+            if (shared == null)
+            {
+                TextBlock none = Note(L("This link doesn't contain a station."));
+                none.FontSize = 14;
+                none.Margin = new Thickness(2, 0, 2, 0);
+                content.Children.Add(none);
+                return;
+            }
+            TextBlock Centred(string text, double size) => new TextBlock
+            {
+                Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center
+            };
+            var card = new StackPanel();
+            Grid badge = LogoBadge(shared.Logo, 72);
+            badge.HorizontalAlignment = HorizontalAlignment.Center;
+            card.Children.Add(badge);
+            TextBlock title = Centred(shared.Name, 20);
+            title.FontWeight = FontWeights.SemiBold;
+            title.Margin = new Thickness(0, 16, 0, 0);
+            card.Children.Add(title);
+            // The stream address without its http(s)://, in small grey text.
+            TextBlock address = Note(Regex.Replace(shared.Url, "^https?://", "", RegexOptions.IgnoreCase));
+            address.FontSize = 12;
+            address.TextAlignment = TextAlignment.Center;
+            address.Margin = new Thickness(0, 4, 0, 0);
+            card.Children.Add(address);
+            TextBlock question = Centred(L("Add it to your stations and play it now?"), 14);
+            question.Margin = new Thickness(0, 16, 0, 0);
+            card.Children.Add(question);
+            var addAndPlay = NewButton("AccentButton", PlayLabel(true, L("Add and play"), 12));
+            addAndPlay.Height = 38;
+            addAndPlay.Margin = new Thickness(0, 20, 0, 0);
+            var cancel = NewButton(null, L("Cancel"));
+            cancel.Height = 32;
+            cancel.Padding = new Thickness(12, 0, 12, 0);
+            cancel.Margin = new Thickness(0, 8, 0, 0);
+            card.Children.Add(addAndPlay);
+            card.Children.Add(cancel);
+            Border frame = CardFrame(card, new Thickness(20, 28, 20, 20));
+            frame.Margin = new Thickness(0);
+            content.Children.Add(frame);
+            cancel.Click += (_, _) => SetPage("stations");
+            // At the end of the list, then it plays (a station that got onto the list meanwhile just plays).
+            addAndPlay.Click += (_, _) =>
+            {
+                int index = Stations.FindIndex(item => Storage.SameStream(item.Url, shared.Url));
+                if (index < 0)
+                {
+                    var added = new SavedStation { Name = shared.Name, Url = shared.Url, Logo = shared.Logo };
+                    if (!ApplyStations(Stations.Concat(new[] { added }).ToList())) return;
+                    index = Stations.IndexOf(added);
+                }
+                SelectStation(index);
+                if (session == null) StartPlayback();
+                SetPage("stations");
+                list.SelectedIndex = station;
+            };
         }
 
         // Statistics page (Settings › Statistics › Show): the period switch, then that period's numbers. The counting is
@@ -1508,8 +1665,20 @@ internal sealed partial class Radio
         footer.Child = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
 
         var middle = new Grid();
-        foreach (FrameworkElement part in new FrameworkElement[] { list, searchPane, fields, settingsPane, historyPane, statisticsPane })
+        foreach (FrameworkElement part in new FrameworkElement[] { list, searchPane, fields, settingsPane, historyPane, statisticsPane, sharedPane, linkCopied })
             middle.Children.Add(part);
+        // A shared station's link while the panel is open (or right after it opened): this page, or the stations page.
+        showInPanel = (target, shared) =>
+        {
+            shownShared = shared;
+            SetPage(target);
+            if (target == "stations")
+            {
+                list.SelectedIndex = station;
+                ShowActiveStationAfterLayout(true);
+            }
+        };
+        panel.Closed += (_, _) => { if (playerPanel == null) showInPanel = null; };
         var content = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(header, Dock.Top);
         DockPanel.SetDock(footer, Dock.Bottom);
@@ -1678,7 +1847,7 @@ internal sealed partial class Radio
     private static Grid LogoBadge(string address, double size)
     {
         var image = new Image { Width = size, Height = size, Stretch = Stretch.Uniform };
-        FrameworkElement placeholder = Theme.Glyph(Theme.RadioIcon, size < 32 ? 16 : 18);
+        FrameworkElement placeholder = Theme.Glyph(Theme.RadioIcon, size < 32 ? 16 : size > 48 ? 36 : 18);
         var badge = new Grid { Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center };
         badge.Children.Add(placeholder);
         badge.Children.Add(image);
@@ -1831,6 +2000,116 @@ internal sealed partial class Radio
             dismissCheck = false;
             elsewhere.Close();
             playerPanel?.Close();
+        }
+    }
+
+    // Self-test of shared stations' links (--test-menu): a link opens the Shared station page, Cancel changes nothing,
+    // Add and play adds the station at the end and plays it, a known station just plays, a link without a station says
+    // so, a link pasted into + Station's box opens its page, a second start hands its link over, and Share copies the
+    // link and shows "Link copied". Nothing is saved; the stream never answers, so playing it stops at once.
+    // With --preview: the Shared station page (shared, shared-invalid), the ⋯ menu (share-menu) and the card (link-copied).
+    private async Task VerifyShare(bool preview)
+    {
+        playerPanel?.Close();
+        if (Stations.Count == 0) Stations.Add(new SavedStation { Name = "Stacja testowa", Url = "https://example.com/radio" });
+        int count = Stations.Count;
+        const string url = "https://example.invalid/shared-test";
+        string link = ShareLink.Web("Antyradio Hard", url, ShotStations[2].Logo);
+        void Fail(string what) => throw new InvalidOperationException("Udostępnianie stacji: " + what);
+        bool Shows(string text)
+        {
+            playerPanel?.UpdateLayout();
+            return playerPanel != null && Descendants(playerPanel).OfType<TextBlock>().Any(block => block.IsVisible && block.Text == text);
+        }
+        Button ButtonWith(string text)
+        {
+            playerPanel.UpdateLayout();   // a page just built gets its buttons' insides only now
+            return Descendants(playerPanel).OfType<Button>().FirstOrDefault(button => button.IsVisible &&
+                (button.Content as string == text || Descendants(button).OfType<TextBlock>().Any(block => block.Text == text)))
+                ?? throw new InvalidOperationException("Udostępnianie stacji: brak przycisku " + text);
+        }
+        void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        Grid RowOf(int index) => Descendants(playerPanel).OfType<ListBox>().First(box => box.IsVisible).Items.OfType<Grid>().ElementAt(index);
+        try
+        {
+            StopPlayback();
+            // The page, and Cancel.
+            OpenShared(link);
+            if (!Shows(L("Shared station")) || !Shows("Antyradio Hard") || !Shows(L("Add it to your stations and play it now?")) || session != null)
+                Fail("nie widać strony udostępnionej stacji.");
+            if (preview)
+            {
+                await Task.Delay(1500);   // the logo comes over the network
+                await SavePreview(playerPanel, "shared");
+            }
+            Click(ButtonWith(L("Cancel")));
+            if (Stations.Count != count || session != null || !Shows(L("History"))) Fail("Anuluj coś zmieniło albo nie wrócił do stacji.");
+            // Add and play: at the end of the list, and it plays.
+            OpenShared(link);
+            Click(ButtonWith(L("Add and play")));
+            bool added = Stations.Count == count + 1 && Stations[count].Url == url && Stations[count].Name == "Antyradio Hard" &&
+                Stations[count].Logo == ShotStations[2].Logo && station == count && session != null && Shows(L("History"));
+            StopPlayback();
+            if (!added) Fail("Dodaj i odtwórz nie dodało stacji na końcu albo jej nie włączyło.");
+            // The same stream again (another name, the radio's own link, a trailing /): already on the list, so it just plays.
+            SelectStation(0);
+            OpenShared(ShareLink.App("Inna nazwa", url + "/", null));
+            bool known = Stations.Count == count + 1 && station == count && session != null && !Shows(L("Shared station"));
+            StopPlayback();
+            if (!known) Fail("znana stacja nie zagrała od razu.");
+            // A link without a station.
+            OpenShared(ShareLink.Page + "#n=Bez+adresu");
+            if (!Shows(L("This link doesn't contain a station.")) || Shows(L("Add and play"))) Fail("brak komunikatu o złym linku.");
+            if (preview) await SavePreview(playerPanel, "shared-invalid");
+            // Pasted into the search box of + Station (when the clipboard is free).
+            Click(Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back")));
+            Click(ButtonWith(L("Station")));
+            string pasted = ShareLink.Web("Wklejona stacja", "https://example.invalid/pasted", null);
+            if (CopyText(pasted))
+            {
+                TextBox box = Descendants(playerPanel).OfType<TextBox>().First(item => item.IsVisible);
+                box.Focus();
+                ApplicationCommands.Paste.Execute(null, box);
+                await Task.Delay(300);
+                if (!Shows(L("Shared station")) || !Shows("Wklejona stacja")) Fail("wklejony link nie otworzył strony stacji.");
+            }
+            // A second start of the radio with --open hands its link to this one.
+            playerPanel?.Close();
+            string handed = ShareLink.App("Z drugiego startu", "https://example.invalid/second", null);
+            using (Process second = Process.Start(new ProcessStartInfo(Exe, "--test-menu --open \"" + handed + "\"") { UseShellExecute = false }))
+            {
+                for (int wait = 0; wait < 100 && !second.HasExited; wait++) await Task.Delay(100);   // the radio answers meanwhile
+                await Task.Delay(300);
+                if (!second.HasExited || second.ExitCode != 0 || !Shows("Z drugiego startu")) Fail("drugi start nie przekazał linku.");
+            }
+            // Share in a station's ⋯ menu: the link on the clipboard and "Link copied".
+            playerPanel?.Close();
+            OpenPlayer();
+            await Task.Delay(500);
+            int shared = Math.Max(0, Math.Min(station, Stations.Count - 1));
+            Button more = RowOf(shared).Children.OfType<Button>().Last();
+            var options = (ContextMenu)more.Tag;
+            if (preview)
+            {
+                Click(more);
+                await Task.Delay(500);
+                await SaveWithMenu(playerPanel, options, "share-menu");
+                options.IsOpen = false;
+            }
+            options.Items.OfType<MenuItem>().First(item => item.Header as string == L("Share")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+            SavedStation sharedStation = Stations[shared];
+            string expected = ShareLink.Web(sharedStation.Name, sharedStation.Url, sharedStation.Logo), copied = null;
+            try { copied = Clipboard.GetText(); }
+            catch (System.Runtime.InteropServices.ExternalException) { /* busy: not the app's fault */ }
+            if (copied != null && (copied != expected || !Shows(L("Link copied")))) Fail("Udostępnij nie skopiowało linku: " + copied);
+            if (preview) await SavePreview(playerPanel, "link-copied");
+        }
+        finally
+        {
+            StopPlayback();
+            playerPanel?.Close();
+            Stations.RemoveRange(count, Stations.Count - count);   // only in memory: the self-test saves nothing
+            station = Math.Min(station, Stations.Count - 1);
         }
     }
 

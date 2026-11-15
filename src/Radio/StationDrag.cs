@@ -550,10 +550,10 @@ internal sealed partial class Radio
                 target.RaiseEvent(args);
             }
 
-            // The ⋯ menu has only Edit and Remove; Move up / Move down went away with dragging.
-            List<string> labels = ((Descendants(Row("A")).OfType<Button>().Last().Tag as ContextMenu)?.Items.OfType<MenuItem>()
-                .Select(item => item.Header as string) ?? Enumerable.Empty<string>()).ToList();
-            if (labels.Count != 2 || !labels.Contains(L("Edit")) || !labels.Contains(L("Remove")))
+            // The ⋯ menu is Edit, Share, then Remove after a line; Move up / Move down went away with dragging.
+            List<string> labels = ((Descendants(Row("A")).OfType<Button>().Last().Tag as ContextMenu)?.Items.OfType<Control>()
+                .Select(item => (item as MenuItem)?.Header as string ?? "—") ?? Enumerable.Empty<string>()).ToList();
+            if (string.Join("|", labels) != string.Join("|", L("Edit"), L("Share"), "—", L("Remove")))
                 throw new InvalidOperationException("Błędne menu stacji: " + string.Join(", ", labels));
 
             // The logos show from the cache; the one that didn't load stays the radio icon and isn't fetched again.

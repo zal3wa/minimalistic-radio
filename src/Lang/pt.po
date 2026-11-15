@@ -493,3 +493,21 @@ msgstr "As estatísticas estão desativadas. Nada de novo é registado."
 
 msgid "Stops the radio and removes it from the tray"
 msgstr "Para o rádio e remove-o da área de notificação"
+
+msgid "Share"
+msgstr "Partilhar"
+
+msgid "Link copied"
+msgstr "Ligação copiada"
+
+msgid "Shared station"
+msgstr "Estação partilhada"
+
+msgid "Add it to your stations and play it now?"
+msgstr "Adicioná-la às suas estações e ouvi-la agora?"
+
+msgid "Add and play"
+msgstr "Adicionar e ouvir"
+
+msgid "This link doesn't contain a station."
+msgstr "Esta ligação não contém nenhuma estação."

@@ -493,3 +493,21 @@ msgstr "Статистику вимкнено. Нічого нового не з
 
 msgid "Stops the radio and removes it from the tray"
 msgstr "Вимикає радіо й прибирає його з області сповіщень"
+
+msgid "Share"
+msgstr "Поділитися"
+
+msgid "Link copied"
+msgstr "Посилання скопійовано"
+
+msgid "Shared station"
+msgstr "Станція, якою поділилися"
+
+msgid "Add it to your stations and play it now?"
+msgstr "Додати її до ваших станцій і ввімкнути зараз?"
+
+msgid "Add and play"
+msgstr "Додати й увімкнути"
+
+msgid "This link doesn't contain a station."
+msgstr "Це посилання не містить станції."

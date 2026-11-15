@@ -31,6 +31,9 @@ internal static class Program
         if (chosen >= 0 && chosen + 1 < args.Length) Lang.Setting = args[chosen + 1];
 #endif
         bool updated = args.Contains("--updated");
+        // "--open <link>": a shared station's link (the minimalistic-radio:// handler starts the radio this way).
+        int opening = Array.IndexOf(args, "--open");
+        string link = opening >= 0 && opening + 1 < args.Length ? args[opening + 1] : null;
         // Same names as earlier versions, so an old copy and taskbar media players keep working with this one.
         string instanceName = @"Local\RadioNaZywo", panelName = @"Local\MinimalisticRadio.Panel";
 #if SELFTEST
@@ -52,8 +55,15 @@ internal static class Program
                 catch (AbandonedMutexException) { first = true; }
             }
             bool openPanel = args.Length == 0 || args.Contains("--open-panel");
+#if SELFTEST
+            string linkWindow = LinkChannel.WindowName(testMenu);
+#else
+            string linkWindow = LinkChannel.WindowName(false);
+#endif
             if (!first)
             {
+                // The running radio shows the link's station; if it doesn't answer, at least its panel opens.
+                if (link != null) { if (!LinkChannel.Send(linkWindow, link)) request.Set(); return; }
                 if (openPanel) { request.Set(); return; }
 #if SELFTEST
                 if (testMenu) { Environment.ExitCode = 2; return; }
@@ -67,9 +77,9 @@ internal static class Program
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             Theme.Load(app);
 #if SELFTEST
-            var radio = new Radio(app, request, testMenu, args.Contains("--autostart"), updated);
+            var radio = new Radio(app, request, testMenu, args.Contains("--autostart"), updated, linkWindow, link);
 #else
-            var radio = new Radio(app, request, args.Contains("--autostart"), updated);
+            var radio = new Radio(app, request, args.Contains("--autostart"), updated, linkWindow, link);
 #endif
             app.Dispatcher.BeginInvoke(new Action(radio.Start));
             app.Run();
