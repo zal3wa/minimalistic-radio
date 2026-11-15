@@ -165,10 +165,10 @@ def prepare_settings(look: str) -> None:
     gsettings("org.gnome.desktop.background", "picture-uri-dark", "'file:///usr/share/backgrounds/ubuntu-wallpaper-d.png'")
     gsettings("org.gnome.desktop.wm.preferences", "button-layout", "':minimize,maximize,close'")
     gsettings("org.gnome.desktop.session", "idle-delay", "uint32 0")
-    # Without GDM the shell announces "Screen Lock disabled": no locking, and no banners over the pictures.
+    # No locking without GDM. (The shell still says "Screen Lock disabled" at the start: tidy() clears it. Turning
+    # banners off instead would put the Do Not Disturb bell next to the clock.)
     gsettings("org.gnome.desktop.screensaver", "lock-enabled", "false")
     gsettings("org.gnome.desktop.lockdown", "disable-lock-screen", "true")
-    gsettings("org.gnome.desktop.notifications", "show-banners", "false")
     gsettings("org.gnome.shell", "welcome-dialog-last-shown-version", "'999'")
     gsettings("org.gnome.shell", "enabled-extensions", f"['{APPINDICATOR}']")
     for schema, key in (("org.gnome.desktop.interface", "color-scheme"), ("org.gnome.desktop.interface", "gtk-theme"),
