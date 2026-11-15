@@ -74,6 +74,9 @@ msgstr "Szukaj w YouTube"
 msgid "More"
 msgstr "Więcej"
 
+msgid "Move Minimalistic Radio to Applications to get updates."
+msgstr "Przenieś Minimalistic Radio do Aplikacji, aby dostawać aktualizacje."
+
 msgid "Station"
 msgstr "Stacja"
 

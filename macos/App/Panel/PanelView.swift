@@ -8,6 +8,14 @@ struct PanelView: View {
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(model: model)
+            if !inApplications {
+                Text(L("Move Minimalistic Radio to Applications to get updates."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(Color.yellow.opacity(0.15))
+            }
             Divider()
             Group {
                 switch model.page {
@@ -23,6 +31,18 @@ struct PanelView: View {
             FooterView(model: model)
         }
         .frame(width: PanelController.size.width, height: PanelController.size.height)
+        .background {
+            // ⌘Q: the radio has no menu bar of its own, so the panel quits it.
+            Button("") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command).opacity(0)
+        }
+    }
+
+    /// Updates need the app in Applications (not run from the DMG or Downloads).
+    private var inApplications: Bool {
+        let path = Bundle.main.bundlePath
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return (path.hasPrefix("/Applications/") || path.hasPrefix(home + "/Applications/")) && !path.contains("/AppTranslocation/")
+            || Bundle.main.object(forInfoDictionaryKey: "MRReleaseTag") as? String == "dev"
     }
 }
 

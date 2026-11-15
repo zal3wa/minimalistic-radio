@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var systemEvents: SystemEvents?
     private(set) var updater: Updater!
     private(set) var panel: PanelController!
+    private var card: CardController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
@@ -52,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                      fetchFile: fetchFile, localize: L)
         logos = LogoCache(folder: paths.logosFolder)
         panel = PanelController(model: PanelModel(controller: controller, logos: logos))
+        card = CardController(controller: controller, logos: logos)
         statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.togglePanel() },
                                           perform: { [weak self] in self?.perform($0) })
         updater = Updater(controller: controller)
@@ -94,7 +96,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.toggle(anchor: statusItem.buttonFrameOnScreen)
     }
 
-    func showCard(_ text: String? = nil) {}
+    /// The station card: after a media key, menu or Shortcuts switch (if Settings allows it), or with `text`.
+    func showCard(_ text: String? = nil) {
+        guard text != nil || controller.prefs.showStationPopup else { return }
+        card.show(text: text, anchor: statusItem.buttonFrameOnScreen)
+    }
 
     // MARK: - The menu's actions (the Linux tray's _on_menu)
 
@@ -159,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
 
+        showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)
         if !panel.isVisible { failures.append("the panel doesn't open") }
         panel.model.page = .settings
