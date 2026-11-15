@@ -12,6 +12,12 @@ on:
   pull_request:
     paths: ['macos/**', '.github/workflows/macos.yml', 'data/banned-stations.json']
   workflow_dispatch:
+    inputs:
+      sign_check:
+        description: 'Sign this build with the project certificate to check the signing (publishes nothing)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -67,7 +73,7 @@ jobs:
       # The same certificate for every release: macOS then sees each version as the same app (no new permission
       # prompts), and the updater accepts only an update signed with it.
       - name: Sign with the project's certificate
-        if: env.TAG != ''
+        if: env.TAG != '' || inputs.sign_check
         env:
           CERTIFICATE: ${{ secrets.MACOS_SIGNING_CERTIFICATE }}
           PASSWORD: ${{ secrets.MACOS_SIGNING_PASSWORD }}
