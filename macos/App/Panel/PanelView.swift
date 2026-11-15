@@ -1,13 +1,14 @@
 import RadioCore
 import SwiftUI
 
-/// The panel: the header, the page, and the player at the bottom (as on Windows).
+/// The panel: the top bar, the page, and on the stations page the player at the bottom.
 struct PanelView: View {
     @ObservedObject var model: PanelModel
 
     var body: some View {
         VStack(spacing: 0) {
             HeaderView(model: model)
+            PanelDivider()
             if !inApplications {
                 Text(L("Move Minimalistic Radio to Applications to get updates."))
                     .font(.callout)
@@ -16,7 +17,6 @@ struct PanelView: View {
                     .padding(.vertical, 6)
                     .background(Color.yellow.opacity(0.15))
             }
-            Divider()
             Group {
                 switch model.page {
                 case .stations: StationsPage(model: model)
@@ -24,16 +24,25 @@ struct PanelView: View {
                 case .search: SearchPage(model: model)
                 case .history: HistoryPage(model: model)
                 case .settings: SettingsPage(model: model)
+                case .statistics: StatisticsPage(model: model)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            Divider()
-            FooterView(model: model)
+            if model.page == .stations {
+                PanelDivider()
+                FooterView(model: model)
+            }
         }
         .frame(width: PanelController.size.width, height: PanelController.size.height)
         .background {
-            // ⌘Q: the radio has no menu bar of its own, so the panel quits it.
-            Button("") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command).opacity(0)
+            // The radio has no menu bar of its own: ⌘Q quits it, ⌘W hides the panel, and Space plays and stops on
+            // every page without a text field (the Play/Stop button is only on the stations page).
+            ZStack {
+                Button("") { NSApp.terminate(nil) }.keyboardShortcut("q", modifiers: .command)
+                Button("") { model.close() }.keyboardShortcut("w", modifiers: .command)
+                Button("") { model.controller.toggle() }.keyboardShortcut(model.spacePlays ? KeyboardShortcut(.space, modifiers: []) : nil)
+            }
+            .opacity(0)
         }
     }
 
@@ -46,8 +55,16 @@ struct PanelView: View {
     }
 }
 
-/// The panel's top row: on the stations page the add, history and settings buttons; on the other pages a back
-/// button and the page's title. Close and the green update arrow are on every page.
+/// The 1 pt line under the top bar and above the player: the text colour at 10 %.
+struct PanelDivider: View {
+    var body: some View {
+        Rectangle().fill(Color.primary.opacity(0.1)).frame(height: 1)
+    }
+}
+
+/// The panel's top bar. On the stations page: [+ Station] [History], then the green update button while an update
+/// is ready, and Settings. On the other pages: ‹ and the page's title. The panel hides with a click elsewhere, Esc,
+/// ⌘W or the menu bar icon, so there is no close button.
 struct HeaderView: View {
     @ObservedObject var model: PanelModel
 
@@ -57,42 +74,51 @@ struct HeaderView: View {
                 Button { model.addStation() } label: { Label(L("Station"), systemImage: "plus") }
                     .help(L("Add a station"))
                     .buttonStyle(.bordered)
-                Button { model.page = .search } label: { Image(systemName: "magnifyingglass") }
-                    .help(L("Search the radio-browser.info directory"))
-                    .buttonStyle(.borderless)
                     .keyboardShortcut("f", modifiers: .command)
-                Spacer()
-            } else {
-                Button { model.page = .stations } label: { Image(systemName: "chevron.left") }
-                    .help(L("Back"))
-                    .buttonStyle(.borderless)
-                Text(title).font(.headline)
-                Spacer()
-            }
-            if let update = AppDelegate.shared?.updater?.label {
-                Button { AppDelegate.shared?.updater?.install() } label: {
-                    Image(systemName: "arrow.down.circle.fill").foregroundStyle(.green)
-                }
-                .help(update)
-                .buttonStyle(.borderless)
-            }
-            if model.page == .stations {
-                Button { model.page = .history } label: { Image(systemName: "clock.arrow.circlepath") }
+                Button { model.page = .history } label: { Label(L("History"), systemImage: "clock.arrow.circlepath") }
                     .help(L("Song history"))
-                    .buttonStyle(.borderless)
-                Button { model.page = .settings } label: { Image(systemName: "gearshape") }
-                    .help(L("Settings"))
-                    .buttonStyle(.borderless)
-                    .keyboardShortcut(",", modifiers: .command)
+                    .buttonStyle(.bordered)
+                Spacer()
+                if let update = model.updateLabel {
+                    iconButton(help: update, action: { AppDelegate.shared?.updater?.install() }) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .green)
+                    }
+                }
+                iconButton(help: L("Settings"), action: { model.page = .settings }) {
+                    Image(systemName: "gearshape")
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            } else {
+                iconButton(help: L("Back"), action: { model.back() }) {
+                    Image(systemName: "chevron.left")
+                }
+                .padding(.trailing, -2)
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+                    .lineLimit(1)
+                Spacer()
             }
-            Button { model.close() } label: { Image(systemName: "xmark") }
-                .help(L("Hide the panel (the radio keeps playing)"))
-                .buttonStyle(.borderless)
-                .keyboardShortcut("w", modifiers: .command)
         }
         .imageScale(.large)
-        .padding(.horizontal, 12)
+        // Equal space above, below and left of [+ Station] (24 pt high in a 44 pt bar); the subpages' ‹ sits in a
+        // 26 pt box, so it starts 2 pt further left.
+        .padding(.leading, model.page == .stations ? 10 : 8)
+        .padding(.trailing, 10)
         .frame(height: 44)
+    }
+
+    /// An icon in a 26 pt box (as in the mockups), so the buttons on the right end 10 pt from the edge.
+    private func iconButton<Icon: View>(help: String, action: @escaping () -> Void,
+                                        @ViewBuilder icon: () -> Icon) -> some View {
+        Button(action: action) {
+            icon()
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .help(help)
     }
 
     private var title: String {
@@ -101,6 +127,7 @@ struct HeaderView: View {
         case .search: return L("Add a station")
         case .history: return L("Song history")
         case .settings: return L("Settings")
+        case .statistics: return L("Statistics")
         case .station(let index): return index == nil ? L("Add by address") : L("Edit")
         }
     }

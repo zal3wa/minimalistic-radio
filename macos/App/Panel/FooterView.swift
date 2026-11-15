@@ -2,7 +2,8 @@ import AVKit
 import RadioCore
 import SwiftUI
 
-/// The bottom of the panel, as on Windows: what plays now, the volume row and Play/Stop.
+/// The bottom of the stations page, as on Windows: what plays now, the volume row and Play/Stop, 12 pt from the
+/// panel's sides and bottom.
 struct FooterView: View {
     @ObservedObject var model: PanelModel
 
@@ -172,7 +173,7 @@ struct AirPlayButton: NSViewRepresentable {
     }
 }
 
-/// Play or Stop, as wide as the panel.
+/// Play or Stop, as wide as the panel. (Space is the panel's: it works on the other pages too.)
 struct PlayStopButton: View {
     @ObservedObject var model: PanelModel
 
@@ -185,6 +186,5 @@ struct PlayStopButton: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .disabled(model.controller.stations.isEmpty)
-        .keyboardShortcut(model.spacePlays ? KeyboardShortcut(.space, modifiers: []) : nil)
     }
 }

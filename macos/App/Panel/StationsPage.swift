@@ -22,6 +22,7 @@ struct StationsPage: View {
                 ForEach(Array(controller.stations.enumerated()), id: \.element.url) { index, station in
                     StationRow(model: model, station: station, index: index) { play(index) }
                         .tag(station.url)
+                        .background(OverlayScroller())
                 }
                 .onMove { from, to in
                     if let source = from.first { controller.moveStation(from: source, to: to) }
