@@ -7,6 +7,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 msgid "The station doesn't send song titles"
 msgstr "La station n'envoie pas les titres"
@@ -415,3 +416,8 @@ msgstr "{0} h {1} min"
 
 msgid "{0} h"
 msgstr "{0} h"
+
+msgid "{0} play"
+msgid_plural "{0} plays"
+msgstr[0] "{0} écoute"
+msgstr[1] "{0} écoutes"
