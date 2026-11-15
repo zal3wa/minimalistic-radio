@@ -187,6 +187,59 @@ import Testing
     #expect(saved(r).songs.count == 1 && saved(r).sessions.count == 1)
 }
 
+// MARK: - The Statistics switch (Settings)
+
+@MainActor @Test func switchedOffNothingNewIsRecorded() {
+    var prefs = Preferences()
+    prefs.collectStatistics = false
+    let r = Rig.started(prefs: prefs), c = r.controller
+    playing(c)
+    c.onPlayerTitle("Queen - A Kind Of Magic")
+    r.scheduler.advance(10 * 60)
+    c.stop()
+    #expect(c.statistics == StatisticsLog() && saved(r) == StatisticsLog())
+    #expect(c.history.map(\.title) == ["Queen - A Kind Of Magic"])        // the history goes on
+}
+
+@MainActor @Test func switchingOffEndsTheSessionAndKeepsWhatWasCollected() {
+    let r = Rig.started(), c = r.controller
+    playing(c)
+    r.scheduler.advance(60)
+    c.onPlayerTitle("Queen - A Kind Of Magic")
+    r.scheduler.advance(60)
+    var seen: [Change] = []
+    c.subscribe { seen.append($0) }
+    c.setCollectStatistics(false)
+    #expect(loadPreferences(r.paths.preferencesFile).collectStatistics == false)
+    #expect(seen.contains { $0.contains(.preferences) })
+    #expect(saved(r).sessions.map(\.end) == [at(r, 120)] && saved(r).songs.count == 1)
+    c.onPlayerTitle("Editors - Shadow")
+    r.scheduler.advance(5 * 60)
+    c.stop()
+    #expect(saved(r).sessions.map(\.end) == [at(r, 120)] && saved(r).songs.count == 1)
+}
+
+@MainActor @Test func switchingOnWhilePlayingStartsCountingThere() {
+    var prefs = Preferences()
+    prefs.collectStatistics = false
+    let r = Rig.started(prefs: prefs), c = r.controller
+    playing(c)
+    r.scheduler.advance(60)
+    c.setCollectStatistics(true)
+    r.scheduler.advance(60)
+    c.stop()
+    #expect(saved(r).sessions.map(\.start) == [at(r, 60)] && saved(r).sessions.map(\.end) == [at(r, 120)])
+}
+
+@Test func collectedSinceIsTheFirstSession() {
+    #expect(StatisticsLog().since == nil)
+    let log = StatisticsLog(sessions: [
+        ListeningSession(station: "B", url: "http://b/1", start: localDate(2026, 3, 2, 20, 0), end: localDate(2026, 3, 2, 21, 0), titles: false),
+        ListeningSession(station: "A", url: "http://a/1", start: localDate(2025, 3, 2, 19, 0), end: localDate(2025, 3, 2, 20, 0), titles: false),
+    ], songs: [PlayedSong(station: "A", title: "Old - Song", time: localDate(2024, 1, 1, 12, 0))])
+    #expect(log.since == localDate(2025, 3, 2, 19, 0))                     // sessions, not songs
+}
+
 @MainActor @Test func removingAStationKeepsItsStatistics() {
     let r = Rig.started(), c = r.controller
     playing(c, 1)

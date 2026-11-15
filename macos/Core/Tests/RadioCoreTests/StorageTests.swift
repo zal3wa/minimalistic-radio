@@ -67,6 +67,15 @@ import Testing
     #expect(loadPreferences(f) == expected)
 }
 
+@Test func statisticsAreCollectedByDefault() throws {
+    #expect(Preferences().collectStatistics)
+    let f = tempFolder().appendingPathComponent("p.json")
+    try Data(#"{"Volume": 40, "CollectStatistics": 1}"#.utf8).write(to: f)   // not a JSON boolean: the default
+    #expect(loadPreferences(f).collectStatistics)
+    try Data(#"{"CollectStatistics": false}"#.utf8).write(to: f)
+    #expect(!loadPreferences(f).collectStatistics)
+}
+
 @Test func preferencesRoundTripAndCorruptFallback() throws {
     let f = tempFolder().appendingPathComponent("p.json")
     var prefs = Preferences()
@@ -76,6 +85,7 @@ import Testing
     prefs.checkUpdates = false
     prefs.lastUpdateCheck = localDate(2026, 11, 15, 9, 30, 12)
     prefs.updateByDownload = true
+    prefs.collectStatistics = false
     try savePreferences(f, prefs)
     #expect(loadPreferences(f) == prefs)
     try Data("{oops".utf8).write(to: f)
