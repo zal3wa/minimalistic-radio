@@ -20,6 +20,63 @@ msgstr "Ukončit"
 msgid "Add a station first."
 msgstr "Nejdřív přidejte stanici."
 
+msgid "Station"
+msgstr "Stanice"
+
+msgid "Add a station"
+msgstr "Přidat stanici"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Hledat v katalogu radio-browser.info"
+
+msgid "Back"
+msgstr "Zpět"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Skrýt panel (rádio hraje dál)"
+
+msgid "Stations"
+msgstr "Stanice"
+
+msgid "Add by address"
+msgstr "Přidat podle adresy"
+
+msgid "Edit"
+msgstr "Upravit"
+
+msgid "Station name"
+msgstr "Název stanice"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Adresa streamu (HTTP nebo HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Adresa loga (nepovinné)"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "This address is already on the list."
+msgstr "Tato adresa už je v seznamu."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Zadejte název a platnou adresu streamu. Logo je nepovinné."
+
+msgid "Remove"
+msgstr "Odebrat"
+
+msgid "Station options"
+msgstr "Možnosti stanice"
+
 msgid "This station uses a format that can't be played."
 msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
 
@@ -77,9 +134,6 @@ msgstr "Zastavit"
 msgid "Play"
 msgstr "Přehrát"
 
-msgid "Station"
-msgstr "Stanice"
-
 msgid "Up 5%"
 msgstr "Zvýšit o 5%"
 
@@ -103,9 +157,6 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Vypnuto"
-
-msgid "Settings"
-msgstr "Nastavení"
 
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio ještě není připravené. Zkuste to znovu."

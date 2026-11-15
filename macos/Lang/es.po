@@ -20,6 +20,63 @@ msgstr "Salir"
 msgid "Add a station first."
 msgstr "Primero añade una emisora."
 
+msgid "Station"
+msgstr "Emisora"
+
+msgid "Add a station"
+msgstr "Añadir emisora"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Busca en el directorio radio-browser.info"
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "Song history"
+msgstr "Historial de canciones"
+
+msgid "Settings"
+msgstr "Configuración"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Ocultar el panel (la radio sigue sonando)"
+
+msgid "Stations"
+msgstr "Emisoras"
+
+msgid "Add by address"
+msgstr "Añadir por dirección"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Station name"
+msgstr "Nombre de la emisora"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Dirección del stream (HTTP o HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Dirección del logotipo (opcional)"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "This address is already on the list."
+msgstr "Esta dirección ya está en la lista."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Escribe un nombre y una dirección de stream válida. El logotipo es opcional."
+
+msgid "Remove"
+msgstr "Quitar"
+
+msgid "Station options"
+msgstr "Opciones de la emisora"
+
 msgid "This station uses a format that can't be played."
 msgstr "Esta emisora usa un formato que no se puede reproducir."
 
@@ -77,9 +134,6 @@ msgstr "Detener"
 msgid "Play"
 msgstr "Reproducir"
 
-msgid "Station"
-msgstr "Emisora"
-
 msgid "Up 5%"
 msgstr "Subir un 5%"
 
@@ -103,9 +157,6 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Desactivado"
-
-msgid "Settings"
-msgstr "Configuración"
 
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio aún no está listo. Inténtalo de nuevo."

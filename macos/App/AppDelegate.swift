@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var nowPlaying: NowPlaying?
     private var systemEvents: SystemEvents?
     private(set) var updater: Updater!
+    private(set) var panel: PanelController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
@@ -50,18 +51,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller = RadioController(player: player, scheduler: MainScheduler(), paths: paths, fetch: fetch,
                                      fetchFile: fetchFile, localize: L)
         logos = LogoCache(folder: paths.logosFolder)
-        statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.openPanel() },
+        panel = PanelController(model: PanelModel(controller: controller, logos: logos))
+        statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.togglePanel() },
                                           perform: { [weak self] in self?.perform($0) })
         statusItem.extraItems = { [weak self] in self?.riskCheckItems() ?? [] }
         updater = Updater(controller: controller)
-        updater.onChange = { [weak self] in self?.statusItem.refresh() }
+        updater.onChange = { [weak self] in
+            self?.statusItem.refresh()
+            self?.panel.model.refresh()
+        }
         updater.showCard = { [weak self] in self?.showCard($0) }
         statusItem.updateLabel = { [weak self] in self?.updater.label }
         controller.subscribe { [weak self] change in self?.changed(change) }
     }
 
     private func changed(_ change: Change) {
-        if change.contains(.preferences) { localizer.setting = controller.prefs.language }
+        if change.contains(.preferences) {
+            localizer.setting = controller.prefs.language
+            panel.model.refresh()
+        }
         statusItem.refresh()
         nowPlaying?.update()
         if change.contains(.switched) { showCard() }
@@ -77,9 +85,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Panel and card (Tasks 15 and 18)
 
-    /// Until the panel exists (Task 15), a click shows the menu.
+    /// Opens the panel, on `page` ("search", "history", "settings") or the stations.
     func openPanel(page: String? = nil) {
-        statusItem.showMenu()
+        let pages: [String: PanelModel.Page] = ["search": .search, "history": .history, "settings": .settings]
+        panel.show(page: page.flatMap { pages[$0] }, anchor: statusItem.buttonFrameOnScreen)
+    }
+
+    private func togglePanel() {
+        panel.toggle(anchor: statusItem.buttonFrameOnScreen)
     }
 
     func showCard(_ text: String? = nil) {}
@@ -169,6 +182,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                       bytesPerRow: 0, bitsPerPixel: 0)
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
+
+        panel.show(anchor: nil)
+        if !panel.isVisible { failures.append("the panel doesn't open") }
+        panel.model.page = .settings
+        panel.model.back()
+        if panel.model.page != .stations { failures.append("Esc on a page doesn't go back to the stations") }
+        panel.model.back()
+        if panel.isVisible { failures.append("Esc on the stations doesn't close the panel") }
 
         if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
         let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
