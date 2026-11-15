@@ -28,9 +28,38 @@ extension AppDelegate {
     func takeScreenshots(into output: URL) async -> Int32 {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-shots-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
+        let screen = await Self.useRetinaScreen()
+        defer { Self.restoreScreen(screen) }
         prepareShots(folder)
         try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         return await takePanelPictures(into: output)
+    }
+
+    /// The pictures taken from the screen (the menus) are sharp on a 2× screen only, and the runner's is 1×: its
+    /// main display goes to a HiDPI mode while they are taken, if it has one. Returns the mode to go back to.
+    static func useRetinaScreen() async -> CGDisplayMode? {
+        let display = CGMainDisplayID()
+        guard let current = CGDisplayCopyDisplayMode(display) else { return nil }
+        print("screen: \(current.width)×\(current.height) points, \(current.pixelWidth)×\(current.pixelHeight) pixels")
+        guard current.pixelWidth < 2 * current.width else { return nil }
+        let options = [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary
+        let modes = (CGDisplayCopyAllDisplayModes(display, options) as? [CGDisplayMode] ?? []).filter { $0.isUsableForDesktopGUI() }
+        print("screen modes: " + modes.map { "\($0.width)×\($0.height)@\($0.pixelWidth / max($0.width, 1))x" }.joined(separator: ", "))
+        let retina = modes.filter { $0.pixelWidth == 2 * $0.width }
+        guard let mode = retina.first(where: { $0.width == current.width && $0.height == current.height })
+                ?? retina.filter({ $0.width >= 1024 && $0.height >= 700 }).max(by: { $0.width < $1.width }) else {
+            print("screen: no 2× mode, the menus stay 1×")
+            return nil
+        }
+        let result = CGDisplaySetDisplayMode(display, mode, nil)
+        print("screen: \(mode.width)×\(mode.height) at 2×: \(result == .success ? "set" : "not set (\(result.rawValue))")")
+        guard result == .success else { return nil }
+        try? await Task.sleep(nanoseconds: 3_000_000_000)   // the screen and the menu bar settle
+        return current
+    }
+
+    static func restoreScreen(_ mode: CGDisplayMode?) {
+        if let mode { CGDisplaySetDisplayMode(CGMainDisplayID(), mode, nil) }
     }
 
     /// The radio as in the README pictures: the stations, history and song of the other systems, nothing playing.
@@ -261,19 +290,14 @@ extension AppDelegate {
         var menuFrame: CGRect?
         var itemCentre: CGPoint?
         var captured = false
-        var openWindow: NSWindow?
-        var sharp: CGImage?
         showMenu(menu, positioning: spotify, at: rowPlace, in: content, closingAfter: 1.4, whileOpen: { menuWindow in
             menuFrame = menuWindow.frame
-            openWindow = menuWindow
             if let row = self.menuItemRow(spotify.title, in: menuWindow) {
                 itemCentre = CGPoint(x: row.midX, y: row.midY)
                 CGWarpMouseCursorPosition(CGPoint(x: row.midX, y: screenTop - row.midY))   // and the pointer on it
             }
         }, beforeClosing: {
             captured = capturePanel(after)
-            // The menu's own views drawn at 2× (the screen here is 1×): its text and highlight, sharp.
-            if let root = openWindow?.contentView?.superview ?? openWindow?.contentView { sharp = self.renderImage(root) }
         })
         try? await Task.sleep(nanoseconds: 300_000_000)
 
@@ -307,31 +331,7 @@ extension AppDelegate {
                 for channel in 0..<4 { picture[index + channel] = big[index + channel] }
             }
         }
-        // Over that, the menu's views drawn at 2× where they drew something (premultiplied "over").
-        if let sharp {
-            let menuX = Int(((menuFrame.minX - panelFrame.minX) * scale).rounded())
-            let menuY = Int(((panelFrame.maxY - menuFrame.maxY) * scale).rounded())
-            let sharpWidth = sharp.width, sharpHeight = sharp.height
-            if let layer = rgba(sharp, sharpWidth, sharpHeight) {
-                if let debug = image(layer, sharpWidth, sharpHeight),
-                   let png = NSBitmapImageRep(cgImage: debug).representation(using: .png, properties: [:]) {
-                    try? png.write(to: file.deletingLastPathComponent()
-                        .appendingPathComponent(file.deletingPathExtension().lastPathComponent + "-layer.png"))
-                }
-                for y in 0..<sharpHeight where (0..<height).contains(menuY + y) {
-                    for x in 0..<sharpWidth where (0..<width).contains(menuX + x) {
-                        let source = (y * sharpWidth + x) * 4, target = ((menuY + y) * width + menuX + x) * 4
-                        let alpha = Int(layer[source + 3])
-                        guard alpha > 0 else { continue }
-                        for channel in 0..<4 {
-                            let under: Int = Int(picture[target + channel]) * (255 - alpha) / 255
-                            let over: Int = Int(layer[source + channel])
-                            picture[target + channel] = UInt8(min(255, over + under))
-                        }
-                    }
-                }
-            }
-        }
+        print("demo: the song menu from a \(smallWidth / Int(panelFrame.width))× screen")
         guard let composed = image(picture, width, height),
               let png = NSBitmapImageRep(cgImage: composed).representation(using: .png, properties: [:]),
               (try? png.write(to: file)) != nil else { return nil }
@@ -522,6 +522,8 @@ extension AppDelegate {
     func takeMenuPictures(into output: URL) async -> Int32 {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-menu-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
+        let screen = await Self.useRetinaScreen()   // a 2× picture; the crop below follows the screen's scale
+        defer { Self.restoreScreen(screen) }
         prepareShots(folder)
         try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         var written = 0
