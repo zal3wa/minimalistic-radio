@@ -5,7 +5,7 @@ on:
   push:
     branches: ['**']
     tags: ['linux-v*']
-    paths: ['linux/tools/**', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux.yml']
+    paths: ['linux/tools/check_aac.py', '.github/workflows/linux-aac-gate.yml']
   workflow_dispatch:
 
 permissions:

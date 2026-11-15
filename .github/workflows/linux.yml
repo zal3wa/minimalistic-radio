@@ -69,9 +69,19 @@ jobs:
 
       - name: Build with Meson and run its checks
         run: |
-          meson setup _build linux
+          meson setup _build linux --prefix "$PWD/_installed"
           meson compile -C _build
           meson test -C _build --print-errorlogs
+
+      # The installed app (as in the Flatpak and the Snap) must have every module: a missing one only fails at run time.
+      - name: Install, and check the installed app
+        run: |
+          meson install -C _build
+          package=$(dirname "$(find _installed -path '*/minimalistic_radio/main.py')")
+          (cd "$package/.." && find minimalistic_radio -name '*.py' | sort) > installed.txt
+          (cd linux && git ls-files 'minimalistic_radio/*.py' | sort) > expected.txt
+          diff -u expected.txt installed.txt
+          dbus-run-session -- xvfb-run -a _installed/bin/minimalistic-radio --self-test
 
       # Pictures of the window for review (the owner has no Linux). Never fails the job.
       - name: Take the screenshots
