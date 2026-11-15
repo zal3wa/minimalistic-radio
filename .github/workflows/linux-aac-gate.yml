@@ -1,0 +1,34 @@
+name: Linux AAC gate
+
+# Depends on live radio stations, so it runs only when it matters.
+on:
+  push:
+    branches: ['**']
+    tags: ['linux-v*']
+    paths: ['linux/tools/**', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Does the GNOME Flatpak runtime decode HE-AAC (SBR and PS) from internet radio?
+  aac-gate:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install the GNOME runtime
+        run: |
+          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --noninteractive --assumeyes flathub org.gnome.Platform//51
+          flatpak list --runtime --columns=ref
+
+      - name: Check HE-AAC decoding
+        run: >
+          flatpak run --share=network --filesystem=$PWD
+          --command=python3 org.gnome.Platform//51
+          linux/tools/check_aac.py
