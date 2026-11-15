@@ -87,12 +87,12 @@ internal static class ShareLink
         return name.Substring(0, length).TrimEnd();
     }
 
-    // A logo is kept only as an absolute https address of at most 2048 characters.
+    // A logo goes along and is kept as an absolute http or https address (the radio's own rule) of at most 2048
+    // characters; the page shows an http one through https.
     private static string Logo(string logo)
     {
         logo = logo?.Trim();
-        return logo != null && logo.Length <= LongestAddress && Uri.TryCreate(logo, UriKind.Absolute, out Uri uri) &&
-            uri.Scheme == Uri.UriSchemeHttps && uri.Host.Length > 0 ? logo : null;
+        return logo != null && logo.Length <= LongestAddress && Storage.IsWebUrl(logo) ? logo : null;
     }
 
     // application/x-www-form-urlencoded as URLSearchParams writes it: letters, digits and *-._ as they are, a space
@@ -162,10 +162,18 @@ internal static class ShareLink
         Check(Read(Page + "#n=%20%20Radio%09Z%0AE%00T%20&u=https%3A%2F%2Fa.example%2F")?.Name == "RadioZET", "nazwa bez znaków sterujących.");
         Check(Read(Page + "#n=" + new string('a', 150) + "&u=https%3A%2F%2Fa.example%2F")?.Name == new string('a', 100), "nazwa skrócona do 100 znaków.");
         Check(Read(Web(new string('a', 99) + "😀", "https://a.example/", null))?.Name == new string('a', 99), "skracanie nie rozcina emoji.");
-        // The logo: only https, otherwise dropped without making the link invalid.
-        foreach (string logo in new[] { "http://a.example/l.png", "javascript:alert(1)", "/l.png", "https://a.example/" + new string('l', 2048) })
+        // The logo: an absolute http or https address of at most 2048 characters goes along and is kept (the page shows an
+        // http one through https); anything else is left out without making the link invalid.
+        const string favicon = "http://www.my-radios.com/favicon.ico";
+        Check(Web("A", "https://a.example/", favicon).EndsWith("&l=http%3A%2F%2Fwww.my-radios.com%2Ffavicon.ico") &&
+            Read(Web("A", "https://a.example/", favicon))?.Logo == favicon &&
+            Read(Page + "#n=A&u=https%3A%2F%2Fa.example%2F&l=http%3A%2F%2Fwww.my-radios.com%2Ffavicon.ico")?.Logo == favicon, "logo http.");
+        Check(Read(Web("A", "https://a.example/", "https://a.example/" + new string('l', 2048 - 18)))?.Logo?.Length == 2048, "logo na granicy 2048 znaków.");
+        foreach (string logo in new[] { "javascript:alert(1)", "ftp://a.example/l.png", "/l.png", "a.example/l.png", "https://user:pass@a.example/l.png",
+            "https://a.example/" + new string('l', 2048) })
         {
-            SharedStation station = Read(Web("A", "https://a.example/", logo));
+            Check(!Web("A", "https://a.example/", logo).Contains("&l="), "zły adres logo w linku: " + logo);
+            SharedStation station = Read(Page + "#n=A&u=https%3A%2F%2Fa.example%2F&l=" + Uri.EscapeDataString(logo));
             Check(station != null && station.Logo == null, "zły adres logo: " + logo);
         }
 
