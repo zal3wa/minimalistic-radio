@@ -160,11 +160,13 @@ def main():
     if decoded < 4:
         print("Inconclusive: fewer than 4 stations produced audio (network?)")
         return 2
-    if sbr >= 3 and ps >= 1:
+    # Two independent stations are enough proof that SBR decodes; any real failure above already stopped us.
+    # (Requiring three made releases depend on how many live HE-AAC stations answered that day.)
+    if sbr >= 2 and ps >= 1:
         return 0
     missing = []
-    if sbr < 3:
-        missing.append(f"SBR proven on only {sbr} stations (need 3)")
+    if sbr < 2:
+        missing.append(f"SBR proven on only {sbr} stations (need 2)")
     if ps < 1:
         missing.append("no HE-AACv2 (PS) station among the candidates")
     print("Inconclusive: " + "; ".join(missing))
