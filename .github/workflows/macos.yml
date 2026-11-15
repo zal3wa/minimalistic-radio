@@ -18,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      menu_picture:
+        description: 'Also take the README picture of the menu bar menu (artifact macos-screenshots)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,6 +73,13 @@ jobs:
         continue-on-error: true
         run: |
           "$APP/Contents/MacOS/Minimalistic Radio" --screenshot "$PWD/macos-screenshots"
+          ls -l macos-screenshots
+
+      - name: Menu bar picture
+        if: ${{ inputs.menu_picture }}
+        continue-on-error: true
+        run: |
+          "$APP/Contents/MacOS/Minimalistic Radio" --menu-picture "$PWD/macos-screenshots"
           ls -l macos-screenshots
 
       - uses: actions/upload-artifact@v7

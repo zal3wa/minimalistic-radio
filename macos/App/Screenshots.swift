@@ -28,6 +28,13 @@ extension AppDelegate {
     func takeScreenshots(into output: URL) async -> Int32 {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-shots-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
+        prepareShots(folder)
+        try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        return await takePanelPictures(into: output)
+    }
+
+    /// The radio as in the README pictures: the stations, history and song of the other systems, nothing playing.
+    private func prepareShots(_ folder: URL) {
         let paths = Paths(support: folder.appendingPathComponent("support"), cache: folder.appendingPathComponent("cache"))
         let now = Date()
         let older = Self.shotSongs.dropLast().reversed().map {
@@ -43,8 +50,9 @@ extension AppDelegate {
         controller.play()
         controller.onPlayerStarted()
         controller.onPlayerTitle(Self.shotSongs.last!.0)
-        try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+    }
 
+    private func takePanelPictures(into output: URL) async -> Int32 {
         let model = panel.model
         var written = 0
         for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
@@ -81,6 +89,50 @@ extension AppDelegate {
         panel.close()
         print("wrote \(written) screenshots to \(output.path)")
         return written == 8 ? 0 : 1
+    }
+
+    /// `--menu-picture DIR`: the menu bar with the radio's open menu, light and dark (macos-menu-<look>.png),
+    /// 778 points wide like the Windows and Ubuntu pictures, taken with screencapture while the menu is open.
+    func takeMenuPictures(into output: URL) async -> Int32 {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-menu-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        prepareShots(folder)
+        try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        var written = 0
+        for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
+            NSApp.appearance = NSAppearance(named: appearance)
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            let full = output.appendingPathComponent("macos-menu-\(look)-full.png")
+            var menuFrame: CGRect?
+            let capture = Timer(timeInterval: 1.5, repeats: false) { _ in
+                menuFrame = NSApp.windows.first { $0.isVisible && $0.className.contains("Menu") }?.frame
+                let shot = Process()
+                shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                shot.arguments = ["-x", full.path]
+                try? shot.run()
+                shot.waitUntilExit()
+                MainActor.assumeIsolated { self.statusItem.closeMenu() }
+            }
+            RunLoop.main.add(capture, forMode: .common)
+            statusItem.showMenu()   // returns when the menu closes
+            print("menu \(look): window \(menuFrame.map { "\($0)" } ?? "not found")")
+            if crop(full, to: output.appendingPathComponent("macos-menu-\(look).png"), menu: menuFrame) { written += 1 }
+        }
+        print("wrote \(written) menu pictures to \(output.path)")
+        return written == 2 ? 0 : 1
+    }
+
+    /// The top right of the screen: 778 points wide, from the menu bar to just under the menu.
+    private func crop(_ source: URL, to target: URL, menu: CGRect?) -> Bool {
+        guard let image = NSImage(contentsOf: source)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let screen = NSScreen.main else { return false }
+        let scale = CGFloat(image.width) / screen.frame.width
+        let bottom = menu.map { screen.frame.maxY - $0.minY + 24 } ?? 420
+        let width = min(778, screen.frame.width)
+        let rect = CGRect(x: (screen.frame.width - width) * scale, y: 0, width: width * scale, height: min(bottom, screen.frame.height) * scale)
+        guard let cropped = image.cropping(to: rect.integral) else { return false }
+        guard let png = NSBitmapImageRep(cgImage: cropped).representation(using: .png, properties: [:]) else { return false }
+        return (try? png.write(to: target)) != nil
     }
 
     private func wait(seconds: Double, until ready: @escaping () -> Bool) async {
