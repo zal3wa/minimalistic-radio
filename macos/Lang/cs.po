@@ -20,11 +20,50 @@ msgstr "Ukončit"
 msgid "Add a station first."
 msgstr "Nejdřív přidejte stanici."
 
-msgid "Station"
-msgstr "Stanice"
+msgid "Now playing"
+msgstr "Právě hraje"
+
+msgid "Copied"
+msgstr "Zkopírováno"
+
+msgid "Copy title"
+msgstr "Kopírovat název"
 
 msgid "Add a station"
 msgstr "Přidat stanici"
+
+msgid "Ready to play"
+msgstr "Připraveno k přehrávání"
+
+msgid "Connecting to the station…"
+msgstr "Připojování ke stanici…"
+
+msgid "The station doesn't send song titles"
+msgstr "Stanice neposílá názvy skladeb"
+
+msgid "Stopped"
+msgstr "Zastaveno"
+
+msgid "Unmute"
+msgstr "Zrušit ztlumení"
+
+msgid "Mute"
+msgstr "Ztlumit"
+
+msgid "Volume"
+msgstr "Hlasitost"
+
+msgid "Sleep timer"
+msgstr "Časovač vypnutí"
+
+msgid "Stop"
+msgstr "Zastavit"
+
+msgid "Play"
+msgstr "Přehrát"
+
+msgid "Station"
+msgstr "Stanice"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Hledat v katalogu radio-browser.info"
@@ -128,29 +167,14 @@ msgstr "Zastaveno časovačem vypnutí"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Toto není seznam stanic Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Zastavit"
-
-msgid "Play"
-msgstr "Přehrát"
-
 msgid "Up 5%"
 msgstr "Zvýšit o 5%"
 
 msgid "Down 5%"
 msgstr "Snížit o 5%"
 
-msgid "Mute"
-msgstr "Ztlumit"
-
-msgid "Volume"
-msgstr "Hlasitost"
-
 msgid "Stops at {0}"
 msgstr "Vypne se v {0}"
-
-msgid "Sleep timer"
-msgstr "Časovač vypnutí"
 
 msgid "{0} min"
 msgstr "{0} min"

@@ -20,11 +20,50 @@ msgstr "Zakończ"
 msgid "Add a station first."
 msgstr "Najpierw dodaj stację."
 
-msgid "Station"
-msgstr "Stacja"
+msgid "Now playing"
+msgstr "Teraz gra"
+
+msgid "Copied"
+msgstr "Skopiowano"
+
+msgid "Copy title"
+msgstr "Kopiuj tytuł"
 
 msgid "Add a station"
 msgstr "Dodaj stację"
+
+msgid "Ready to play"
+msgstr "Gotowe do odtwarzania"
+
+msgid "Connecting to the station…"
+msgstr "Łączenie ze stacją…"
+
+msgid "The station doesn't send song titles"
+msgstr "Stacja nie podaje tytułu"
+
+msgid "Stopped"
+msgstr "Zatrzymano"
+
+msgid "Unmute"
+msgstr "Włącz dźwięk"
+
+msgid "Mute"
+msgstr "Wycisz"
+
+msgid "Volume"
+msgstr "Głośność"
+
+msgid "Sleep timer"
+msgstr "Wyłącznik czasowy"
+
+msgid "Stop"
+msgstr "Zatrzymaj"
+
+msgid "Play"
+msgstr "Odtwórz"
+
+msgid "Station"
+msgstr "Stacja"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Szukaj w katalogu radio-browser.info"
@@ -128,29 +167,14 @@ msgstr "Wyłączono wyłącznikiem czasowym"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "To nie jest lista stacji Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Zatrzymaj"
-
-msgid "Play"
-msgstr "Odtwórz"
-
 msgid "Up 5%"
 msgstr "Zwiększ o 5%"
 
 msgid "Down 5%"
 msgstr "Zmniejsz o 5%"
 
-msgid "Mute"
-msgstr "Wycisz"
-
-msgid "Volume"
-msgstr "Głośność"
-
 msgid "Stops at {0}"
 msgstr "Wyłączy się o {0}"
-
-msgid "Sleep timer"
-msgstr "Wyłącznik czasowy"
 
 msgid "{0} min"
 msgstr "{0} min"

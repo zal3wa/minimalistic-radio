@@ -20,11 +20,50 @@ msgstr "Beenden"
 msgid "Add a station first."
 msgstr "Füge zuerst einen Sender hinzu."
 
-msgid "Station"
-msgstr "Sender"
+msgid "Now playing"
+msgstr "Läuft gerade"
+
+msgid "Copied"
+msgstr "Kopiert"
+
+msgid "Copy title"
+msgstr "Titel kopieren"
 
 msgid "Add a station"
 msgstr "Sender hinzufügen"
+
+msgid "Ready to play"
+msgstr "Bereit zur Wiedergabe"
+
+msgid "Connecting to the station…"
+msgstr "Verbinden mit dem Sender…"
+
+msgid "The station doesn't send song titles"
+msgstr "Der Sender überträgt keine Titel"
+
+msgid "Stopped"
+msgstr "Gestoppt"
+
+msgid "Unmute"
+msgstr "Stummschaltung aufheben"
+
+msgid "Mute"
+msgstr "Stummschalten"
+
+msgid "Volume"
+msgstr "Lautstärke"
+
+msgid "Sleep timer"
+msgstr "Sleep-Timer"
+
+msgid "Stop"
+msgstr "Stopp"
+
+msgid "Play"
+msgstr "Wiedergabe"
+
+msgid "Station"
+msgstr "Sender"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Im Verzeichnis radio-browser.info suchen"
@@ -128,29 +167,14 @@ msgstr "Vom Sleep-Timer gestoppt"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Das ist keine Senderliste von Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Stopp"
-
-msgid "Play"
-msgstr "Wiedergabe"
-
 msgid "Up 5%"
 msgstr "5% lauter"
 
 msgid "Down 5%"
 msgstr "5% leiser"
 
-msgid "Mute"
-msgstr "Stummschalten"
-
-msgid "Volume"
-msgstr "Lautstärke"
-
 msgid "Stops at {0}"
 msgstr "Stoppt um {0}"
-
-msgid "Sleep timer"
-msgstr "Sleep-Timer"
 
 msgid "{0} min"
 msgstr "{0} min"

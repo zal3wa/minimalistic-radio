@@ -20,11 +20,50 @@ msgstr "Salir"
 msgid "Add a station first."
 msgstr "Primero añade una emisora."
 
-msgid "Station"
-msgstr "Emisora"
+msgid "Now playing"
+msgstr "Sonando ahora"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Copy title"
+msgstr "Copiar título"
 
 msgid "Add a station"
 msgstr "Añadir emisora"
+
+msgid "Ready to play"
+msgstr "Listo para reproducir"
+
+msgid "Connecting to the station…"
+msgstr "Conectando con la emisora…"
+
+msgid "The station doesn't send song titles"
+msgstr "La emisora no envía los títulos"
+
+msgid "Stopped"
+msgstr "Detenido"
+
+msgid "Unmute"
+msgstr "Activar sonido"
+
+msgid "Mute"
+msgstr "Silenciar"
+
+msgid "Volume"
+msgstr "Volumen"
+
+msgid "Sleep timer"
+msgstr "Temporizador de apagado"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Play"
+msgstr "Reproducir"
+
+msgid "Station"
+msgstr "Emisora"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Busca en el directorio radio-browser.info"
@@ -128,29 +167,14 @@ msgstr "Detenido por el temporizador"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "No es una lista de emisoras de Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Detener"
-
-msgid "Play"
-msgstr "Reproducir"
-
 msgid "Up 5%"
 msgstr "Subir un 5%"
 
 msgid "Down 5%"
 msgstr "Bajar un 5%"
 
-msgid "Mute"
-msgstr "Silenciar"
-
-msgid "Volume"
-msgstr "Volumen"
-
 msgid "Stops at {0}"
 msgstr "Se apaga a las {0}"
-
-msgid "Sleep timer"
-msgstr "Temporizador de apagado"
 
 msgid "{0} min"
 msgstr "{0} min"

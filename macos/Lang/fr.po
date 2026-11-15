@@ -20,11 +20,50 @@ msgstr "Quitter"
 msgid "Add a station first."
 msgstr "Ajoutez d'abord une station."
 
-msgid "Station"
-msgstr "Station"
+msgid "Now playing"
+msgstr "En cours de lecture"
+
+msgid "Copied"
+msgstr "Copié"
+
+msgid "Copy title"
+msgstr "Copier le titre"
 
 msgid "Add a station"
 msgstr "Ajouter une station"
+
+msgid "Ready to play"
+msgstr "Prêt à lire"
+
+msgid "Connecting to the station…"
+msgstr "Connexion à la station…"
+
+msgid "The station doesn't send song titles"
+msgstr "La station n'envoie pas les titres"
+
+msgid "Stopped"
+msgstr "Arrêté"
+
+msgid "Unmute"
+msgstr "Rétablir le son"
+
+msgid "Mute"
+msgstr "Couper le son"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Sleep timer"
+msgstr "Minuteur d'arrêt"
+
+msgid "Stop"
+msgstr "Arrêter"
+
+msgid "Play"
+msgstr "Lire"
+
+msgid "Station"
+msgstr "Station"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Rechercher dans l'annuaire radio-browser.info"
@@ -128,29 +167,14 @@ msgstr "Arrêté par le minuteur"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Ce n'est pas une liste de stations Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Arrêter"
-
-msgid "Play"
-msgstr "Lire"
-
 msgid "Up 5%"
 msgstr "Augmenter de 5%"
 
 msgid "Down 5%"
 msgstr "Baisser de 5%"
 
-msgid "Mute"
-msgstr "Couper le son"
-
-msgid "Volume"
-msgstr "Volume"
-
 msgid "Stops at {0}"
 msgstr "S'arrête à {0}"
-
-msgid "Sleep timer"
-msgstr "Minuteur d'arrêt"
 
 msgid "{0} min"
 msgstr "{0} min"

@@ -20,11 +20,50 @@ msgstr "Вийти"
 msgid "Add a station first."
 msgstr "Спершу додайте станцію."
 
-msgid "Station"
-msgstr "Станція"
+msgid "Now playing"
+msgstr "Зараз грає"
+
+msgid "Copied"
+msgstr "Скопійовано"
+
+msgid "Copy title"
+msgstr "Скопіювати назву"
 
 msgid "Add a station"
 msgstr "Додати станцію"
+
+msgid "Ready to play"
+msgstr "Готово до відтворення"
+
+msgid "Connecting to the station…"
+msgstr "Підключення до станції…"
+
+msgid "The station doesn't send song titles"
+msgstr "Станція не передає назви пісень"
+
+msgid "Stopped"
+msgstr "Зупинено"
+
+msgid "Unmute"
+msgstr "Увімкнути звук"
+
+msgid "Mute"
+msgstr "Вимкнути звук"
+
+msgid "Volume"
+msgstr "Гучність"
+
+msgid "Sleep timer"
+msgstr "Таймер сну"
+
+msgid "Stop"
+msgstr "Зупинити"
+
+msgid "Play"
+msgstr "Відтворити"
+
+msgid "Station"
+msgstr "Станція"
 
 msgid "Search the radio-browser.info directory"
 msgstr "Пошук у каталозі radio-browser.info"
@@ -128,29 +167,14 @@ msgstr "Зупинено таймером сну"
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Це не список станцій Minimalistic Radio."
 
-msgid "Stop"
-msgstr "Зупинити"
-
-msgid "Play"
-msgstr "Відтворити"
-
 msgid "Up 5%"
 msgstr "Гучніше на 5%"
 
 msgid "Down 5%"
 msgstr "Тихіше на 5%"
 
-msgid "Mute"
-msgstr "Вимкнути звук"
-
-msgid "Volume"
-msgstr "Гучність"
-
 msgid "Stops at {0}"
 msgstr "Вимкнеться о {0}"
-
-msgid "Sleep timer"
-msgstr "Таймер сну"
 
 msgid "{0} min"
 msgstr "{0} хв"

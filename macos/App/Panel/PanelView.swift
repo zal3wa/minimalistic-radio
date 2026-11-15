@@ -17,6 +17,8 @@ struct PanelView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            FooterView(model: model)
         }
         .frame(width: PanelController.size.width, height: PanelController.size.height)
     }
