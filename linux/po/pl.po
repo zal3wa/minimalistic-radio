@@ -214,3 +214,79 @@ msgstr "Wyłącz wyciszenie"
 #, python-brace-format
 msgid "{n} min"
 msgstr "{n} min"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Search"
+msgstr "Szukaj"
+
+#: minimalistic_radio/ui/search_page.py minimalistic_radio/ui/station_dialog.py
+msgid "Add by address"
+msgstr "Dodaj z adresu"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Searching…"
+msgstr "Szukam…"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "No results."
+msgstr "Brak wyników."
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Couldn't reach the station directory. Try again."
+msgstr "Nie udało się połączyć z katalogiem stacji. Spróbuj ponownie."
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Loading suggestions…"
+msgstr "Wczytuję propozycje…"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Recommended"
+msgstr "Polecane"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Popular in your country"
+msgstr "Popularne w Twoim kraju"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Popular worldwide"
+msgstr "Popularne na świecie"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Already on your list"
+msgstr "Już jest na twojej liście"
+
+#: minimalistic_radio/ui/search_page.py
+msgid "Add to your stations"
+msgstr "Dodaj do stacji"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Edit station"
+msgstr "Edytuj stację"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Station name"
+msgstr "Nazwa stacji"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Adres strumienia HTTP lub HTTPS"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Logo address (optional)"
+msgstr "Adres logotypu (opcjonalnie)"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Save"
+msgstr "Zapisz"
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "This address is already on the list."
+msgstr "Ten adres jest już na liście."
+
+#: minimalistic_radio/ui/station_dialog.py
+msgid "Check the name and the addresses."
+msgstr "Sprawdź nazwę i adresy."

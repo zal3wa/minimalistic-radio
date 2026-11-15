@@ -1,7 +1,7 @@
 """The panel window: a navigation view whose first page is the station list with the footer.
 
-Closing the window only hides it; the radio keeps playing. The search, history and settings pages are
-placeholders filled by later tasks (12 and 13).
+Closing the window only hides it; the radio keeps playing. The history and settings pages are
+placeholders filled by a later task (13).
 """
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ from .. import APP_NAME  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
 from .footer import Footer  # noqa: E402
 from .logos import LogoCache  # noqa: E402
+from .search_page import SearchPage  # noqa: E402
+from .station_dialog import StationDialog  # noqa: E402
 from .stations_page import StationsPage  # noqa: E402
 
 PAGES = ("stations", "search", "history", "settings")
@@ -74,8 +76,9 @@ class RadioWindow(Adw.ApplicationWindow):
 
         self.navigation = Adw.NavigationView()
         self.navigation.add(self.stations_page)
-        for tag, title in (("search", _("Add a station")), ("history", _("Song history")),
-                           ("settings", _("Settings"))):
+        self.search_page = SearchPage(self, controller, self.logos, _)
+        self.navigation.add(self.search_page)
+        for tag, title in (("history", _("Song history")), ("settings", _("Settings"))):
             self.navigation.add(_placeholder(tag, title))
         self.toasts = Adw.ToastOverlay(child=self.navigation)
         self.set_content(self.toasts)
@@ -93,9 +96,11 @@ class RadioWindow(Adw.ApplicationWindow):
     def _destroyed(self, _window: Gtk.Window) -> None:
         self.footer.release()
         self.stations_page.release()
+        self.search_page.release()
 
     def _changed(self, change: Change) -> None:
         self.stations_page.refresh(change)
+        self.search_page.refresh(change)
         self.footer.refresh(change)
         if change & Change.MESSAGE and self.controller.message:
             self.toast(self.controller.message)   # a file couldn't be saved
@@ -133,8 +138,15 @@ class RadioWindow(Adw.ApplicationWindow):
         if self._toast is toast:
             self._toast = None
 
-    def edit_station(self, index: int) -> None:
-        """Opens the station dialog (Task 12)."""
+    def edit_station(self, index: int) -> StationDialog | None:
+        """Opens the station dialog for the station at that index."""
+        if 0 <= index < len(self.controller.stations):
+            return StationDialog(self, self.controller.stations[index],
+                                 lambda station: self.controller.update_station(index, station), self._)
+        return None
+
+    def add_by_address(self) -> StationDialog:
+        return StationDialog(self, None, self.controller.add_station, self._)
 
     # ---- Keys ----
 

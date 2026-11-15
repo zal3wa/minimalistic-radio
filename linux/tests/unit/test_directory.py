@@ -46,3 +46,87 @@ def test_search_all_servers_down():
         raise NetworkError("down")
     with pytest.raises(DirectoryUnavailable):
         search("a", fetch)
+
+
+# ---- Suggestions ----
+
+from minimalistic_radio.core.directory import (  # noqa: E402
+    RECOMMENDED_IDS, clean_popular, country_for, country_from_locale, looks_like_spam, name_key, popular_url,
+    recommended_url, suggestions)
+
+
+def _entry(name, url=None, id=""):
+    return DirectoryStation(name, "", url or f"http://x/{name}", None, "MP3", 128, "", id)
+
+
+@pytest.mark.parametrize("name", ["-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax",
+                                  "*Chill", "Lofi || Chill", "Hits #1", "Top ***", "a, b, c, d, e"])
+def test_spam(name):
+    assert looks_like_spam(name)
+
+
+@pytest.mark.parametrize("name", ["RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli", "Rock, Pop, Jazz, Blues"])
+def test_not_spam(name):
+    assert not looks_like_spam(name)
+
+
+def test_name_key():
+    assert name_key("Radio RMF FM") == name_key("RMF FM") == "rmffm"
+    assert name_key("Radio") == ""
+
+
+def test_clean_popular_rules():
+    names = lambda items: [e.name for e in items]
+    assert names(clean_popular([_entry(n) for n in ["RMF FM", "Radio RMF FM", "Radio ZET", "Radio ZET Chilli"]], [])) \
+        == ["RMF FM", "Radio ZET", "Radio ZET Chilli"]
+    assert names(clean_popular([_entry("Radio", "http://a"), _entry("Radio", "http://b")], [])) == ["Radio", "Radio"]
+    assert names(clean_popular([_entry("A", "http://s"), _entry("B", "http://s/")], [])) == ["A"]
+    assert names(clean_popular([_entry("KEXP"), _entry("Other", "http://r"), _entry("Third")],
+                               [_entry("Radio KEXP"), _entry("Z", "http://r")])) == ["Third"]
+    assert len(clean_popular([_entry(f"S{i}") for i in range(30)], [])) == 15
+
+
+@pytest.mark.parametrize("language,system,expected", [
+    ("pl", "US", "PL"), ("pl", None, "PL"), ("es", "MX", "MX"), ("es", "US", "ES"), ("en", "US", "US"),
+    ("en", None, None), ("de", "AT", "AT"), ("pt", "BR", "BR")])
+def test_country_for(language, system, expected):
+    assert country_for(language, system) == expected
+
+
+def test_country_from_locale():
+    assert country_from_locale({"LANG": "pl_PL.UTF-8"}) == "PL"
+    assert country_from_locale({"LC_ALL": "en_US", "LANG": "pl_PL.UTF-8"}) == "US"
+    assert country_from_locale({"LANG": "C"}) is None and country_from_locale({"LANG": "POSIX"}) is None
+    assert country_from_locale({}) is None
+
+
+def test_suggestion_urls():
+    assert recommended_url("s").startswith("https://s/json/stations/byuuid?uuids=2e6fabb2")
+    assert popular_url("s", "PL").endswith("limit=40&countrycode=PL")
+    assert "countrycode" not in popular_url("s", None)
+
+
+def _suggest_fetch(popular_ok=True, recommended_ok=True):
+    def fetch(url):
+        if "byuuid" in url:
+            if not recommended_ok:
+                raise NetworkError("x")
+            return [{"name": "K", "url": "http://k", "stationuuid": RECOMMENDED_IDS[3]},
+                    {"name": "Dead", "url": "http://d", "stationuuid": RECOMMENDED_IDS[0], "lastcheckok": 0},
+                    {"name": "P", "url": "http://p", "stationuuid": RECOMMENDED_IDS[2]}]
+        if not popular_ok:
+            raise NetworkError("x")
+        return [{"name": "Pop", "url": "http://pop"}, {"name": "Down", "url": "http://dn", "lastcheckok": 0}]
+    return fetch
+
+
+def test_suggestions_order_and_filters():
+    recommended, popular = suggestions("PL", _suggest_fetch())
+    assert [e.name for e in recommended] == ["P", "K"] and [e.name for e in popular] == ["Pop"]
+
+
+def test_suggestions_popular_failure_and_total_failure():
+    recommended, popular = suggestions(None, _suggest_fetch(popular_ok=False))
+    assert len(recommended) == 2 and popular == []
+    with pytest.raises(DirectoryUnavailable):
+        suggestions(None, _suggest_fetch(popular_ok=False, recommended_ok=False))
