@@ -274,7 +274,7 @@ jobs:
           version="${full%%-*}"   # the pre-release suffix is not part of the app version
           if [ "$full" != "$version" ]; then prerelease=true; channel=beta; else prerelease=false; channel=stable; fi
 
-          code=$(sed -n 's/^VERSION = "\(.*\)"$//p' linux/minimalistic_radio/__init__.py)
+          code=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' linux/minimalistic_radio/__init__.py)
           meta=$(grep -o '<release version="[^"]*"' linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in | head -n 1 | cut -d'"' -f2)
           echo "tag=$tag version=$version code=$code metainfo=$meta prerelease=$prerelease channel=$channel"
           [ "$version" = "$code" ] || { echo "::error::Tag version $version differs from VERSION $code"; exit 1; }
