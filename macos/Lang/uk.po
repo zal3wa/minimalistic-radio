@@ -8,12 +8,6 @@ msgstr ""
 msgid "Copied to clipboard"
 msgstr "Скопійовано в буфер обміну"
 
-msgid "Import…"
-msgstr "Імпорт…"
-
-msgid "Open at login"
-msgstr "Відкривати під час входу"
-
 msgid "Quit"
 msgstr "Вийти"
 
@@ -62,6 +56,24 @@ msgstr "Зупинити"
 msgid "Play"
 msgstr "Відтворити"
 
+msgid "Songs the radio plays will show up here."
+msgstr "Тут з’являтимуться пісні, які зіграє радіо."
+
+msgid "Clear history"
+msgstr "Очистити історію"
+
+msgid "Copy"
+msgstr "Копіювати"
+
+msgid "Search on Spotify"
+msgstr "Шукати в Spotify"
+
+msgid "Search on YouTube"
+msgstr "Шукати на YouTube"
+
+msgid "More"
+msgstr "Більше"
+
 msgid "Station"
 msgstr "Станція"
 
@@ -88,6 +100,108 @@ msgstr "Додати за адресою"
 
 msgid "Edit"
 msgstr "Редагувати"
+
+msgid "Type a station name"
+msgstr "Введіть назву станції"
+
+msgid "Search"
+msgstr "Шукати"
+
+msgid "Recommended"
+msgstr "Рекомендовані"
+
+msgid "Popular worldwide"
+msgstr "Популярні у світі"
+
+msgid "Popular in your country"
+msgstr "Популярні у вашій країні"
+
+msgid "Searching…"
+msgstr "Пошук…"
+
+msgid "No results."
+msgstr "Нічого не знайдено."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Каталог тимчасово недоступний. Спробуйте ще раз."
+
+msgid "Loading suggestions…"
+msgstr "Завантаження пропозицій…"
+
+msgid "Already on your list"
+msgstr "Уже у вашому списку"
+
+msgid "This station is already on the list."
+msgstr "Ця станція вже є у списку."
+
+msgid "Add to your stations"
+msgstr "Додати до своїх станцій"
+
+msgid "General"
+msgstr "Загальні"
+
+msgid "Language"
+msgstr "Мова"
+
+msgid "Same as system"
+msgstr "Як у системі"
+
+msgid "Open at login"
+msgstr "Відкривати під час входу"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Чекає біля годинника, музику не вмикає"
+
+msgid "Show station changes"
+msgstr "Показувати зміну станції"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Картка під значком після мультимедійної клавіші чи перемикання в меню"
+
+msgid "Export…"
+msgstr "Експорт…"
+
+msgid "Import…"
+msgstr "Імпорт…"
+
+msgid "Station list"
+msgstr "Список станцій"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Копія у файлі, наприклад для друзів"
+
+msgid "Updates"
+msgstr "Оновлення"
+
+msgid "Looks for a new version every few hours"
+msgstr "Кожні кілька годин перевіряє, чи є нова версія"
+
+msgid "Check now"
+msgstr "Перевірити"
+
+msgid "About"
+msgstr "Про програму"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Вийти з Minimalistic Radio"
+
+msgid "Not checked yet."
+msgstr "Ще не перевірялося."
+
+msgid "Stations saved: {0}."
+msgstr "Збережено станцій: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Не вдалося зберегти файл."
+
+msgid "All stations from this file are already on the list."
+msgstr "Усі станції з цього файлу вже є у списку."
+
+msgid "Stations added: {0}."
+msgstr "Додано станцій: {0}."
+
+msgid "Checking…"
+msgstr "Перевірка…"
 
 msgid "Station name"
 msgstr "Назва станції"

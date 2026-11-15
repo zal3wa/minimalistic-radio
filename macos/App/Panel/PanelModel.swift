@@ -17,6 +17,11 @@ final class PanelModel: ObservableObject {
 
     let controller: RadioController
     let logos: LogoCache
+    /// Stations never shown in search or suggestions (data/banned-stations.json, in the app).
+    let bans = BanList.load(Bundle.main.url(forResource: "banned-stations", withExtension: "json")
+                            ?? URL(fileURLWithPath: "/nonexistent"))
+    /// The suggestions, loaded once per opening of the panel.
+    var suggested: (recommended: [DirectoryStation], popular: [DirectoryStation], country: String?)?
     @Published var page: Page = .stations
     @Published private(set) var revision = 0
     /// Set by the panel controller: hides the panel.

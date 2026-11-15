@@ -34,6 +34,7 @@ final class PanelController: NSObject, NSWindowDelegate {
     func show(page: PanelModel.Page? = nil, anchor: CGRect?) {
         let panel = self.panel ?? makePanel()
         self.panel = panel
+        if !isVisible { model.suggested = nil }
         model.page = page ?? (isVisible ? model.page : .stations)
         let screen = NSScreen.screens.first { anchor.map($0.frame.intersects) ?? false } ?? NSScreen.main ?? NSScreen.screens[0]
         panel.setFrameOrigin(panelOrigin(anchor: anchor, visibleFrame: screen.visibleFrame, size: Self.size))

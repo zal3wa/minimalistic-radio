@@ -54,7 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel = PanelController(model: PanelModel(controller: controller, logos: logos))
         statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.togglePanel() },
                                           perform: { [weak self] in self?.perform($0) })
-        statusItem.extraItems = { [weak self] in self?.riskCheckItems() ?? [] }
         updater = Updater(controller: controller)
         updater.onChange = { [weak self] in
             self?.statusItem.refresh()
@@ -124,29 +123,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(track, forType: .string)
         showCard(L("Copied to clipboard"))
-    }
-
-    // MARK: - Temporary menu items for the risk-check beta (removed when Settings exists, Task 17)
-
-    private func riskCheckItems() -> [NSMenuItem] {
-        [
-            MenuBuilder.item(L("Import…")) { [weak self] in self?.importStations() },
-            MenuBuilder.item(L("Open at login"), checked: LoginItem.isEnabled) {
-                try? LoginItem.set(!LoginItem.isEnabled)
-                if LoginItem.needsApproval { LoginItem.openSettings() }
-            },
-        ]
-    }
-
-    private func importStations() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.json]
-        NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let result = controller.importStations(url)
-        let alert = NSAlert()
-        alert.messageText = result.error ?? "\(result.added)"
-        alert.runModal()
     }
 
     // MARK: - Self-test

@@ -13,7 +13,9 @@ struct PanelView: View {
                 switch model.page {
                 case .stations: StationsPage(model: model)
                 case .station(let index): StationForm(model: model, index: index)
-                case .search, .history, .settings: Text("…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .search: SearchPage(model: model)
+                case .history: HistoryPage(model: model)
+                case .settings: SettingsPage(model: model)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

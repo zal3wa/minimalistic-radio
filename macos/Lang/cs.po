@@ -8,12 +8,6 @@ msgstr ""
 msgid "Copied to clipboard"
 msgstr "Zkopírováno do schránky"
 
-msgid "Import…"
-msgstr "Importovat…"
-
-msgid "Open at login"
-msgstr "Otevírat při přihlášení"
-
 msgid "Quit"
 msgstr "Ukončit"
 
@@ -62,6 +56,24 @@ msgstr "Zastavit"
 msgid "Play"
 msgstr "Přehrát"
 
+msgid "Songs the radio plays will show up here."
+msgstr "Zde se objeví skladby, které rádio zahraje."
+
+msgid "Clear history"
+msgstr "Vymazat historii"
+
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "Search on Spotify"
+msgstr "Hledat na Spotify"
+
+msgid "Search on YouTube"
+msgstr "Hledat na YouTube"
+
+msgid "More"
+msgstr "Další"
+
 msgid "Station"
 msgstr "Stanice"
 
@@ -88,6 +100,108 @@ msgstr "Přidat podle adresy"
 
 msgid "Edit"
 msgstr "Upravit"
+
+msgid "Type a station name"
+msgstr "Zadejte název stanice"
+
+msgid "Search"
+msgstr "Hledat"
+
+msgid "Recommended"
+msgstr "Doporučené"
+
+msgid "Popular worldwide"
+msgstr "Oblíbené ve světě"
+
+msgid "Popular in your country"
+msgstr "Oblíbené ve vaší zemi"
+
+msgid "Searching…"
+msgstr "Hledání…"
+
+msgid "No results."
+msgstr "Žádné výsledky."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Katalog je dočasně nedostupný. Zkuste to znovu."
+
+msgid "Loading suggestions…"
+msgstr "Načítání návrhů…"
+
+msgid "Already on your list"
+msgstr "Už je ve vašem seznamu"
+
+msgid "This station is already on the list."
+msgstr "Tato stanice už je v seznamu."
+
+msgid "Add to your stations"
+msgstr "Přidat do stanic"
+
+msgid "General"
+msgstr "Obecné"
+
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Same as system"
+msgstr "Podle systému"
+
+msgid "Open at login"
+msgstr "Otevírat při přihlášení"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Čeká u hodin, samo nehraje"
+
+msgid "Show station changes"
+msgstr "Zobrazovat změnu stanice"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Karta pod ikonou po multimediální klávese nebo přepnutí v nabídce"
+
+msgid "Export…"
+msgstr "Exportovat…"
+
+msgid "Import…"
+msgstr "Importovat…"
+
+msgid "Station list"
+msgstr "Seznam stanic"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopie v souboru, např. pro přátele"
+
+msgid "Updates"
+msgstr "Aktualizace"
+
+msgid "Looks for a new version every few hours"
+msgstr "Každých pár hodin hledá novou verzi"
+
+msgid "Check now"
+msgstr "Zkontrolovat"
+
+msgid "About"
+msgstr "O aplikaci"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Ukončit Minimalistic Radio"
+
+msgid "Not checked yet."
+msgstr "Zatím nekontrolováno."
+
+msgid "Stations saved: {0}."
+msgstr "Uloženo stanic: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Soubor se nepodařilo uložit."
+
+msgid "All stations from this file are already on the list."
+msgstr "Všechny stanice z tohoto souboru už jsou v seznamu."
+
+msgid "Stations added: {0}."
+msgstr "Přidáno stanic: {0}."
+
+msgid "Checking…"
+msgstr "Kontrola…"
 
 msgid "Station name"
 msgstr "Název stanice"

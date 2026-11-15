@@ -8,12 +8,6 @@ msgstr ""
 msgid "Copied to clipboard"
 msgstr "In die Zwischenablage kopiert"
 
-msgid "Import…"
-msgstr "Importieren…"
-
-msgid "Open at login"
-msgstr "Beim Anmelden öffnen"
-
 msgid "Quit"
 msgstr "Beenden"
 
@@ -62,6 +56,24 @@ msgstr "Stopp"
 msgid "Play"
 msgstr "Wiedergabe"
 
+msgid "Songs the radio plays will show up here."
+msgstr "Hier erscheinen die Titel, die das Radio spielt."
+
+msgid "Clear history"
+msgstr "Verlauf löschen"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Search on Spotify"
+msgstr "Auf Spotify suchen"
+
+msgid "Search on YouTube"
+msgstr "Auf YouTube suchen"
+
+msgid "More"
+msgstr "Mehr"
+
 msgid "Station"
 msgstr "Sender"
 
@@ -88,6 +100,108 @@ msgstr "Per Adresse hinzufügen"
 
 msgid "Edit"
 msgstr "Bearbeiten"
+
+msgid "Type a station name"
+msgstr "Sendernamen eingeben"
+
+msgid "Search"
+msgstr "Suchen"
+
+msgid "Recommended"
+msgstr "Empfohlen"
+
+msgid "Popular worldwide"
+msgstr "Weltweit beliebt"
+
+msgid "Popular in your country"
+msgstr "Beliebt in Ihrem Land"
+
+msgid "Searching…"
+msgstr "Suche läuft…"
+
+msgid "No results."
+msgstr "Keine Ergebnisse."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Verzeichnis gerade nicht erreichbar. Bitte erneut versuchen."
+
+msgid "Loading suggestions…"
+msgstr "Vorschläge werden geladen…"
+
+msgid "Already on your list"
+msgstr "Schon in Ihrer Liste"
+
+msgid "This station is already on the list."
+msgstr "Dieser Sender ist schon in der Liste."
+
+msgid "Add to your stations"
+msgstr "Zu Ihren Sendern hinzufügen"
+
+msgid "General"
+msgstr "Allgemein"
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Same as system"
+msgstr "Wie das System"
+
+msgid "Open at login"
+msgstr "Beim Anmelden öffnen"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Wartet neben der Uhr, spielt nicht von selbst"
+
+msgid "Show station changes"
+msgstr "Senderwechsel anzeigen"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Eine Karte unter dem Symbol nach einer Medientaste oder einem Wechsel im Menü"
+
+msgid "Export…"
+msgstr "Exportieren…"
+
+msgid "Import…"
+msgstr "Importieren…"
+
+msgid "Station list"
+msgstr "Senderliste"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Als Datei, z. B. für Freunde"
+
+msgid "Updates"
+msgstr "Updates"
+
+msgid "Looks for a new version every few hours"
+msgstr "Sucht alle paar Stunden nach einer neuen Version"
+
+msgid "Check now"
+msgstr "Jetzt prüfen"
+
+msgid "About"
+msgstr "Info"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Minimalistic Radio beenden"
+
+msgid "Not checked yet."
+msgstr "Noch nicht geprüft."
+
+msgid "Stations saved: {0}."
+msgstr "Gespeicherte Sender: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Die Datei konnte nicht gespeichert werden."
+
+msgid "All stations from this file are already on the list."
+msgstr "Alle Sender aus dieser Datei sind schon in der Liste."
+
+msgid "Stations added: {0}."
+msgstr "Hinzugefügte Sender: {0}."
+
+msgid "Checking…"
+msgstr "Wird geprüft…"
 
 msgid "Station name"
 msgstr "Sendername"
