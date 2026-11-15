@@ -303,11 +303,25 @@ def _render(window: Gtk.Window, path: Path, popover: Gtk.Popover | None = None) 
     print("wrote", path)
 
 
+def _descendants(widget: Gtk.Widget):
+    yield widget
+    child = widget.get_first_child()
+    while child is not None:
+        yield from _descendants(child)
+        child = child.get_next_sibling()
+
+
 def _share_pictures(window: RadioWindow, folder: Path, look: str) -> None:
     """The ⋯ menu with Share, and "Link copied" after it, on the playing station's row."""
     button = window.stations_page.rows[SHOT_PLAYING].menu_button
     button.popup()
-    pump(600)
+    pump(300)
+    share = window._("Share")
+    for item in _descendants(button.get_popover()):   # Share highlighted, as under the pointer
+        if item.get_css_name() == "modelbutton" and share in [w.get_text() for w in _descendants(item)
+                                                               if isinstance(w, Gtk.Label)]:
+            item.grab_focus()
+    pump(400)
     _render(window, folder / f"linux-share-menu-{look}.png", button.get_popover())
     button.popdown()
     pump(300)
