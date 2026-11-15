@@ -91,6 +91,7 @@ class MprisService:
         self._registrations: list[int] = []
         self._owner = 0
         self.acquired = False   # the bus name is ours
+        self.error: str | None = None   # why publishing failed
         self.lost = False       # the bus name was refused or taken
         self._last: dict[str, Any] = {}
         self._subscribed = False
@@ -112,7 +113,8 @@ class MprisService:
             for info in (self._root_info, self._player_info):
                 self._registrations.append(self._connection.register_object(
                     OBJECT_PATH, info, self._on_method_call, self._on_get_property, self._on_set_property))
-        except GLib.Error:
+        except GLib.Error as error:
+            self.error = error.message
             self._connection = None   # no session bus: the radio works without media keys
             return
         if not self._subscribed:
