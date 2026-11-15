@@ -1,0 +1,61 @@
+name: Linux tray check
+
+# The tray menu on Ubuntu's desktop (GNOME Shell with Ubuntu's AppIndicator extension) follows the radio, and its items
+# work: .github/scripts/linux-tray-check.py. The desktop is set up as for the tray pictures (linux-tray-screenshot.yml).
+on:
+  workflow_dispatch:
+  push:
+    tags: ['linux-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install GNOME Shell, Ubuntu's tray and theme
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnome-shell gnome-shell-extension-appindicator \
+            yaru-theme-gnome-shell yaru-theme-gtk yaru-theme-icon fonts-ubuntu fonts-cantarell ubuntu-wallpapers \
+            xwayland xvfb dconf-service dconf-cli libglib2.0-bin libgl1-mesa-dri libegl-mesa0 pulseaudio
+          gnome-shell --version
+          dpkg-query -W gnome-shell-extension-appindicator
+
+      - name: Install the radio's dependencies
+        run: |
+          sudo apt-get install -y python3-gi python3-pytest gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-pulseaudio gstreamer1.0-tools gir1.2-gdkpixbuf-2.0 librsvg2-common xvfb dbus-x11 gettext meson desktop-file-utils appstream
+
+      - name: Build and install the radio
+        run: |
+          meson setup _build linux --prefix /usr
+          meson compile -C _build
+          sudo meson install -C _build --no-rebuild
+          sudo gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || sudo gtk4-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+
+      - name: Check the tray menu
+        env:
+          XDG_CURRENT_DESKTOP: ubuntu:GNOME
+          XDG_SESSION_DESKTOP: ubuntu
+          GNOME_SHELL_SESSION_MODE: ubuntu
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          NO_AT_BRIDGE: '1'
+        run: |
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/runtime" XDG_CONFIG_HOME="$RUNNER_TEMP/xdg/config"
+          export XDG_DATA_HOME="$RUNNER_TEMP/xdg/data" XDG_CACHE_HOME="$RUNNER_TEMP/xdg/cache"
+          mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- /usr/bin/python3 .github/scripts/linux-tray-check.py tray-check-logs
+
+      # The shell's and the radio's output, and the screen at the end.
+      - name: Upload the logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-tray-check-logs
+          path: tray-check-logs/
+          if-no-files-found: ignore
