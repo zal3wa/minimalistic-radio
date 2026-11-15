@@ -53,9 +53,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setUp(paths: paths, player: player, fetch: Network.fetchJSON, fetchFile: Network.fetchFile)
         nowPlaying = NowPlaying(controller: controller)
         systemEvents = SystemEvents(controller: controller)
-        controller.start(autostart: launchedAtLogin)
+        // Started to open a share link: the link's page asks first, so the last station doesn't start by itself.
+        controller.start(autostart: launchedAtLogin || !pendingLinks.isEmpty)
         if CommandLine.arguments.contains("--resume") { controller.play() }
         updater.start()
+        let links = pendingLinks
+        pendingLinks = []
+        for link in links { openShareLink(link) }
+    }
+
+    /// Share links that came before the radio was set up (it was started to open one).
+    private var pendingLinks: [URL] = []
+
+    /// minimalistic-radio://add?… from the link page (Info.plist's CFBundleURLTypes), the radio running or not.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        guard controller != nil else {
+            pendingLinks += urls
+            return
+        }
+        for url in urls { openShareLink(url) }
+    }
+
+    /// The panel on the link's Shared station page; a station already on the list plays on the stations page.
+    func openShareLink(_ url: URL) {
+        guard let link = readShareLink(url.absoluteString) else { return }
+        panel.model.openShared(link)
+        panel.show(page: panel.model.page, anchor: statusItem.buttonFrameOnScreen)
     }
 
     /// The controller, the logo cache and the menu bar item, over the given player and network.
@@ -174,7 +197,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
-        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min"] where L(text) == text {
+        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min", "Share", "Add and play"]
+            where L(text) == text {
             failures.append("\"\(text)\" isn't translated into Polish")
         }
         localizer.setting = saved
@@ -225,6 +249,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             failures.append("the sample statistics show nothing this month")
         }
 
+        failures += checkSharing()
+
         if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
         let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
                                     paths: Paths(support: folder.appendingPathComponent("empty"), cache: folder.appendingPathComponent("empty-cache")),
@@ -270,6 +296,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     failures.append("Statistics doesn't open on Month")
                 }
             }
+        }
+        panel.close()
+        return failures
+    }
+
+    /// Share a station, through the app's own doors: a minimalistic-radio:// link opened into the running radio
+    /// (the Shared station page; Cancel changes nothing; Add and play adds and plays; a station already on the list
+    /// just plays; a link without a station says so), a web link pasted into + Station's field, and Share copying
+    /// the link with "Link copied". Starts with the self-test's two stations, nothing playing.
+    private func checkSharing() -> [String] {
+        var failures: [String] = []
+        let model = panel.model
+        let schemes = (Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] ?? [])
+            .flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
+        if !schemes.contains("minimalistic-radio") { failures.append("Info.plist doesn't register minimalistic-radio:// links") }
+        let count = controller.stations.count
+        let hard = Station(name: "Antyradio Hard", url: "https://an05.cdn.eurozet.pl/ANTHAR.mp3")
+        let shared = SharedStation(name: hard.name, url: hard.url, logo: nil)
+        let open = { (link: String) in self.application(NSApp, open: [URL(string: link)!]) }
+
+        open(shareAppLink(hard))
+        if model.page != .shared(shared) || !panel.isVisible { failures.append("a share link doesn't open the Shared station page") }
+        model.back()
+        if model.page != .stations || controller.stations.count != count || controller.active {
+            failures.append("Cancel on a shared station changed something")
+        }
+
+        open(shareAppLink(hard))
+        if case .shared(let station?) = model.page { model.addShared(station) }
+        if controller.stations.count != count + 1 || controller.stations.last?.url != hard.url
+            || controller.current != count || !controller.active || model.page != .stations {
+            failures.append("Add and play didn't add and play the shared station")
+        }
+        controller.stop()
+
+        let known = controller.stations[1]
+        open(shareAppLink(Station(name: "Another name", url: known.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/")))
+        if model.page != .stations || controller.current != 1 || !controller.active || controller.stations.count != count + 1 {
+            failures.append("a shared station already on the list doesn't just play")
+        }
+        controller.stop()
+
+        open("minimalistic-radio://add?n=Nothing+else")
+        if model.page != .shared(nil) { failures.append("a link without a station doesn't say so") }
+
+        model.page = .search
+        let nowy = Station(name: "Radio Nowy Świat", url: "https://stream.nowyswiat.online/mp3")
+        if !model.openSharedText(" " + shareLink(nowy) + "\n", complete: false)
+            || model.page != .shared(SharedStation(name: nowy.name, url: nowy.url, logo: nil)) {
+            failures.append("a web link pasted into + Station doesn't open the Shared station page")
+        }
+        if model.openSharedText("jazz", complete: true) { failures.append("a search is taken for a share link") }
+
+        model.page = .stations
+        model.share(controller.stations[0])
+        if NSPasteboard.general.string(forType: .string) != shareLink(controller.stations[0]) || !model.linkCopied {
+            failures.append("Share doesn't copy the station's link and say so")
         }
         panel.close()
         return failures

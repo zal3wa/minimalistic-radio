@@ -54,28 +54,45 @@ extension AppDelegate {
         controller.onPlayerTitle(Self.shotSongs.last!.0)
     }
 
-    /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update, and
-    /// Statistics switched off.
-    private static let shots: [(page: PanelModel.Page, name: String, toEnd: Bool, update: Bool, off: Bool)] = [
-        (.stations, "stations", false, false, false), (.search, "search", false, false, false),
-        (.history, "history", false, false, false), (.settings, "settings", false, false, false),
-        (.settings, "settings-end", true, false, false), (.statistics, "statistics", false, false, false),
-        (.statistics, "statistics-end", true, false, false), (.stations, "stations-update", false, true, false),
-        (.statistics, "statistics-off", false, false, true),
+    private struct Shot {
+        let page: PanelModel.Page
+        let name: String
+        var toEnd = false
+        var update = false
+        var statisticsOff = false
+        var linkCopied = false
+    }
+
+    /// The station of the Shared station picture, as in the approved pictures.
+    static let shotShared = SharedStation(name: shotStations[2].name, url: shotStations[2].url, logo: shotStations[2].logo)
+
+    /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update,
+    /// Statistics switched off, "Link copied" and a Shared station.
+    private static let shots = [
+        Shot(page: .stations, name: "stations"), Shot(page: .search, name: "search"), Shot(page: .history, name: "history"),
+        Shot(page: .settings, name: "settings"), Shot(page: .settings, name: "settings-end", toEnd: true),
+        Shot(page: .statistics, name: "statistics"), Shot(page: .statistics, name: "statistics-end", toEnd: true),
+        Shot(page: .stations, name: "stations-update", update: true),
+        Shot(page: .statistics, name: "statistics-off", statisticsOff: true),
+        Shot(page: .stations, name: "stations-copied", linkCopied: true),
+        Shot(page: .shared(shotShared), name: "shared"),
     ]
 
     private func takePanelPictures(into output: URL) async -> Int32 {
         let model = panel.model
         var written = 0
+        var menus = 0
         for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
             NSApp.appearance = NSAppearance(named: appearance)
-            for (page, name, toEnd, update, off) in Self.shots {
+            for shot in Self.shots {
+                let page = shot.page, name = shot.name
                 if page == .search {
                     model.lastResults = nil
                     model.pendingSearch = "jazz"
                 }
-                model.sampleUpdate = update ? L("Update") : nil
-                controller.setCollectStatistics(!off)   // temporary files: nothing of the user's
+                model.sampleUpdate = shot.update ? L("Update") : nil
+                controller.setCollectStatistics(!shot.statisticsOff)   // temporary files: nothing of the user's
+                if shot.linkCopied { model.showLinkCopied(for: nil) } else { model.hideLinkCopied() }
                 model.refresh()
                 panel.show(page: page, anchor: nil)
                 await wait(seconds: 20) {
@@ -85,6 +102,8 @@ extension AppDelegate {
                     case .search:
                         guard let results = model.lastResults else { return false }
                         return results.allSatisfy { self.logos.lookup($0.logo).known }
+                    case .shared(let station):
+                        return self.logos.lookup(station?.logo).known
                     default:
                         return true
                     }
@@ -96,7 +115,7 @@ extension AppDelegate {
                     await wait(seconds: 20) { model.lastResults.map { $0.allSatisfy { self.logos.lookup($0.logo).known } } ?? false }
                 }
                 try? await Task.sleep(nanoseconds: 800_000_000)
-                if toEnd, let view = panel.contentView {
+                if shot.toEnd, let view = panel.contentView {
                     scrollToEnd(view)
                     try? await Task.sleep(nanoseconds: 500_000_000)
                 }
@@ -104,11 +123,57 @@ extension AppDelegate {
                     written += 1
                 }
             }
+            model.hideLinkCopied()
+            if await takeShareMenuPicture(output.appendingPathComponent("macos-share-menu-\(look).png"), dark: look == "dark") {
+                menus += 1
+            }
         }
         model.sampleUpdate = nil
         panel.close()
-        print("wrote \(written) screenshots to \(output.path)")
+        // The menu is a screen capture (it is a window of its own): reported, but not required.
+        print("wrote \(written) screenshots and \(menus) share menu pictures to \(output.path)")
         return written == Self.shots.count * 2 ? 0 : 1
+    }
+
+    /// The playing station's ⋯ menu (Edit, Share, a line, Remove) open over the panel with Share under the pointer,
+    /// taken with screencapture: a menu is its own window, which the panel's picture doesn't include. The items are
+    /// the ones StationRow's menu has.
+    private func takeShareMenuPicture(_ file: URL, dark: Bool) async -> Bool {
+        panel.show(page: .stations, anchor: nil)
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        guard let window = panel.window, let content = panel.contentView, let screen = window.screen ?? NSScreen.main else {
+            return false
+        }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        menu.addItem(withTitle: L("Edit"), action: nil, keyEquivalent: "")
+        let share = menu.addItem(withTitle: L("Share"), action: nil, keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: L("Remove"), action: nil, keyEquivalent: "")
+        // Share at the approved picture's place: under the ⋯ of the third station (top-left coordinates 264, 247).
+        let place = NSPoint(x: 264, y: content.isFlipped ? 247 : content.bounds.height - 247)
+        let onScreen = window.convertPoint(toScreen: content.convert(place, to: nil))
+        let region = window.frame
+        let top = screen.frame.maxY
+        var written = false
+        let point = Timer(timeInterval: 0.5, repeats: false) { _ in
+            CGWarpMouseCursorPosition(CGPoint(x: onScreen.x + 20, y: top - onScreen.y))   // highlights Share
+        }
+        let capture = Timer(timeInterval: 1.5, repeats: false) { _ in
+            let shot = Process()
+            shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            shot.arguments = ["-x", "-R", "\(Int(region.minX)),\(Int(top - region.maxY)),\(Int(region.width)),\(Int(region.height))", file.path]
+            try? shot.run()
+            shot.waitUntilExit()
+            written = shot.terminationStatus == 0 && FileManager.default.fileExists(atPath: file.path)
+            MainActor.assumeIsolated { menu.cancelTracking() }
+        }
+        RunLoop.main.add(point, forMode: .common)
+        RunLoop.main.add(capture, forMode: .common)
+        _ = menu.popUp(positioning: share, at: place, in: content)   // returns when the menu closes
+        print("share menu \(dark ? "dark" : "light"): \(written ? "written" : "not written")")
+        return written
     }
 
     /// Statistics for the pictures: evenings over about a year and a half with the pictures' stations and songs.
