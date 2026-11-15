@@ -87,6 +87,38 @@ internal sealed partial class Radio
 
     private static readonly GridLength Auto = GridLength.Auto;
     private static readonly GridLength Star = new GridLength(1, GridUnitType.Star);
+    private const double Gutter = 12;   // the panel's padding: around the bar, at the sides of every page, under Play
+
+    // A page that scrolls; its content keeps the gutter on both sides and the scroll bar floats over the right one.
+    private ScrollViewer Pane()
+    {
+        var pane = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Visibility = Visibility.Collapsed, Focusable = false
+        };
+        pane.SetResourceReference(FrameworkElement.StyleProperty, "OverlayScroll");
+        return pane;
+    }
+
+    // The same for a list: its rows keep the gutter on both sides (the list's own border adds the last pixel).
+    private void OverlayScroll(ListBox box)
+    {
+        box.Resources[typeof(ScrollViewer)] = app.FindResource("OverlayScroll");
+        box.Padding = new Thickness(Gutter - 1, 0, Gutter - 1, 0);
+    }
+
+    // The Play/Stop button's content: a filled triangle or square, then the word.
+    private static FrameworkElement PlayLabel(bool play, string text)
+    {
+        FrameworkElement glyph = Theme.Solid(play ? Theme.PlayIcon : Theme.StopIcon, play ? 16 : 18, "AccentFg");
+        glyph.VerticalAlignment = VerticalAlignment.Center;
+        // Segoe UI sits low in its line: a pixel up puts the word level with the glyph.
+        var label = new StackPanel { Orientation = Orientation.Horizontal };
+        label.Children.Add(glyph);
+        label.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 2) });
+        return label;
+    }
 
     private static FrameworkElement Spaced(Orientation orientation, double spacing, params FrameworkElement[] children)
     {
@@ -274,7 +306,11 @@ internal sealed partial class Radio
             menu.Closed += (_, _) => holdOpen--;
         }
 
-        var list = new ListBox();
+        // The list starts 12 px under the bar, like its sides (its border and the rows' margin add a pixel each).
+        var list = new ListBox { Margin = new Thickness(0, Gutter - 2, 0, 0) };
+        OverlayScroll(list);
+        // The playing station's row shows a play triangle before its ⋯ button.
+        var playingMarks = new Dictionary<SavedStation, FrameworkElement>();
         // Stations are dragged to a new place, or moved with Alt+↑/↓ (StationDrag.cs); MoveStation below makes the move.
         var drag = new StationDrag(panel, list);
         var now = new TextBlock
@@ -329,12 +365,12 @@ internal sealed partial class Radio
             noticeTimer.Start();
         }
 
-        var add = NewButton(null, IconText(Theme.PlusIcon, L("Station")));
-        add.HorizontalAlignment = HorizontalAlignment.Left;
+        // The station form (Add by address, Edit) is a page of its own.
         var save = NewButton("AccentButton", L("Save"));
         var cancelForm = NewButton(null, L("Cancel"));
         var fields = Spaced(Orientation.Vertical, 8, name, url, logo,
             Spaced(Orientation.Horizontal, 8, save, cancelForm), message);
+        fields.Margin = new Thickness(Gutter);
         fields.Visibility = Visibility.Collapsed;
 
         var searchBox = new TextBox { Tag = L("Type a station name"), MaxLength = 100 };
@@ -346,11 +382,12 @@ internal sealed partial class Radio
         manual.VerticalAlignment = VerticalAlignment.Center;
         manual.Margin = new Thickness(8, 0, -8, 0);
         var results = new ListBox();
+        OverlayScroll(results);
         TextBlock searchStatus = Note(searchHint);
         searchStatus.VerticalAlignment = VerticalAlignment.Center;
         var searchHeader = Spaced(Orientation.Vertical, 4, Columns((searchBox, Star), (searchButton, Auto)),
             Columns((searchStatus, Star), (manual, Auto)));
-        searchHeader.Margin = new Thickness(0, 0, 0, 6);
+        searchHeader.Margin = new Thickness(Gutter, Gutter, Gutter, 6);
         var searchPane = new DockPanel { Visibility = Visibility.Collapsed };
         DockPanel.SetDock(searchHeader, Dock.Top);
         searchPane.Children.Add(searchHeader);
@@ -361,40 +398,49 @@ internal sealed partial class Radio
         string page = "stations";
         panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
 
-        // Header: title with Update (when ready), History, Settings and Hide; the page title with a back arrow.
-        var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), L("Song history"));
+        // The bar on top. On the stations page: [+ Station] [History], and on the right the update arrow (when one is
+        // ready) and Settings. On the other pages: ← and the page's title. There is no hide button: the panel hides when
+        // it loses focus, on Esc and on a click on the tray icon. Its space above, below and left is the same 12 px.
+        var add = NewButton(null, IconText(Theme.PlusIcon, L("Station")));
+        var historyButton = NewButton(null, IconText(Theme.HistoryIcon, L("History")));
+        historyButton.Margin = new Thickness(4, 0, 0, 0);
+        foreach (Button button in new[] { add, historyButton })
+        {
+            button.Height = 32;
+            button.Padding = new Thickness(10, 0, 12, 0);
+        }
         var settingsButton = NewButton("GhostButton", Theme.Glyph(Theme.SettingsIcon), L("Settings"));
-        // Hides the panel (like the X of Windows 11 flyouts); the radio keeps playing next to the clock.
-        var closeButton = NewButton("GhostButton", Theme.Glyph(Theme.CloseIcon), L("Hide the panel (the radio keeps playing)"));
-        closeButton.Click += (_, _) => panel.Close();
+        settingsButton.Margin = new Thickness(4, 0, 0, 0);
         // Like Discord: a green arrow appears once a new version is downloaded; a click installs it.
-        var updateButton = NewButton("GhostButton", Theme.Glyph(Theme.UpdateReadyIcon, 18, "Success"), L("Update Ready!"));
+        var updateButton = NewButton("GhostButton", Theme.UpdateBadge(18), L("Update Ready!"));
         updateButton.Visibility = Visibility.Collapsed;
         updateButton.Click += (_, _) => InstallUpdate();
-        foreach (Button button in new[] { updateButton, historyButton, settingsButton, closeButton })
-        {
-            button.Padding = new Thickness(8, 6, 8, 6);
-            button.VerticalAlignment = VerticalAlignment.Center;
-        }
-        var sectionLabel = new TextBlock
-        {
-            Text = L("Stations"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center
-        };
         var backButton = NewButton("GhostButton", Theme.Glyph(Theme.BackIcon), L("Back"));
-        backButton.Padding = new Thickness(6);
-        backButton.Margin = new Thickness(-6, 0, 6, 0);
-        backButton.VerticalAlignment = VerticalAlignment.Center;
-        var sectionRow = Columns((backButton, Auto), (sectionLabel, Star));
-        var settingsPane = new ScrollViewer
+        foreach (Button button in new[] { updateButton, settingsButton, backButton })
         {
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Visibility = Visibility.Collapsed, Padding = new Thickness(0, 0, 8, 0), Focusable = false
-        };
-        var historyPane = new ScrollViewer
+            button.Width = button.Height = 32;
+            button.Padding = new Thickness(0);
+        }
+        // Segoe UI sits low in its line: 2 px less below lifts the title by one, level with the arrow.
+        var pageTitle = new TextBlock
         {
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            Visibility = Visibility.Collapsed, Padding = new Thickness(0, 0, 8, 0), Focusable = false
+            FontSize = 14, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 2)
         };
+        var stationsBar = Columns((add, Auto), (historyButton, Auto), (new Border(), Star), (updateButton, Auto), (settingsButton, Auto));
+        var pageBar = Columns((backButton, Auto), (pageTitle, Star));
+        var bar = new Grid { Margin = new Thickness(Gutter) };
+        bar.Children.Add(stationsBar);
+        bar.Children.Add(pageBar);
+        // Under the bar, across the whole panel: the text colour at 10 %.
+        var barLine = new Border { Height = 1, Opacity = 0.1 };
+        barLine.SetResourceReference(Border.BackgroundProperty, "Fg");
+        var header = new StackPanel();
+        header.Children.Add(bar);
+        header.Children.Add(barLine);
+        // The player (now playing, volume, Play/Stop) is only on the stations page; it is filled in further down.
+        var footer = new Border { Margin = new Thickness(Gutter, 10, Gutter, Gutter) };
+        ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane();
 
         int shownStation = station;
         void ShowActiveStation(bool centre)
@@ -416,14 +462,15 @@ internal sealed partial class Radio
             url.Text = item?.Url ?? "";
             logo.Text = item?.Logo ?? "";
             message.Text = "";
-            fields.Visibility = Visibility.Visible;
-            name.Focus();
+            SetPage("form");
+            app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => name.Focus()));
         }
 
         void FillList()
         {
             drag.Abandon();   // a press or a drag on the old rows ends here
             list.Items.Clear();
+            playingMarks.Clear();
             foreach (SavedStation item in Stations) list.Items.Add(StationRow(item));
             list.SelectedIndex = station;
             shownStation = station;
@@ -562,39 +609,51 @@ internal sealed partial class Radio
             resetting = false;
         }
 
+        // Pages: "stations", "search" (Add a station), "form" (Add by address, Edit), "history", "settings", "statistics".
         void SetPage(string target)
         {
-            if (target != "stations")
-            {
-                fields.Visibility = Visibility.Collapsed;
-                editing = null;
-            }
+            if (target != "form") editing = null;
             if (page == "search" && target != "search") ResetSearch();
             page = target;
             bool stations = target == "stations";
-            list.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
-            searchPane.Visibility = target == "search" ? Visibility.Visible : Visibility.Collapsed;
-            settingsPane.Visibility = target == "settings" ? Visibility.Visible : Visibility.Collapsed;
-            historyPane.Visibility = target == "history" ? Visibility.Visible : Visibility.Collapsed;
-            add.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
-            sectionLabel.Text = target == "settings" ? L("Settings")
-                : target == "history" ? L("History")
-                : target == "search" ? L("Add a station") : L("Stations");
+            Visibility Shown(bool shown) => shown ? Visibility.Visible : Visibility.Collapsed;
+            list.Visibility = footer.Visibility = stationsBar.Visibility = Shown(stations);
+            pageBar.Visibility = Shown(!stations);
+            searchPane.Visibility = Shown(target == "search");
+            fields.Visibility = Shown(target == "form");
+            settingsPane.Visibility = Shown(target == "settings");
+            historyPane.Visibility = Shown(target == "history");
+            statisticsPane.Visibility = Shown(target == "statistics");
+            pageTitle.Text = target == "settings" ? L("Settings")
+                : target == "history" ? L("Song history")
+                : target == "statistics" ? L("Statistics")
+                : target == "search" ? L("Add a station")
+                : target == "form" ? (editing == null ? L("Add by address") : L("Edit")) : "";
             if (target == "search")
             {
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
                 ShowSuggestions();
             }
-            backButton.Visibility = stations ? Visibility.Collapsed : Visibility.Visible;
-            // Off the stations page these two go away entirely, so the rest moves up to the X on the right.
-            historyButton.Visibility = settingsButton.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
             if (target == "settings") settingsPane.ScrollToTop();
             if (target == "history")
             {
                 FillHistory();
                 historyPane.ScrollToTop();
             }
+            if (target == "statistics")
+            {
+                FillStatistics();
+                statisticsPane.ScrollToTop();
+            }
             if (stations) ShowActiveStationAfterLayout(false);
+        }
+
+        // ← and Esc: the station form goes back to where it came from, Statistics to Settings, the rest to the stations.
+        void GoBack()
+        {
+            if (page == "form") CancelForm();
+            else if (page == "statistics") SetPage("settings");
+            else SetPage("stations");
         }
 
         add.Click += (_, _) => SetPage("search");
@@ -611,18 +670,13 @@ internal sealed partial class Radio
             searchStatus.Text = searchHint;
             ShowSuggestions();
         };
-        manual.Click += (_, _) => { SetPage("stations"); Edit(null); };
+        manual.Click += (_, _) => Edit(null);
         settingsButton.Click += (_, _) => SetPage("settings");
         historyButton.Click += (_, _) => SetPage("history");
-        backButton.Click += (_, _) => SetPage("stations");
+        backButton.Click += (_, _) => GoBack();
 
-        void CancelForm()
-        {
-            bool adding = editing == null;
-            editing = null;
-            fields.Visibility = Visibility.Collapsed;
-            if (adding) SetPage("search");
-        }
+        // Adding goes back to the search, editing to the stations.
+        void CancelForm() => SetPage(editing == null ? "search" : "stations");
         cancelForm.Click += (_, _) => CancelForm();
 
         void AddSearchResult(DirectoryStation item)
@@ -673,8 +727,7 @@ internal sealed partial class Radio
             if (wasSelected && session != null && editing.Url != address) StartPlayback();
             else if (wasSelected && session != null && status == editing.Name) SetStatus(entry.Name);
             if (station < 0) SelectStation(Stations.IndexOf(entry));
-            fields.Visibility = Visibility.Collapsed;
-            editing = null;
+            SetPage("stations");
         };
 
         void Remove(SavedStation item)
@@ -694,7 +747,7 @@ internal sealed partial class Radio
                 lastPlayed = null;
                 SavePreferences();
             }
-            if (editing == item) fields.Visibility = Visibility.Collapsed;
+            if (editing == item && page == "form") SetPage("stations");
         }
 
         // Puts a station in another place on the list (dragged there, or Alt+↑/↓) and saves the order like any other
@@ -790,7 +843,13 @@ internal sealed partial class Radio
                 Text = item.Name, TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0)
             };
-            var stationButton = NewButton("GhostButton", Columns((badge, Auto), (text, Star)));
+            // Shown while this station plays (RefreshPanel), like the Linux and Mac lists.
+            FrameworkElement playing = Theme.Solid(Theme.PlayIcon, 14, "Accent");
+            playing.VerticalAlignment = VerticalAlignment.Center;
+            playing.Margin = new Thickness(8, 0, 4, 0);
+            playing.Visibility = Visibility.Collapsed;
+            playingMarks[item] = playing;
+            var stationButton = NewButton("GhostButton", Columns((badge, Auto), (text, Star), (playing, Auto)));
             stationButton.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             stationButton.Padding = new Thickness(10, 6, 8, 6);
             stationButton.FontSize = 16;
@@ -827,7 +886,7 @@ internal sealed partial class Radio
         void FillHistory()
         {
             shownHistory = historyVersion;
-            var content = new StackPanel();
+            var content = new StackPanel { Margin = new Thickness(Gutter) };
             if (history.Count == 0)
             {
                 content.Children.Add(Note(L("Songs the radio plays will show up here.")));
@@ -870,13 +929,15 @@ internal sealed partial class Radio
             historyPane.Content = content;
         }
 
+        void FillStatistics() { }
+
         BitmapSource titleIcon = Theme.AppImage(64);
 
         // Settings page, laid out like the Windows 11 Settings app: groups of cards.
         Action refreshUpdates = null;
         FrameworkElement BuildSettings()
         {
-            var settings = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+            var settings = new StackPanel { Margin = new Thickness(Gutter) };
 
             // General: language, start with Windows
             var language = new ComboBox { MinWidth = 136 };
@@ -1161,23 +1222,13 @@ internal sealed partial class Radio
         };
         trackCard.SetResourceReference(Border.BackgroundProperty, "Card");
 
-        var titleRow = Columns(
-            (Spaced(Orientation.Horizontal, 10,
-                new Image { Source = titleIcon, Width = 20, Height = 20 },
-                new TextBlock { Text = AppName, FontSize = 16, VerticalAlignment = VerticalAlignment.Center }), Star),
-            (updateButton, Auto), (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
-        var header = Spaced(Orientation.Vertical, 12, titleRow, add, fields, sectionRow);
-        header.Margin = new Thickness(0, 0, 0, 8);
         var volumeRow = Columns((muteButton, Auto), (sliderCell, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
-        var footer = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
-        footer.Margin = new Thickness(0, 10, 0, 0);
+        footer.Child = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
 
         var middle = new Grid();
-        middle.Children.Add(list);
-        middle.Children.Add(searchPane);
-        middle.Children.Add(settingsPane);
-        middle.Children.Add(historyPane);
+        foreach (FrameworkElement part in new FrameworkElement[] { list, searchPane, fields, settingsPane, historyPane, statisticsPane })
+            middle.Children.Add(part);
         var content = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(header, Dock.Top);
         DockPanel.SetDock(footer, Dock.Bottom);
@@ -1185,10 +1236,10 @@ internal sealed partial class Radio
         content.Children.Add(footer);
         content.Children.Add(middle);
 
+        // No padding: the bar's line goes from edge to edge; each part keeps its own 12 px from the sides.
         var frame = new Border
         {
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(12), Child = content
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Child = content
         };
         frame.SetResourceReference(Border.BackgroundProperty, "Bg");
         frame.SetResourceReference(Border.BorderBrushProperty, "Line");
@@ -1216,8 +1267,7 @@ internal sealed partial class Radio
         panel.KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
-            if (page != "stations") SetPage("stations");
-            else if (fields.Visibility == Visibility.Visible) CancelForm();
+            if (page != "stations") GoBack();
             else panel.Close();
             e.Handled = true;
         };
@@ -1254,8 +1304,11 @@ internal sealed partial class Radio
             if (!Equals(play.Tag, playText))
             {
                 play.Tag = playText;
-                play.Content = IconText(session == null ? Theme.PlayIcon : Theme.StopIcon, playText, "AccentFg");
+                play.Content = PlayLabel(session == null, playText);
             }
+            SavedStation playing = session != null && station >= 0 && station < Stations.Count ? Stations[station] : null;
+            foreach (KeyValuePair<SavedStation, FrameworkElement> mark in playingMarks)
+                mark.Value.Visibility = mark.Key == playing ? Visibility.Visible : Visibility.Collapsed;
             copy.IsEnabled = track != null;
             now.Text = track ?? (session != null && status == StationName ? NoTrack : status);
             now.ToolTip = track;

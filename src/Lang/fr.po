@@ -421,3 +421,6 @@ msgid "{0} play"
 msgid_plural "{0} plays"
 msgstr[0] "{0} écoute"
 msgstr[1] "{0} écoutes"
+
+msgid "Statistics"
+msgstr "Statistiques"

@@ -301,6 +301,27 @@
     </Style.Triggers>
   </Style>
 
+  <!-- A scroll viewer whose bar floats over the content's right margin, like Windows 11's, so the content keeps the
+       same padding on both sides. The content (or the list's Padding) leaves the room for it. -->
+  <Style x:Key="OverlayScroll" TargetType="ScrollViewer">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ScrollViewer">
+          <Grid Background="{TemplateBinding Background}">
+            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Margin="{TemplateBinding Padding}"
+                                    CanContentScroll="{TemplateBinding CanContentScroll}" CanHorizontallyScroll="False" CanVerticallyScroll="False"
+                                    Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+            <ScrollBar x:Name="PART_VerticalScrollBar" HorizontalAlignment="Right" Margin="0,2,2,2" Cursor="Arrow"
+                       AutomationProperties.AutomationId="VerticalScrollBar"
+                       Minimum="0" Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}"
+                       Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
+                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- List rows: rounded highlight and an accent bar on the selected station. -->
   <Style TargetType="ListBox">
     <Setter Property="Background" Value="Transparent"/>
