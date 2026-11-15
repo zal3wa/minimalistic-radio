@@ -1,7 +1,10 @@
 """The history and settings pages (Task 13). File dialogs are not driven: the pages' export_to and
 import_from are what the dialogs call with the chosen path."""
 import json
+import shutil
+import subprocess
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from urllib.parse import quote
 
 import pytest
@@ -12,11 +15,17 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk  # noqa: E402
 
-from minimalistic_radio import VERSION  # noqa: E402
-from minimalistic_radio.controller import Change  # noqa: E402
+from minimalistic_radio import VERSION, i18n  # noqa: E402
+from minimalistic_radio.controller import Change, RadioController  # noqa: E402
 from minimalistic_radio.core.models import HistoryEntry, ListeningSession, SongPlay, Station  # noqa: E402
 from minimalistic_radio.core.statistics import Period  # noqa: E402
-from test_ui_main import descendants, make, menu_labels, texts, wait_for  # noqa: E402,F401
+from minimalistic_radio.core.storage import Paths, save_stations  # noqa: E402
+from minimalistic_radio.glib_scheduler import GLibScheduler  # noqa: E402
+from minimalistic_radio.selftest import SHOT_STATIONS, sample_statistics  # noqa: E402
+from minimalistic_radio.ui.window import PAGES, RadioWindow  # noqa: E402
+from test_ui_main import FakePlayer, descendants, make, menu_labels, run_loop, texts, wait_for  # noqa: E402,F401
+
+ROOT = Path(__file__).resolve().parents[2]   # linux/
 
 
 @pytest.fixture
@@ -130,6 +139,47 @@ def test_statistics_page(make, monkeypatch):
     page._clear_answered(dialog, "clear")
     assert answers == ["cleared"]
     dialog.force_close()
+
+
+@pytest.mark.parametrize("language", ["de", "uk"])
+def test_every_page_fits_the_window_in_long_languages(language, tmp_path, monkeypatch):
+    """No page asks for more than the 412 px the window has (a wider page would widen the window)."""
+    msgfmt = shutil.which("msgfmt")
+    if msgfmt is None:
+        pytest.skip("msgfmt is missing")
+    target = tmp_path / "locale" / language / "LC_MESSAGES"
+    target.mkdir(parents=True)
+    subprocess.run([msgfmt, "-o", str(target / "minimalistic-radio.mo"), str(ROOT / "po" / f"{language}.po")],
+                   check=True)
+    monkeypatch.delenv("LANGUAGE", raising=False)
+    monkeypatch.setattr(i18n, "_translation", i18n._translation)   # English again for the later tests
+    _ = i18n.install(language, str(tmp_path / "locale"))
+    paths = Paths(tmp_path / "config", tmp_path / "data", tmp_path / "cache")
+    save_stations(paths.config / "stations.json", SHOT_STATIONS)
+    controller = RadioController(FakePlayer(), GLibScheduler(), paths, lambda url, cb: None,
+                                 lambda url, path, cb: None, _)
+    controller.start(autostart=True)
+    sample = sample_statistics(SHOT_STATIONS, datetime.now(timezone.utc))
+    controller.statistics.sessions[:] = sample.sessions
+    controller.statistics.songs[:] = sample.songs
+    window = RadioWindow(controller, _)
+    window.present()
+    try:
+        assert wait_for(window.get_mapped)
+        too_wide = {}
+        for tag in PAGES:
+            window.show_page(tag)
+            run_loop(100)
+            page = window.navigation.get_visible_page()
+            needed = page.measure(Gtk.Orientation.HORIZONTAL, -1)[0]
+            if needed > 412:
+                too_wide[tag] = (needed, sorted(
+                    ((w.measure(Gtk.Orientation.HORIZONTAL, -1)[0], type(w).__name__,
+                      w.get_text() if isinstance(w, Gtk.Label) else "") for w in descendants(page)
+                     if w.get_visible() and w.measure(Gtk.Orientation.HORIZONTAL, -1)[0] > 250), reverse=True)[:12])
+        assert not too_wide
+    finally:
+        window.destroy()
 
 
 def test_statistics_with_too_few_titles(make):
