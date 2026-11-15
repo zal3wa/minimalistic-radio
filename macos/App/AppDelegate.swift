@@ -32,6 +32,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             selfTest()
             return
         }
+        if let index = CommandLine.arguments.firstIndex(of: "--screenshot"), CommandLine.arguments.count > index + 1 {
+            let output = URL(fileURLWithPath: CommandLine.arguments[index + 1])
+            Task { @MainActor in exit(await self.takeScreenshots(into: output)) }
+            return
+        }
         let launchedAtLogin = LoginItem.launchedAtLogin
         let paths = Paths.standard()
         let player = StreamPlayer(onStarted: { [weak self] in self?.controller.onPlayerStarted() },
@@ -48,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// The controller, the logo cache and the menu bar item, over the given player and network.
-    private func setUp(paths: Paths, player: AudioPlayer, fetch: @escaping FetchJSON, fetchFile: @escaping FetchFile) {
+    func setUp(paths: Paths, player: AudioPlayer, fetch: @escaping FetchJSON, fetchFile: @escaping FetchFile) {
         controller = RadioController(player: player, scheduler: MainScheduler(), paths: paths, fetch: fetch,
                                      fetchFile: fetchFile, localize: L)
         logos = LogoCache(folder: paths.logosFolder)

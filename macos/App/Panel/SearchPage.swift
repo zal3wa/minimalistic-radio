@@ -56,7 +56,14 @@ struct SearchPage: View {
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            if let pending = model.pendingSearch {
+                model.pendingSearch = nil
+                query = pending
+                search()
+            }
+        }
         .task { await loadSuggestions() }
     }
 
@@ -70,9 +77,11 @@ struct SearchPage: View {
                 let found = try await RadioCore.search(text, bans: model.bans, fetch: Network.json)
                 guard query.trimmingCharacters(in: .whitespaces) == text else { return }   // typed on meanwhile
                 results = found
+                model.lastResults = found
                 message = found.isEmpty ? L("No results.") : nil
             } catch {
                 results = []
+                model.lastResults = []
                 message = L("The station directory is unavailable right now. Try again.")
             }
         }

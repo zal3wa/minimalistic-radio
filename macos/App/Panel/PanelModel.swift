@@ -23,6 +23,10 @@ final class PanelModel: ObservableObject {
     /// The suggestions, loaded once per opening of the panel.
     var suggested: (recommended: [DirectoryStation], popular: [DirectoryStation], country: String?)?
     @Published var page: Page = .stations
+    /// A search to run when the search page opens (the README pictures' "jazz").
+    @Published var pendingSearch: String?
+    /// The last search's results, once they arrived.
+    var lastResults: [DirectoryStation]?
     @Published private(set) var revision = 0
     /// Set by the panel controller: hides the panel.
     var close: () -> Void = {}

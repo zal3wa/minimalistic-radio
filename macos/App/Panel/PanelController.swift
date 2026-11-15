@@ -21,6 +21,14 @@ final class PanelController: NSObject, NSWindowDelegate {
     private var closedAt = Date.distantPast
     /// While a file dialog or an alert of the panel's is open, losing the focus doesn't close the panel.
     var keepOpen = false
+    /// For the README pictures: a plain window background (a vibrant one doesn't render into a picture), and the
+    /// panel stays open.
+    var screenshotMode = false {
+        didSet { keepOpen = screenshotMode }
+    }
+
+    /// The panel's content, for the README pictures.
+    var contentView: NSView? { panel?.contentView }
 
     init(model: PanelModel) {
         self.model = model
@@ -71,13 +79,25 @@ final class PanelController: NSObject, NSWindowDelegate {
         panel.delegate = self
         panel.onCancel = { [weak self] in self?.model.back() }
 
-        let background = NSVisualEffectView(frame: CGRect(origin: .zero, size: Self.size))
-        background.material = .popover
-        background.blendingMode = .behindWindow
-        background.state = .active
-        background.wantsLayer = true
-        background.layer?.cornerRadius = 12
-        background.layer?.masksToBounds = true
+        let background: NSView
+        if screenshotMode {
+            let box = NSBox(frame: CGRect(origin: .zero, size: Self.size))
+            box.boxType = .custom
+            box.fillColor = .windowBackgroundColor
+            box.borderWidth = 0
+            box.cornerRadius = 12
+            box.contentViewMargins = .zero
+            background = box
+        } else {
+            let effect = NSVisualEffectView(frame: CGRect(origin: .zero, size: Self.size))
+            effect.material = .popover
+            effect.blendingMode = .behindWindow
+            effect.state = .active
+            effect.wantsLayer = true
+            effect.layer?.cornerRadius = 12
+            effect.layer?.masksToBounds = true
+            background = effect
+        }
         let content = NSHostingView(rootView: PanelView(model: model))
         content.frame = background.bounds
         content.autoresizingMask = [.width, .height]
