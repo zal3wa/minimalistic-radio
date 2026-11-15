@@ -1,5 +1,6 @@
 from conftest import item
-from minimalistic_radio.platform.menu_model import TRACK_ID, build_tray_menu, mpris_metadata, tooltip
+from minimalistic_radio.platform.menu_model import (TRACK_ID, build_tray_menu, item_properties, mpris_metadata,
+                                                    property_changes, tooltip)
 
 
 def test_menu_order_and_labels(ctl_playing):
@@ -9,6 +10,36 @@ def test_menu_order_and_labels(ctl_playing):
     assert menu["playback"].label == "Stop" and menu["volume"].label == "Volume (30%)"
     assert menu["now:station"].enabled is False and menu["now:track"].label == "Leonard Cohen - Everybody Knows"
     assert [s.checked for s in menu["stations"].children] == [True, False] and menu["stations"].children[0].toggle == "radio"
+
+
+
+def shown(c):
+    """Each item's dbusmenu properties, by id, submenus included."""
+    def walk(items):
+        for m in items:
+            yield m
+            yield from walk(m.children)
+    return {m.id: item_properties(m) for m in walk(build_tray_menu(c, str, None))}
+
+
+def test_property_changes_follow_the_radio(ctl_playing):
+    """A desktop updates the items it shows only from these (GNOME's AppIndicator extension): once they were never
+    sent, its menu kept the first volume, station and Play or Stop."""
+    before = shown(ctl_playing)
+    ctl_playing.set_volume(100)
+    ctl_playing.select(1)
+    ctl_playing.stop()
+    updated, removed = property_changes(before, after := shown(ctl_playing))
+    updated = dict(updated)
+    assert updated["playback"] == {"label": "Play", "icon-name": "media-playback-start-symbolic"}
+    assert updated["volume"] == {"label": "Volume (100%)"} and updated["volume:100"] == {"toggle-state": 1}
+    assert updated["volume:up"] == {"enabled": False}
+    assert updated["station:0"] == {"toggle-state": 0} and updated["station:1"] == {"toggle-state": 1}
+    assert updated["now:station"] == {"label": "Radio B"}
+    assert "settings" not in updated and removed == []
+    ctl_playing.set_volume(50)
+    updated, removed = property_changes(after, shown(ctl_playing))
+    assert ("volume:up", ["enabled"]) in removed   # enabled again: the default
 
 
 def test_volume_bounds(ctl):

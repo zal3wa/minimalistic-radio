@@ -2,6 +2,10 @@
 
 Items are numbered on first sight and keep their number for as long as the menu exists, so a number is
 stable within a layout revision (and across them). The root is 0.
+
+Every change is announced twice: ItemsPropertiesUpdated with the new properties of the items a desktop may show
+(Ubuntu's AppIndicator extension updates an item it shows only from that), then LayoutUpdated with a new revision
+(KDE reads the menu again; the extension adds and removes items).
 """
 from __future__ import annotations
 
@@ -12,7 +16,7 @@ import gi
 gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib  # noqa: E402
 
-from .menu_model import MenuItem  # noqa: E402
+from .menu_model import PROPERTY_TYPES, MenuItem, Properties, item_properties, property_changes  # noqa: E402
 
 IFACE = "com.canonical.dbusmenu"
 ROOT = 0
@@ -84,25 +88,8 @@ _MENU_PROPERTIES = {
 }
 
 
-def label(text: str) -> str:
-    """DBusMenu reads "_" as the mark of a keyboard shortcut; doubled, a station or song keeps its "_"."""
-    return text.replace("_", "__")
-
-
-def _properties(item: MenuItem) -> dict[str, GLib.Variant]:
-    if item.separator:
-        return {"type": GLib.Variant("s", "separator")}
-    props = {"label": GLib.Variant("s", label(item.label))}
-    if not item.enabled:
-        props["enabled"] = GLib.Variant("b", False)
-    if item.icon:
-        props["icon-name"] = GLib.Variant("s", item.icon)
-    if item.toggle:
-        props["toggle-type"] = GLib.Variant("s", item.toggle)
-        props["toggle-state"] = GLib.Variant("i", 1 if item.checked else 0)
-    if item.children:
-        props["children-display"] = GLib.Variant("s", "submenu")
-    return props
+def _variants(props: Properties) -> dict[str, GLib.Variant]:
+    return {name: GLib.Variant(PROPERTY_TYPES[name], value) for name, value in props.items()}
 
 
 class DBusMenu:
@@ -116,6 +103,9 @@ class DBusMenu:
         self._numbers: dict[str, int] = {}          # MenuItem id -> number, for as long as the menu exists
         self._nodes: dict[int, MenuItem] = {}       # the current layout, by number
         self._served: dict[int, int] = {}           # number -> the revision whose children GetLayout last sent
+        # number -> the item's properties as last shown, kept (like the number) when it leaves the menu: an item that
+        # comes back may still be on a desktop with the properties it had then.
+        self._shown: dict[int, Properties] = {}
         info = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION).lookup_interface(IFACE)
         self._registration = connection.register_object(path, info, self._on_method_call, self._on_get_property, None)
 
@@ -132,16 +122,24 @@ class DBusMenu:
         return number
 
     def set_items(self, items: list[MenuItem]) -> None:
-        """Shows `items`; the desktop is told (LayoutUpdated) only when something changed."""
+        """Shows `items`; the desktop is told only when something changed."""
         if items == self._items:
             return
         self._items = items
         self._nodes = {}
         self._index(items)
+        now = {number: item_properties(item) for number, item in self._nodes.items()}
+        updated, removed = property_changes(self._shown, now)
+        self._shown.update(now)
         self.revision += 1
+        if updated or removed:
+            self._emit("ItemsPropertiesUpdated", GLib.Variant(
+                "(a(ia{sv})a(ias))", ([(number, _variants(props)) for number, props in updated], removed)))
+        self._emit("LayoutUpdated", GLib.Variant("(ui)", (self.revision, ROOT)))
+
+    def _emit(self, signal: str, parameters: GLib.Variant) -> None:
         try:
-            self.connection.emit_signal(None, self.path, IFACE, "LayoutUpdated",
-                                        GLib.Variant("(ui)", (self.revision, ROOT)))
+            self.connection.emit_signal(None, self.path, IFACE, signal, parameters)
         except GLib.Error:
             pass   # the bus is gone: nothing listens
 
@@ -157,7 +155,7 @@ class DBusMenu:
         if number == ROOT:
             props = {"children-display": GLib.Variant("s", "submenu")}
         else:
-            props = _properties(self._nodes[number])
+            props = _variants(item_properties(self._nodes[number]))
         return {k: v for k, v in props.items() if k in names} if names else props
 
     def _layout(self, number: int, depth: int, names: list[str]) -> tuple:

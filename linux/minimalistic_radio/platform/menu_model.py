@@ -1,8 +1,9 @@
-"""The tray menu and the MPRIS metadata as plain data (no gi), so they are tested without a desktop."""
+"""The tray menu (with its dbusmenu properties) and the MPRIS metadata as plain data (no gi), so they are tested
+without a desktop."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Hashable, TypeVar
 
 from .. import APP_NAME
 from ..controller import RadioController
@@ -12,6 +13,12 @@ TRACK_ID = "/io/github/zal3wa/MinimalisticRadio/Track"
 TOOLTIP_BODY_MAX = 120
 SLEEP_MINUTES = (15, 30, 45, 60, 90)
 VOLUME_PRESETS = (0, 25, 50, 75, 100)
+# The dbusmenu properties an item can have, with their D-Bus types.
+PROPERTY_TYPES = {"type": "s", "label": "s", "enabled": "b", "icon-name": "s", "toggle-type": "s",
+                  "toggle-state": "i", "children-display": "s"}
+
+Properties = dict[str, str | int | bool]
+Key = TypeVar("Key", bound=Hashable)
 
 
 @dataclass
@@ -75,6 +82,45 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
     items.append(MenuItem("settings", _("Settings"), icon="preferences-system-symbolic"))
     items.append(MenuItem("quit", _("Quit"), icon="application-exit-symbolic"))
     return items
+
+
+def item_properties(item: MenuItem) -> Properties:
+    """The item's dbusmenu properties (PROPERTY_TYPES); one at its default value is left out. DBusMenu reads "_" as
+    the mark of a keyboard shortcut: doubled, a station or song keeps its "_"."""
+    if item.separator:
+        return {"type": "separator"}
+    props: Properties = {"label": item.label.replace("_", "__")}
+    if not item.enabled:
+        props["enabled"] = False
+    if item.icon:
+        props["icon-name"] = item.icon
+    if item.toggle:
+        props["toggle-type"] = item.toggle
+        props["toggle-state"] = 1 if item.checked else 0
+    if item.children:
+        props["children-display"] = "submenu"
+    return props
+
+
+def property_changes(shown: dict[Key, Properties], now: dict[Key, Properties]
+                     ) -> tuple[list[tuple[Key, Properties]], list[tuple[Key, list[str]]]]:
+    """ItemsPropertiesUpdated's two lists: for each item in `now` that was shown before (`shown`) with other
+    properties, the properties that changed, and those that are gone (back to their default).
+
+    A desktop updates an item it already shows only from these: when the layout changes, Ubuntu's AppIndicator
+    extension (GNOME) reads the type of each item and nothing else."""
+    updated, removed = [], []
+    for key, props in now.items():
+        before = shown.get(key)
+        if before is None or before == props:
+            continue
+        changed = {name: value for name, value in props.items() if name not in before or before[name] != value}
+        gone = [name for name in before if name not in props]
+        if changed:
+            updated.append((key, changed))
+        if gone:
+            removed.append((key, gone))
+    return updated, removed
 
 
 def tooltip(c: RadioController) -> tuple[str, str]:

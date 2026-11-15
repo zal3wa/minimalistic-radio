@@ -290,7 +290,7 @@ def test_now_track_opens_panel_and_copies(make, watcher):
 
 
 def test_layout_updated_on_change(make, watcher):
-    _, c, _, _, _ = make()
+    _, c, tray, _, _ = make()
     menu = Client(MENU_PATH, MENU)
     revision, _ = layout(menu)
     c.set_volume(55)
@@ -298,6 +298,9 @@ def test_layout_updated_on_change(make, watcher):
     updated = [params for name, params in menu.signals if name == "LayoutUpdated"]
     assert updated[-1][0] > revision
     assert layout(menu)[0] > revision
+    # Sent first. GNOME's AppIndicator extension updates the items it shows only from this, not from the layout.
+    changed = [params for name, params in menu.signals if name == "ItemsPropertiesUpdated"]
+    assert changed and (tray.menu.id_of("volume"), {"label": "Volume (55%)"}) in changed[-1][0]
 
 
 def test_about_to_show_after_a_change(make, watcher):
