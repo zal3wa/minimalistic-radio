@@ -8,10 +8,10 @@ from typing import Any
 import gi
 
 gi.require_version("Gio", "2.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GdkPixbuf, Gio, GLib  # noqa: E402
+from gi.repository import Gio  # noqa: E402
 
 from ..controller import Change, Status  # noqa: E402
+from ..pictures import picture  # noqa: E402
 
 NOTIFICATION_ID = "station"
 FIRST_TITLE_WINDOW = 15.0   # seconds after the switch in which the first title, then its cover, replace it
@@ -21,11 +21,10 @@ COVER_PIXELS = 256          # plenty for a notification; the cover file itself i
 def cover_icon(path: Path) -> Gio.Icon | None:
     """The cover at most 256 px on a side, as PNG bytes: no file the notification server might not be able to read."""
     try:
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(str(path), COVER_PIXELS, COVER_PIXELS)
-        ok, data = pixbuf.save_to_bufferv("png", [], [])
-    except GLib.Error:
+        texture = picture(path.read_bytes(), COVER_PIXELS)
+    except OSError:
         return None
-    return Gio.BytesIcon.new(GLib.Bytes.new(data)) if ok else None
+    return Gio.BytesIcon.new(texture.save_to_png_bytes()) if texture is not None else None
 
 
 class StationNotifier:

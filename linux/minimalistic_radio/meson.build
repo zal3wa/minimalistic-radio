@@ -5,6 +5,7 @@ python.install_sources(
   'glib_scheduler.py',
   'i18n.py',
   'main.py',
+  'pictures.py',
   'selftest.py',
   subdir: 'minimalistic_radio',
 )

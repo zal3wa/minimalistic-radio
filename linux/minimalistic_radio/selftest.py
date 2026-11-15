@@ -18,7 +18,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, GLib, Gtk  # noqa: E402
+from gi.repository import Adw, Gdk, GLib, Gtk  # noqa: E402
 
 from . import i18n  # noqa: E402
 from .controller import RadioController  # noqa: E402
@@ -26,6 +26,7 @@ from .core import directory  # noqa: E402
 from .core.models import HistoryEntry, Station  # noqa: E402
 from .core.storage import Paths, save_history, save_stations  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
+from .pictures import picture  # noqa: E402
 from .platform.menu_model import build_tray_menu  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
 from .ui.window import PAGES, RadioWindow  # noqa: E402
@@ -135,11 +136,21 @@ def _check_bans() -> None:
            "the banned-stations list is not loaded: Radio Republika would be shown")
 
 
+def _check_pictures() -> None:
+    """A PNG logo decodes and shrinks: in the Flatpak, gdk-pixbuf's decoders may not start (pictures.py)."""
+    red = GLib.Bytes.new(bytes([200, 30, 30, 255]) * 16 * 16)
+    png = Gdk.MemoryTexture.new(16, 16, Gdk.MemoryFormat.R8G8B8A8, red, 16 * 4).save_to_png_bytes()
+    small = picture(png.get_data(), 8)
+    _check(small is not None and (small.get_width(), small.get_height()) == (8, 8), "a PNG logo doesn't decode")
+
+
 def run_self_test(app: Any) -> int:
-    """0 when the window and every page, the tray menu, the MPRIS object, the ban list and the Polish catalogue work."""
+    """0 when the window and every page, the tray menu, the MPRIS object, the ban list, logos and the Polish
+    catalogue work."""
     try:
         Adw.init()
         _check_bans()
+        _check_pictures()
         translate = getattr(app, "_", lambda s: s)
         with tempfile.TemporaryDirectory() as folder:
             controller = _controller(Path(folder), TEST_STATIONS)

@@ -16,11 +16,11 @@ from typing import Callable
 import gi
 
 gi.require_version("Gdk", "4.0")
-gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gdk, GdkPixbuf, Gio, GLib  # noqa: E402
+from gi.repository import Gdk, GLib  # noqa: E402
 
 from ..core import net  # noqa: E402
 from ..core.streams import is_web_url  # noqa: E402
+from ..pictures import picture  # noqa: E402
 
 LOGO_LIMIT = 2_000_000    # bytes downloaded at most
 LOGO_PIXELS = 96          # decoded at most this big: shown at 40 px, sharp at 2× scaling
@@ -31,15 +31,8 @@ Texture = Gdk.Texture
 
 
 def _decode(data: bytes) -> Texture | None:
-    """A texture from PNG, JPEG, SVG… bytes, scaled down to LOGO_PIXELS; None if it isn't a picture."""
-    try:
-        stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(data))
-        pixbuf = GdkPixbuf.Pixbuf.new_from_stream_at_scale(stream, LOGO_PIXELS, LOGO_PIXELS, True, None)
-    except GLib.Error:
-        return None
-    memory_format = Gdk.MemoryFormat.R8G8B8A8 if pixbuf.get_has_alpha() else Gdk.MemoryFormat.R8G8B8
-    return Gdk.MemoryTexture.new(pixbuf.get_width(), pixbuf.get_height(), memory_format,
-                                 pixbuf.read_pixel_bytes(), pixbuf.get_rowstride())
+    """A texture from PNG, JPEG, SVG… bytes, at most LOGO_PIXELS; None if it isn't a picture."""
+    return picture(data, LOGO_PIXELS)
 
 
 def _save(path: Path, data: bytes) -> None:
