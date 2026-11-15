@@ -5,6 +5,7 @@ python.install_sources(
   'glib_scheduler.py',
   'i18n.py',
   'main.py',
+  'selftest.py',
   subdir: 'minimalistic_radio',
 )
 
@@ -29,6 +30,10 @@ python.install_sources(
 
 python.install_sources(
   'platform/__init__.py',
+  'platform/background.py',
+  'platform/inhibit.py',
+  'platform/notifications.py',
+  'platform/session.py',
   'platform/dbusmenu.py',
   'platform/menu_model.py',
   'platform/mpris.py',
@@ -39,8 +44,12 @@ python.install_sources(
 python.install_sources(
   'ui/__init__.py',
   'ui/footer.py',
+  'ui/history_page.py',
   'ui/logos.py',
   'ui/reorder.py',
+  'ui/search_page.py',
+  'ui/settings_page.py',
+  'ui/station_dialog.py',
   'ui/stations_page.py',
   'ui/window.py',
   subdir: 'minimalistic_radio/ui',
@@ -48,3 +57,7 @@ python.install_sources(
 
 # Loaded by ui/window.py from next to the module.
 install_data('ui/style.css', install_dir: python.get_install_dir() / 'minimalistic_radio' / 'ui')
+
+# The screenshot mode's search results, found next to the module by selftest.py.
+install_data('selftest_data/search-jazz.json',
+             install_dir: python.get_install_dir() / 'minimalistic_radio' / 'selftest_data')

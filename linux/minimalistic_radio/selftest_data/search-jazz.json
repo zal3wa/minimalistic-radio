@@ -1,0 +1,7 @@
+[
+  {"stationuuid": "00000000-0000-0000-0000-000000000001", "name": "Jazz24", "url": "http://jazz24.example/live", "url_resolved": "http://jazz24.example/live", "favicon": "", "country": "United States", "codec": "MP3", "bitrate": 128, "tags": "jazz,blues", "lastcheckok": 1},
+  {"stationuuid": "00000000-0000-0000-0000-000000000002", "name": "Radio Swiss Jazz", "url": "http://swissjazz.example/live", "url_resolved": "http://swissjazz.example/live", "favicon": "", "country": "Switzerland", "codec": "AAC", "bitrate": 128, "tags": "jazz", "lastcheckok": 1},
+  {"stationuuid": "00000000-0000-0000-0000-000000000003", "name": "Jazz Radio Classic", "url": "http://jazzclassic.example/live", "url_resolved": "http://jazzclassic.example/live", "favicon": "", "country": "France", "codec": "MP3", "bitrate": 192, "tags": "jazz,classic jazz", "lastcheckok": 1},
+  {"stationuuid": "00000000-0000-0000-0000-000000000004", "name": "KNKX Jazz", "url": "http://knkx.example/live", "url_resolved": "http://knkx.example/live", "favicon": "", "country": "United States", "codec": "AAC", "bitrate": 96, "tags": "jazz,news", "lastcheckok": 1},
+  {"stationuuid": "00000000-0000-0000-0000-000000000005", "name": "Polskie Radio Jazz", "url": "http://prjazz.example/live", "url_resolved": "http://prjazz.example/live", "favicon": "", "country": "Poland", "codec": "MP3", "bitrate": 128, "tags": "jazz", "lastcheckok": 1}
+]

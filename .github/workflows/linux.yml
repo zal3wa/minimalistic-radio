@@ -74,14 +74,14 @@ jobs:
           meson test -C _build --print-errorlogs
 
       # Pictures of the window for review (the owner has no Linux). Never fails the job.
-      - name: Render a preview of the window
+      - name: Take the screenshots
         continue-on-error: true
-        run: cd linux && dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 tools/preview_window.py ../window-preview
+        run: cd linux && dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 -m minimalistic_radio.main --screenshot ../linux-screenshots
 
-      - name: Upload the preview
+      - name: Upload the screenshots
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
-          name: window-preview
-          path: window-preview/
+          name: linux-screenshots
+          path: linux-screenshots/
           if-no-files-found: ignore

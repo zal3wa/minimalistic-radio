@@ -173,13 +173,19 @@ class RadioApplication(Adw.Application):
         self.updated = options.contains("updated")
         shots = options.lookup_value("screenshot", GLib.VariantType("s"))
         self.screenshot_dir = shots.get_string() if shots is not None else None
-        checking = options.contains("self-test") or self.screenshot_dir is not None
-        self._start_radio(autostart or checking)   # a check never plays
-        if options.contains("self-test"):
-            self.show_window()
-            print("self-test ok")
+        if options.contains("self-test") or self.screenshot_dir is not None:
+            # A check runs on temporary data: no radio, no tray, no MPRIS, nothing plays.
+            from . import selftest
+            if self.screenshot_dir is not None:
+                code = selftest.take_screenshots(self, Path(self.screenshot_dir))
+            else:
+                code = selftest.run_self_test(self)
+                if code == 0:
+                    print("self-test ok")
             GLib.idle_add(self._quit_idle)
-        elif not autostart:
+            return code
+        self._start_radio(autostart)
+        if not autostart:
             self.show_window()
         return 0
 
