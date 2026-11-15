@@ -5,6 +5,15 @@ msgstr ""
 "Language: pt\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid "Copied to clipboard"
+msgstr "Copiado para a área de transferência"
+
+msgid "Import…"
+msgstr "Importar…"
+
+msgid "Open at login"
+msgstr "Abrir ao iniciar sessão"
+
 msgid "Quit"
 msgstr "Sair"
 

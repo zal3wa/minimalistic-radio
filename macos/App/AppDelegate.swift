@@ -1,5 +1,6 @@
 import AppKit
 import RadioCore
+import UniformTypeIdentifiers
 
 /// The radio lives in the menu bar (LSUIElement: no Dock icon, no menus of its own).
 @main
@@ -12,38 +13,152 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         app.run()
     }
 
-    private var statusItem: NSStatusItem?
+    static private(set) var shared: AppDelegate!
+
+    private(set) var controller: RadioController!
+    private(set) var player: StreamPlayer?
+    private(set) var logos: LogoCache!
+    private var statusItem: StatusItemController!
+    private var nowPlaying: NowPlaying?
+    private var systemEvents: SystemEvents?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        let image = NSImage(named: "MenuBarIcon")
-        image?.isTemplate = true
-        image?.size = NSSize(width: 18, height: 18)
-        item.button?.image = image
-        item.button?.toolTip = "Minimalistic Radio"
-        let menu = NSMenu()
-        menu.addItem(withTitle: L("Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        item.menu = menu
-        statusItem = item
-
+        AppDelegate.shared = self
         if CommandLine.arguments.contains("--self-test") {
-            selfTest(item)
+            selfTest()
+            return
+        }
+        let launchedAtLogin = LoginItem.launchedAtLogin
+        let paths = Paths.standard()
+        let player = StreamPlayer(onStarted: { [weak self] in self?.controller.onPlayerStarted() },
+                                  onTitle: { [weak self] in self?.controller.onPlayerTitle($0) },
+                                  onError: { [weak self] in self?.controller.onPlayerError($0, detail: $1) },
+                                  onEOS: { [weak self] in self?.controller.onPlayerEOS() })
+        self.player = player
+        setUp(paths: paths, player: player, fetch: Network.fetchJSON, fetchFile: Network.fetchFile)
+        nowPlaying = NowPlaying(controller: controller)
+        systemEvents = SystemEvents(controller: controller)
+        controller.start(autostart: launchedAtLogin)
+        if CommandLine.arguments.contains("--resume") { controller.play() }
+    }
+
+    /// The controller, the logo cache and the menu bar item, over the given player and network.
+    private func setUp(paths: Paths, player: AudioPlayer, fetch: @escaping FetchJSON, fetchFile: @escaping FetchFile) {
+        controller = RadioController(player: player, scheduler: MainScheduler(), paths: paths, fetch: fetch,
+                                     fetchFile: fetchFile, localize: L)
+        logos = LogoCache(folder: paths.logosFolder)
+        statusItem = StatusItemController(controller: controller, onClick: { [weak self] in self?.openPanel() },
+                                          perform: { [weak self] in self?.perform($0) })
+        statusItem.extraItems = { [weak self] in self?.riskCheckItems() ?? [] }
+        controller.subscribe { [weak self] change in self?.changed(change) }
+    }
+
+    private func changed(_ change: Change) {
+        if change.contains(.preferences) { localizer.setting = controller.prefs.language }
+        statusItem.refresh()
+        nowPlaying?.update()
+        if change.contains(.switched) { showCard() }
+        if change.contains(.message), let notice = controller.notice { showCard(notice) }
+    }
+
+    /// Starting the radio again (Finder, Spotlight, the Dock) opens the panel, as on Windows.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        openPanel()
+        return false
+    }
+
+    // MARK: - Panel and card (Tasks 15 and 18)
+
+    func openPanel(page: String? = nil) {}
+
+    func showCard(_ text: String? = nil) {}
+
+    // MARK: - The menu's actions (the Linux tray's _on_menu)
+
+    private func perform(_ id: String) {
+        let c = controller!
+        let parts = id.split(separator: ":", maxSplits: 1).map(String.init)
+        let kind = parts[0], value = parts.count > 1 ? parts[1] : ""
+        switch (kind, value) {
+        case ("playback", _): c.toggle()
+        case ("station", _): if let index = Int(value) { c.select(index, switched: true) }
+        case ("volume", "up"): c.setVolume(c.volume + 5)
+        case ("volume", "down"): c.setVolume(c.volume - 5)
+        case ("volume", _): if let level = Int(value) { c.setVolume(level) }
+        case ("sleep", "off"): c.setSleepTimer(minutes: nil)
+        case ("sleep", _): if let minutes = Int(value) { c.setSleepTimer(minutes: minutes) }
+        case ("now", "track"): copyTrack()
+        case ("settings", _): openPanel(page: "settings")
+        case ("quit", _): NSApp.terminate(nil)
+        default: break
         }
     }
 
-    /// `--self-test` (CI): the app starts and builds what it shows; exit code 0 when everything is there.
-    private func selfTest(_ item: NSStatusItem) {
+    func copyTrack() {
+        guard let track = controller.track, !track.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(track, forType: .string)
+        showCard(L("Copied to clipboard"))
+    }
+
+    // MARK: - Temporary menu items for the risk-check beta (removed when Settings exists, Task 17)
+
+    private func riskCheckItems() -> [NSMenuItem] {
+        [
+            MenuBuilder.item(L("Import…")) { [weak self] in self?.importStations() },
+            MenuBuilder.item(L("Open at login"), checked: LoginItem.isEnabled) {
+                try? LoginItem.set(!LoginItem.isEnabled)
+                if LoginItem.needsApproval { LoginItem.openSettings() }
+            },
+        ]
+    }
+
+    private func importStations() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let result = controller.importStations(url)
+        let alert = NSAlert()
+        alert.messageText = result.error ?? "\(result.added)"
+        alert.runModal()
+    }
+
+    // MARK: - Self-test
+
+    /// `--self-test` (CI): the app's parts start on temporary files and a silent player, and build what they show;
+    /// exit code 0 when everything is there. Nothing plays, and the user's files aren't touched.
+    private func selfTest() {
         var failures: [String] = []
-        if item.button?.image == nil { failures.append("no menu bar icon") }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-self-test-\(UUID().uuidString)")
+        let paths = Paths(support: folder.appendingPathComponent("support"), cache: folder.appendingPathComponent("cache"))
+        try? saveStations(paths.stationsFile, [Station(name: "Radio 357", url: "http://s0.example/live"),
+                                               Station(name: "RMF FM", url: "http://s1.example/live")])
+        setUp(paths: paths, player: SilentPlayer(), fetch: { _, done in done(nil) }, fetchFile: { _, _, done in done(false) })
+        controller.start(autostart: true)
+
+        if !statusItem.hasIcon { failures.append("no menu bar icon") }
+        if statusItem.makeMenu().items.count < 8 { failures.append("the menu bar menu is incomplete") }
+        let model = buildMenu(controller, update: nil).map(\.id)
+        for id in ["playback", "stations", "volume", "sleep", "settings", "quit"] where !model.contains(id) {
+            failures.append("the menu has no \(id)")
+        }
+
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
         localizer.setting = saved
+
         let pixels = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 16, bitsPerSample: 8,
                                       samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
                                       bytesPerRow: 0, bitsPerPixel: 0)
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
+
+        let bans = BanList.load(Bundle.main.url(forResource: "banned-stations", withExtension: "json") ?? folder)
+        if bans == .none { failures.append("the banned-stations list isn't in the app") }
+
+        try? FileManager.default.removeItem(at: folder)
         for failure in failures { FileHandle.standardError.write(Data("self-test failed: \(failure)\n".utf8)) }
         exit(failures.isEmpty ? 0 : 1)
     }

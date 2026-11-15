@@ -5,6 +5,15 @@ msgstr ""
 "Language: it\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid "Copied to clipboard"
+msgstr "Copiato negli Appunti"
+
+msgid "Import…"
+msgstr "Importa…"
+
+msgid "Open at login"
+msgstr "Apri al login"
+
 msgid "Quit"
 msgstr "Esci"
 
