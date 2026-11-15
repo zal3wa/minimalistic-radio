@@ -8,6 +8,24 @@ msgstr ""
 msgid "Quit"
 msgstr "Ukončit"
 
+msgid "This station uses a format that can't be played."
+msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
+
+msgid "The connection to the station was lost."
+msgstr "Spojení se stanicí bylo přerušeno."
+
+msgid "The station's server refused access ({code})."
+msgstr "Server stanice odepřel přístup ({code})."
+
+msgid "The station's server refused access."
+msgstr "Server stanice odepřel přístup."
+
+msgid "The station's server returned error {code}."
+msgstr "Server stanice vrátil chybu {code}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
+
 msgid "Couldn't save the station list."
 msgstr "Seznam stanic se nepodařilo uložit."
 

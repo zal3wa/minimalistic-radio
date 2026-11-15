@@ -39,6 +39,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
         localizer.setting = saved
+        let pixels = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 16, bitsPerSample: 8,
+                                      samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                                      bytesPerRow: 0, bitsPerPixel: 0)
+        let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
+        if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
         for failure in failures { FileHandle.standardError.write(Data("self-test failed: \(failure)\n".utf8)) }
         exit(failures.isEmpty ? 0 : 1)
     }

@@ -8,6 +8,24 @@ msgstr ""
 msgid "Quit"
 msgstr "Sair"
 
+msgid "This station uses a format that can't be played."
+msgstr "Esta estação usa um formato que não pode ser reproduzido."
+
+msgid "The connection to the station was lost."
+msgstr "A ligação à estação foi interrompida."
+
+msgid "The station's server refused access ({code})."
+msgstr "O servidor da estação recusou o acesso ({code})."
+
+msgid "The station's server refused access."
+msgstr "O servidor da estação recusou o acesso."
+
+msgid "The station's server returned error {code}."
+msgstr "O servidor da estação devolveu o erro {code}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Não foi possível ligar à estação. Verifique a ligação à Internet."
+
 msgid "Couldn't save the station list."
 msgstr "Não foi possível guardar a lista de estações."
 
