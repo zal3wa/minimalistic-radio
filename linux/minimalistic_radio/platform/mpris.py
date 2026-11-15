@@ -119,8 +119,9 @@ class MprisService:
             self._subscribed = True
             self.controller.subscribe(self._on_change)
         self._last = self._player_properties()
-        self._owner = Gio.bus_own_name_on_connection(
-            self._connection, self._name or bus_name(), Gio.BusNameOwnerFlags.NONE,
+        # The same shared session connection the objects are registered on.
+        self._owner = Gio.bus_own_name(
+            Gio.BusType.SESSION, self._name or bus_name(), Gio.BusNameOwnerFlags.NONE, None,
             lambda connection, name: setattr(self, "acquired", True),
             lambda connection, name: setattr(self, "lost", True))
 
