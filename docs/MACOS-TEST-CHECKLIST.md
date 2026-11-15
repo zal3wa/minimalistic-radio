@@ -4,7 +4,7 @@ For testing a beta on a Mac. Write down what you see next to each step (OK, or w
 
 ## Risk checks (betas 1–3)
 
-The first betas have only the menu next to the clock (a click or a right click on the icon opens it), no window yet. They check the things the rest of the app depends on.
+They check the things the rest of the app depends on. Beta 1 has only the menu next to the clock (a click or a right click on the icon opens it); from beta 2 the radio has its window too (a click opens it, a right click the menu).
 
 1. **Installing.** Download the DMG from the release page and open it. Drag Minimalistic Radio to Applications, then open it from Applications.
    - macOS says it can't check the app: click Done. Open System Settings → Privacy & Security, scroll down to "Minimalistic Radio was blocked…", click **Open Anyway**, and confirm with your password.
@@ -16,7 +16,7 @@ The first betas have only the menu next to the clock (a click or a right click o
    - the ⏯ key on the keyboard stops and starts it;
    - squeezing an AirPods stem (or tapping it) does the same;
    - Control Center (the switches icon in the menu bar) → Now Playing shows the song and the station; ⏭ and ⏮ switch stations.
-4. **Open at login.** Menu → **Open at login** (it gets a check mark). If macOS asks to allow it, allow it. Log out and back in.
+4. **Open at login.** Menu → **Open at login** (from beta 2 on: the window's Settings → **Open at login**). If macOS asks to allow it, allow it. Log out and back in.
    - Expected: the icon is back next to the clock, and nothing plays by itself.
 5. **Shortcuts and Siri.** Open the Shortcuts app and search for "Minimalistic Radio".
    - Expected: actions such as Play, Play Station, Stop, Next Station and Set Volume are listed. Try one.
@@ -28,9 +28,9 @@ The first betas have only the menu next to the clock (a click or a right click o
 7. **The second update (when beta 3 is out).** Update again the same way.
    - Expected: nothing is asked this time.
 
-## The whole app (beta 4 and later)
+## The whole app (beta 2 and later)
 
-From beta 4 the radio has its window. A click on the icon opens it under the icon; a right click opens the menu.
+A click on the icon opens the window under the icon; a right click opens the menu.
 
 1. **The window.** It opens under the icon and closes on a click elsewhere, on Esc, or on another click on the icon. The station list shows the logos; a click on a station plays it; dragging a station moves it; ⋯ → Edit and Remove work.
 2. **Now playing.** The song and its cover show at the bottom; the copy button turns into "Copied" and the song is in the clipboard. The speaker mutes and unmutes; the slider shows its value while dragged; the moon sets the sleep timer, and the radio stops at the end.
