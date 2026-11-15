@@ -173,13 +173,28 @@ def test_every_page_fits_the_window_in_long_languages(language, tmp_path, monkey
             page = window.navigation.get_visible_page()
             needed = page.measure(Gtk.Orientation.HORIZONTAL, -1)[0]
             if needed > 412:
-                too_wide[tag] = (needed, sorted(
-                    ((w.measure(Gtk.Orientation.HORIZONTAL, -1)[0], type(w).__name__,
-                      w.get_text() if isinstance(w, Gtk.Label) else "") for w in descendants(page)
-                     if w.get_visible() and w.measure(Gtk.Orientation.HORIZONTAL, -1)[0] > 250), reverse=True)[:12])
-        assert not too_wide
+                too_wide[tag] = (needed, _widest(page))
+        if too_wide:
+            pytest.fail("\n".join(f"{tag} needs {needed} px:\n" + "\n".join(lines)
+                                  for tag, (needed, lines) in too_wide.items()))
     finally:
         window.destroy()
+
+
+def _widest(widget, depth=0, lines=None):
+    """The widgets a page's width comes from: each visible widget of 100 px or more, indented by depth."""
+    lines = [] if lines is None else lines
+    width = widget.measure(Gtk.Orientation.HORIZONTAL, -1)[0]
+    if widget.get_visible() and width >= 100:
+        text = widget.get_text() if isinstance(widget, Gtk.Label) else ""
+        classes = ".".join(widget.get_css_classes())
+        lines.append(f"{'  ' * depth}{type(widget).__name__}.{classes} {width} {text!r}"
+                     f" margins {widget.get_margin_start()}+{widget.get_margin_end()}")
+        child = widget.get_first_child()
+        while child is not None:
+            _widest(child, depth + 1, lines)
+            child = child.get_next_sibling()
+    return lines
 
 
 def test_statistics_with_too_few_titles(make):
