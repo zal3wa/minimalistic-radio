@@ -1,4 +1,4 @@
-"""The radio itself: what plays, reconnecting, the sleep timer, song history and the station list.
+"""The radio itself: what plays, reconnecting, the sleep timer, song history, statistics and the station list.
 
 A port of the playback side of src/Radio/RadioApp.cs (and the station edits of RadioPanel.cs).
 Everything here runs on one thread, the GLib main loop. It never imports gi: the player, the timers
@@ -10,17 +10,18 @@ import hashlib
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum, Flag, auto
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from . import APP_NAME
 from .core.covers import CoverCache, itunes_search_url, pick_cover
-from .core.models import HistoryEntry, Preferences, Station
+from .core.models import HistoryEntry, Preferences, Station, Statistics
+from .core.statistics import SAVE_SECONDS, Recorder
 from .core.storage import (
-    HISTORY_LIMIT, Paths, load_history, load_preferences, load_stations,
-    save_history, save_preferences, save_stations,
+    HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations,
+    save_history, save_preferences, save_statistics, save_stations,
 )
 from .core.streams import is_web_url, same_stream, stream_key
 from .core.titles import (
@@ -64,6 +65,7 @@ class Change(Flag):
     PREFERENCES = auto()
     SWITCHED = auto()      # the station was changed by a media key or the tray menu
     MESSAGE = auto()       # a notice for the user (the station list couldn't be saved)
+    STATISTICS = auto()    # the listening statistics
 
 
 class AddResult(Enum):
@@ -127,11 +129,13 @@ class RadioController:
         self.sleep_at: datetime | None = None
         self.sleep_minutes: int | None = None
         self.history: list[HistoryEntry] = []
+        self.statistics = Statistics()
         self.corrupt_stations = False
         # Set when the retries ran out on NETWORK errors: network_available() starts again within 10 minutes.
         self.gave_up_on_network_at: datetime | None = None
 
         self._listeners: list[Callable[[Change], None]] = []
+        self._pending = Change(0)                  # sent with the next change (statistics updated meanwhile)
         self._covers = CoverCache()
         self._fade = 100
         self._sleep_timer: object | None = None
@@ -149,6 +153,10 @@ class RadioController:
         self._poll_timer: object | None = None
         self._switch_timer: object | None = None   # set while a switched station waits to connect
         self._polling = False
+        # Listening statistics: the sessions and songs go to statistics.json, the running session every 5 minutes.
+        self._recorder = Recorder(self.statistics)
+        self._statistics_timer: object | None = None
+        self._statistics_unsaved = False
 
     # ---- State ----
 
@@ -174,6 +182,7 @@ class RadioController:
             self._listeners.remove(listener)
 
     def _emit(self, change: Change) -> None:
+        change, self._pending = change | self._pending, Change(0)
         if change:
             for listener in list(self._listeners):
                 listener(change)
@@ -192,6 +201,10 @@ class RadioController:
     def _history_file(self) -> Path:
         return self.paths.data / "history.json"
 
+    @property
+    def _statistics_file(self) -> Path:
+        return self.paths.data / "statistics.json"
+
     def start(self, autostart: bool) -> None:
         """Loads the files and, unless started with the system, plays the last station."""
         try:
@@ -206,11 +219,14 @@ class RadioController:
             self.history = load_history(self._history_file)
         except OSError:
             self.history = []
+        self.statistics = self._load_statistics()
+        self._recorder = Recorder(self.statistics)
         self.volume = self.prefs.volume
         self._prune_covers()
         self.current = next((i for i, s in enumerate(self.stations) if s.url == self.prefs.last_played), -1)
         self.player.set_volume(self.effective_volume)
-        self._emit(Change.STATE | Change.STATIONS | Change.VOLUME | Change.HISTORY | Change.PREFERENCES)
+        self._emit(Change.STATE | Change.STATIONS | Change.VOLUME | Change.HISTORY | Change.PREFERENCES
+                   | Change.STATISTICS)
         if self.current >= 0 and not autostart:
             self.play()
 
@@ -256,6 +272,27 @@ class RadioController:
         except OSError:
             pass
 
+    def _load_statistics(self) -> Statistics:
+        """A file that can't be read is kept as statistics.json.bad, so the next save doesn't lose it."""
+        path = self._statistics_file
+        try:
+            return load_statistics(path)
+        except ValueError:
+            try:
+                os.replace(path, path.with_name(path.name + ".bad"))
+            except OSError:
+                pass
+        except OSError:
+            pass
+        return Statistics()
+
+    def _save_statistics(self) -> None:
+        self._statistics_unsaved = False
+        try:
+            save_statistics(self._statistics_file, self.statistics)
+        except OSError:
+            pass
+
     # ---- Playback ----
 
     def play(self) -> None:
@@ -293,6 +330,7 @@ class RadioController:
 
     def _end_session(self) -> None:
         """Forgets the current session: callbacks still on their way are ignored from now on."""
+        self._listening_ended()
         self._session += 1
         for timer in (self._retry_timer, self._poll_timer, self._switch_timer):
             if timer is not None:
@@ -328,6 +366,7 @@ class RadioController:
             return
         delay = BACKOFF[min(self._attempt, len(BACKOFF) - 1)]
         self._attempt += 1
+        self._listening_ended()   # a reconnect within 2 minutes continues the same statistics session
         self.player.stop()
         self.track = None
         self.cover_path = None
@@ -368,6 +407,7 @@ class RadioController:
         self.message = None
         self.prefs.last_played = self._url
         self._save_preferences()
+        self._listening_started()
         self._emit(Change.STATE)
         if self._kind == "radio357" and not self._polling:
             self._polling = True
@@ -417,12 +457,77 @@ class RadioController:
         self.history.insert(0, HistoryEntry(title, station, self.scheduler.now()))
         del self.history[HISTORY_LIMIT:]
         self._save_history()
+        self._recorder.song(station, title, self._statistics_now())   # saved with the session
+        self._statistics_unsaved = True
+        self._pending |= Change.STATISTICS
         return True
 
     def clear_history(self) -> None:
         self.history.clear()
         self._save_history()
         self._emit(Change.HISTORY)
+
+    # ---- Listening statistics ----
+
+    def _statistics_now(self) -> datetime:
+        return self.scheduler.now().astimezone(timezone.utc)
+
+    def _listening_started(self) -> None:
+        """The sound started: a statistics session begins (or a reconnect continues the last one)."""
+        self._recorder.started(self.station_name or APP_NAME, self._url, self._statistics_now())
+        self._save_statistics()
+        if self._statistics_timer is not None:
+            self.scheduler.cancel(self._statistics_timer)
+        self._statistics_timer = self.scheduler.call_later(SAVE_SECONDS, self._statistics_tick)
+        self._pending |= Change.STATISTICS
+
+    def _listening_ended(self) -> None:
+        """The sound stopped (Stop, another station, the sleep timer, an error, a lost connection, quitting)."""
+        if self._statistics_timer is not None:
+            self.scheduler.cancel(self._statistics_timer)
+            self._statistics_timer = None
+        running = self._recorder.current is not None
+        self._recorder.stopped(self._statistics_now())
+        if running or self._statistics_unsaved:
+            self._save_statistics()
+            self._pending |= Change.STATISTICS
+
+    def _keep_listening(self) -> None:
+        """The running session goes on until now; after the computer slept, a new one starts now."""
+        now = self._statistics_now()
+        if not self._recorder.alive(now) and self.status is Status.PLAYING and self._switch_timer is None:
+            self._recorder.started(self.station_name or APP_NAME, self._url, now)
+
+    def _statistics_tick(self) -> None:
+        """Every 5 minutes while playing: the session is saved, so a crash loses at most that much."""
+        self._statistics_timer = None
+        self._keep_listening()
+        self._save_statistics()
+        if self._recorder.current is not None:
+            self._statistics_timer = self.scheduler.call_later(SAVE_SECONDS, self._statistics_tick)
+        self._emit(Change.STATISTICS)
+
+    def refresh_statistics(self) -> None:
+        """Brings the running session up to now, for the Statistics page."""
+        self._keep_listening()
+
+    def suspending(self) -> None:
+        """The computer is about to sleep: the running session ends here, not when the radio notices it woke up."""
+        if self._recorder.current is not None:
+            self._recorder.suspend(self._statistics_now())
+            self._save_statistics()
+
+    def shutdown(self) -> None:
+        """Quitting: the running session ends now and the statistics are saved."""
+        self._listening_ended()
+        if self._statistics_unsaved:
+            self._save_statistics()
+
+    def clear_statistics(self) -> None:
+        """Deletes the statistics (not the song history); a station that is playing counts again from now."""
+        self._recorder.clear(self._statistics_now())
+        self._save_statistics()
+        self._emit(Change.STATISTICS)
 
     def _still_showing(self, session: int, title: str) -> bool:
         return session == self._session and self.track == title

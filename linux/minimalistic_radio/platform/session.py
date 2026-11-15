@@ -1,4 +1,4 @@
-"""Resume from sleep and the network coming back, passed to the controller.
+"""Going to sleep, resume from sleep and the network coming back, passed to the controller.
 
 Both are debounced: the network often flaps several times when it returns. Resume comes from logind
 (development runs and the Snap); the Flatpak has no access to it, and there the network going down and
@@ -35,7 +35,9 @@ class SessionWatcher:
             self._bus = None   # no system bus (a container): resume is simply not noticed
 
     def _prepare_for_sleep(self, _bus, _sender, _path, _iface, _signal, params) -> None:
-        if not params.unpack()[0]:
+        if params.unpack()[0]:
+            self.controller.suspending()   # at once: the listening statistics end before the sleep
+        else:
             self._later("resume", self.controller.resumed)
 
     def _network_changed(self, _monitor, available: bool) -> None:

@@ -192,11 +192,15 @@ class RadioApplication(Adw.Application):
             self.inhibitor.release()
 
     def _window_closing(self, _window: Gtk.Window) -> bool:
+        """The first time the window is closed (✕, Escape, Ctrl+W): it says that the radio keeps playing."""
         controller = self.controller
-        if (self.tray is None or not self.tray.visible) and not controller.prefs.no_tray_hint_shown:
+        if not controller.prefs.no_tray_hint_shown:
             controller.set_no_tray_hint_shown()
             note = Gio.Notification.new(self._("The radio keeps playing"))
-            note.set_body(self._("Open it again from your apps, or control it from the clock menu."))
+            if self.tray is not None and self.tray.visible:
+                note.set_body(self._("Open it again from the tray icon."))
+            else:
+                note.set_body(self._("Open it again from your apps, or control it from the clock menu."))
             note.set_default_action("app.show-panel")
             self.send_notification("no-tray-hint", note)
         return False   # the window hides, as before
@@ -252,6 +256,7 @@ class RadioApplication(Adw.Application):
         if self.tray is not None:
             self.tray.stop()
         if self.controller is not None:
+            self.controller.shutdown()   # the listening statistics end here and are saved
             self.controller.player.stop()
         Adw.Application.do_shutdown(self)
 

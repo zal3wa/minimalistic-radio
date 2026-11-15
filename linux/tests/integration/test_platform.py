@@ -295,3 +295,23 @@ def test_no_tray_hint_once(setup, monkeypatch):
     app.window.close()
     assert sent == ["no-tray-hint"]
     assert controller.prefs.no_tray_hint_shown
+
+
+def test_the_hint_shows_once_with_a_tray_too(setup, monkeypatch):
+    app, controller = setup()
+    sent = []
+    monkeypatch.setattr(app, "send_notification", lambda nid, n: sent.append((nid, n)))
+
+    class VisibleTray:
+        visible = True
+
+        def stop(self):
+            pass
+
+    app.tray = VisibleTray()
+    app.show_window()
+    app.window.close()
+    app.window.present()
+    app.window.close()
+    assert [nid for nid, _note in sent] == ["no-tray-hint"]
+    assert controller.prefs.no_tray_hint_shown

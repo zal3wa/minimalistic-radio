@@ -23,6 +23,7 @@ python.install_sources(
   'core/directory.py',
   'core/models.py',
   'core/net.py',
+  'core/statistics.py',
   'core/storage.py',
   'core/streams.py',
   'core/titles.py',
