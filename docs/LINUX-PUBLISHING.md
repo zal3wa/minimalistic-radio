@@ -2,7 +2,7 @@
 
 For the owner. You do not need to know Linux: everything below is done in a browser, in a terminal on Windows (Git Bash or PowerShell, plus Ubuntu in WSL once for the Snap Store login), or on GitHub. The order is: Snap Store account, Flathub, then the first beta.
 
-What is automated: when you push a tag that starts with `linux-v`, GitHub Actions builds the Flatpak and the Snap, runs the tests, creates the GitHub release with both files, and (if the Snap secret is set) publishes the Snap to the Snap Store. Nothing here touches the Windows release: Linux releases are never marked "latest".
+What is automated: when you push a tag that starts with `linux-v`, GitHub Actions builds the Flatpak and the Snap, runs the tests, publishes the Flatpak to the radio's own signed Flatpak repository (section 4, where testers get their updates), creates the GitHub release with both files, and (if the Snap secret is set) publishes the Snap to the Snap Store. Nothing here touches the Windows release: Linux releases are never marked "latest".
 
 ## 1. Snap Store (Ubuntu's App Center)
 
@@ -65,7 +65,7 @@ When a store is live, edit `README.md`: remove the `<!-- -->` around that store'
 
 Do this on the merged `main`, with the version already right: `VERSION` in `linux/minimalistic_radio/__init__.py` and the newest `<release>` in `linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in` must both say `1.0.0`. The release job stops with an error if they differ from the tag.
 
-Optional rehearsal, which publishes nothing: GitHub, Actions, the "Linux" workflow, Run workflow, choose branch `main`, tag `linux-v1.0.0-beta.1`, tick `dry_run`. It does every check and prints what it would do.
+Optional rehearsal, which publishes nothing: GitHub, Actions, the "Linux" workflow, Run workflow, choose branch `main`, tag `linux-v1.0.0-beta.1`, tick `dry_run`. It does every check, signs the Flatpak repository without publishing it, and prints what it would do.
 
 Then the real thing:
 
@@ -76,14 +76,47 @@ git tag -a linux-v1.0.0-beta.1 -m "First Linux beta: please test it with docs/LI
 git push origin linux-v1.0.0-beta.1
 ```
 
-The tag message becomes the text of the release, so write it as you want people to read it. Watch the run under Actions. When it finishes, the release appears under Releases, marked "pre-release", with `minimalistic-radio.flatpak` and the `.snap` attached. If the secret is set, the Snap is also in the Snap Store `beta` channel.
+The tag message becomes the text of the release, so write it as you want people to read it. Watch the run under Actions. When it finishes, the new version is in the Flatpak repository (testers who installed it get it as an update), and the release appears under Releases, marked "pre-release", with `minimalistic-radio.flatpak` and the `.snap` attached. If the secret is set, the Snap is also in the Snap Store `beta` channel.
 
-Send testers the release link and `docs/LINUX-TEST-CHECKLIST.md`. For the full release use `linux-v1.0.0`; the Snap then goes to `stable`.
+Send new testers the install link (<https://zal3wa.github.io/minimalistic-radio/>) and `docs/LINUX-TEST-CHECKLIST.md`. For the full release use `linux-v1.0.0`; the Snap then goes to `stable`. The Flatpak repository has one branch, `stable`, for betas and full releases alike.
 
 ### If the run is red
 
 - **A check job is red and the release job did not run** (for example the AAC or HLS check, which play live stations, or a rare GStreamer crash in the player tests): open the run, click "Re-run failed jobs". That is safe. The release job waits for the checks and then runs normally.
 - **The release job is red at "Publish to the Snap Store", and the message says the upload needs a manual review** (possible for the first upload of a new snap): do not re-run. The GitHub release is there already. Wait for the Snap Store's e-mail that the review passed, then open <https://snapcraft.io/minimalistic-radio/releases> and release the uploaded revision to `beta` (or to `stable` for a full release).
 - **The release job is red for another reason** (a wrong or expired `SNAPCRAFT_STORE_CREDENTIALS` secret, a Snap Store outage, a network error): fix the secret if needed (section 1, steps 5 and 6), then click "Re-run failed jobs". The release step sees that the GitHub release exists, only replaces its two files, and the Snap Store step runs again.
+- **The repo, deploy or verify job is red** (section 4): the release job waits for them, so there is no release yet. If `verify` is red, the new version is already published; it is usually a download from Flathub that failed. Click "Re-run failed jobs" in both cases. If `repo` says the signing key does not match, see section 4.
 
 If a tag was wrong, delete the release on GitHub (Releases, the release, Delete), then run `git push origin :refs/tags/linux-v1.0.0-beta.1` and `git tag -d linux-v1.0.0-beta.1`, and make a new one.
+
+## 4. The Flatpak repository (automatic updates)
+
+Testers install the radio once, from <https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref>, and every later version reaches them as an update: in GNOME Software or Discover, with `flatpak update`, and as the green arrow in the radio. The repository is a signed Flatpak repository on GitHub Pages of this GitHub repository. There is nothing to pay and no server to run.
+
+How it is published: for each `linux-v...` tag, the workflow signs the new build with the repository's GPG key, adds it to the repository on branch `stable` (the previous version stays, with a small download from it to the new one), deploys GitHub Pages, and then installs the radio from there on a clean Ubuntu to check it. The `.flatpak` in the GitHub release comes from the same signed repository and brings it along as its remote, so a bundle install gets updates too.
+
+To publish `main` without a release (for example after a failed deploy): Actions, the "Linux" workflow, Run workflow, branch `main`, tick `publish_repo`. It signs, deploys and checks, and creates no GitHub release.
+
+The key:
+
+- Two GitHub secrets: `FLATPAK_GPG_PRIVATE_KEY` (the private key, ASCII-armoured, no passphrase) and `FLATPAK_GPG_KEY_ID` (`2722144004B0F37F`).
+- The public key is `linux/flatpak/minimalistic-radio.gpg`. It is public by design: the workflow puts it into the `.flatpakref`, the `.flatpakrepo` and the release `.flatpak`, and stops if the secret is not the matching private key.
+- The backup of the private key is in your password manager. GitHub secrets cannot be read back, so keep that copy.
+- GitHub Pages: Settings, Pages, Source "GitHub Actions". The `github-pages` environment (Settings, Environments) allows deploys from `main` and from `linux-v*` tags.
+
+If the key is lost (or leaked): make a new key (ask Claude), put it into both secrets, replace `linux/flatpak/minimalistic-radio.gpg`, and publish. Testers' computers trust only the old key, so they refuse versions signed with the new one. Each tester removes the radio and its remote, then installs it again from the link; the stations and settings stay:
+
+```
+flatpak uninstall io.github.zal3wa.minimalistic-radio
+flatpak remote-delete minimalistic-radio
+flatpak install https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref
+```
+
+(Someone who installed the release `.flatpak` instead has a remote with another name: `flatpak remotes` shows it.)
+
+Moving to Flathub later:
+
+1. Get the app on Flathub (section 2). Flathub builds it itself and signs it with its own key.
+2. An installed Flatpak follows the remote it came from, so testers do not move by themselves. Publish one last version to this repository marked end of life, with a message such as "Minimalistic Radio is now on Flathub: install it from there". Flatpak and GNOME Software show that message. (Ask Claude to add this to the workflow: it is `flatpak build-commit-from --end-of-life="..."`.)
+3. Testers uninstall the radio and install it from Flathub. Their stations and settings stay, because the app ID is the same.
+4. Point the README to Flathub instead of the `.flatpakref`. Keep GitHub Pages up for a few months, then remove the repo, deploy and verify jobs from the workflow.

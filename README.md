@@ -76,9 +76,15 @@ The same radio for Linux, made with GTK and libadwaita: a tray icon (where the d
 <a href="https://snapcraft.io/minimalistic-radio"><img src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" height="56" alt="Get it from the Snap Store"></a>
 -->
 
-Until the stores are live: open the [releases page](https://github.com/zal3wa/minimalistic-radio/releases) and take the `.flatpak` or the `.snap` from the newest `linux-v...` release. Double-click it to open it in GNOME Software, Discover or App Center. For the `.snap` you can also run `sudo snap install --dangerous ./minimalistic-radio_*.snap`.
+**Install:** open [minimalistic-radio.flatpakref](https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref). It opens in GNOME Software or Discover: one click on Install. Or in a terminal:
 
-Both downloads are under 1 MB: the `.flatpak` is about 0.22 MB and the `.snap` about 0.68 MB. The GNOME platform they run on is installed once and shared with other apps. The Flatpak plays more formats (it has FFmpeg). The Snap plays MP3, AAC and HE-AAC, Ogg/Opus and FLAC, including HLS streams; rare formats such as WMA play only in the Flatpak.
+```
+flatpak install https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref
+```
+
+Updates are automatic: they come through GNOME Software or Discover (or `flatpak update`), and the radio shows a green arrow when a new version is ready. On Ubuntu, [enable Flatpak](https://flathub.org/setup/Ubuntu) first; the Snap Store comes later. The `.snap` on the [releases page](https://github.com/zal3wa/minimalistic-radio/releases) is for testing only and does not update.
+
+The app is under 1 MB. The GNOME platform it runs on is installed once and shared with other apps. The Flatpak plays more formats (it has FFmpeg). The Snap plays MP3, AAC and HE-AAC, Ogg/Opus and FLAC, including HLS streams; rare formats such as WMA play only in the Flatpak.
 
 Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLIST.md).
 
@@ -148,7 +154,7 @@ The radio collects no personal data: no accounts, no telemetry, no ads. It only 
 
 Nothing else is sent. Like any internet connection, these servers see your IP address.
 
-The Linux version contacts the same servers, except GitHub: it never contacts GitHub for updates. Updates come from Flathub or the Snap Store, through your system's software center (the Flatpak also shows an update arrow, asked of Flatpak itself).
+The Linux version contacts the same servers, except GitHub: the radio itself never checks for updates. Flatpak and your software center get them from the radio's Flatpak repository at `zal3wa.github.io` (hosted by GitHub Pages), or from the Snap Store (the Flatpak also shows an update arrow, asked of Flatpak itself).
 
 Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio` on Windows, and in your user folders on Linux (inside the app's own folder for a Flatpak or a Snap).
 
@@ -160,7 +166,7 @@ There's no installer. The radio adds a Start menu shortcut, so Windows shows its
 1. Settings → turn off *Start with Windows*, then *Quit*.
 2. Delete `Minimalistic-Radio.exe`, the folder `%LOCALAPPDATA%\Minimalistic Radio` and the shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Minimalistic Radio.lnk`.
 
-**Linux.** Remove it in GNOME Software, Discover or App Center. The Flatpak asks whether to delete its data too (settings, station list, history); tick it to remove everything.
+**Linux.** Remove it in GNOME Software, Discover or App Center. The Flatpak asks whether to delete its data too (settings, station list, history); tick it to remove everything. To remove the radio's Flatpak repository as well, run `flatpak remote-delete minimalistic-radio`.
 
 ## License
 

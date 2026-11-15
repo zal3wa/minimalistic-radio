@@ -1,15 +1,21 @@
 # Linux beta test checklist
 
-Thank you for testing. You need one Linux computer, about 30 minutes, and a few stations. Pick the row that matches your system, install the radio as shown, then go through the checks. Tick what works and note what does not.
+Thank you for testing. You need one Linux computer, about 30 minutes, and a few stations. Install the radio once, as below, then go through the checks. Tick what works and note what does not.
 
-| System | Install | Notes |
-| --- | --- | --- |
-| Ubuntu (24.04 or newer) | the `.snap` from the newest `linux-v...` [release](https://github.com/zal3wa/minimalistic-radio/releases): `sudo snap install --dangerous ./minimalistic-radio_*.snap` (or open it in App Center) | The Snap plays MP3, AAC, Ogg/Opus, FLAC and HLS. Rare formats such as WMA play only in the Flatpak. |
-| Fedora Workstation (GNOME) | the `.flatpak` from the same release, opened in GNOME Software | GNOME shows no tray icon by default. Check that the window, the media keys and the clock-menu player still work. |
-| Fedora KDE or Kubuntu | the `.flatpak`, opened in Discover | KDE has a tray. |
-| Linux Mint (Cinnamon) | the `.flatpak`, opened in Software Manager | Cinnamon has a tray too. |
+**Install:** open [minimalistic-radio.flatpakref](https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref) and click Install in GNOME Software, Discover or your software manager. If the link does not open there, run this in a terminal:
 
-If a double click does nothing, run `flatpak install --user ./minimalistic-radio.flatpak` in a terminal.
+```
+flatpak install https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref
+```
+
+You install it once: every later beta arrives as an update.
+
+| System | Notes |
+| --- | --- |
+| Ubuntu (24.04 or newer) | Enable Flatpak first: [flathub.org/setup/Ubuntu](https://flathub.org/setup/Ubuntu). The `.snap` on the [releases page](https://github.com/zal3wa/minimalistic-radio/releases) is for testing the Snap only (`sudo snap install --dangerous ./minimalistic-radio_*.snap`): it does not update, and it plays MP3, AAC, Ogg/Opus, FLAC and HLS but not rare formats such as WMA. |
+| Fedora Workstation (GNOME) | GNOME shows no tray icon by default. Check that the window, the media keys and the clock-menu player still work. |
+| Fedora KDE or Kubuntu | KDE has a tray. |
+| Linux Mint (Cinnamon) | Cinnamon has a tray too. |
 
 ## Checks
 
@@ -37,6 +43,7 @@ Do each on your system. Write "ok", "broken" or "not applicable".
 20. Second launch: with the radio running and its window closed, start it again from the application menu. The same window comes back, and no second radio starts (only one tray icon, only one stream in the sound settings).
 21. Copy the song from the tray: while a song title shows, click it in the tray menu. The window opens; paste somewhere: you get the title. On Wayland the window may say "Press Copy to copy the song" instead: press Copy, then paste. Report it if the window says "Copied" but the paste is wrong or empty.
 22. MP3 and Ogg/Opus: in the search, add one station listed as MP3 and one listed as OGG or OPUS. Both play, with song titles if the station sends them.
+23. Update: when the next beta is out (it shows on the [releases page](https://github.com/zal3wa/minimalistic-radio/releases)), it arrives as an update without a new download: the radio shows a green arrow, or GNOME Software or Discover lists it under Updates. Install it there (or run `flatpak update`), restart the radio, and check that your stations and settings are still there.
 
 ## How to report
 
@@ -44,6 +51,6 @@ Open a [new GitHub issue](https://github.com/zal3wa/minimalistic-radio/issues/ne
 
 - your system and desktop (for example "Fedora 43 KDE, Wayland"), and Flatpak or Snap,
 - the number of the check that failed and what you saw instead,
-- a screenshot if it helps. A screenshot of the tray menu on your desktop is welcome too: it will go into the README.
+- a screenshot if it helps.
 
 If everything worked, a short "all ok on <your system>" is just as useful.
