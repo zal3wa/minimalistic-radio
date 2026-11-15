@@ -46,6 +46,7 @@ extension AppDelegate {
         setUp(paths: paths, player: SilentPlayer(), fetch: Network.fetchJSON, fetchFile: Network.fetchFile)
         panel.screenshotMode = true
         panel.model.showsUpdatesAlways = true                          // Settings as in a release
+        panel.model.picturesMode = true                                // as installed: no Applications note
         panel.model.sampleStatistics = Self.sampleStatistics(now: now)  // in memory only
         controller.start(autostart: true)
         controller.select(Self.shotPlaying)

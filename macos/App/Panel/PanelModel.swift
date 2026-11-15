@@ -39,6 +39,9 @@ final class PanelModel: ObservableObject {
     var sampleStatistics: StatisticsLog?
     var sampleUpdate: String?
     var showsUpdatesAlways = false
+    /// The pictures show what an installed copy shows: no "Move … to Applications" note (the runner doesn't run the
+    /// app from Applications).
+    var picturesMode = false
     /// "Link copied" over the stations, for a moment after Share.
     @Published private(set) var linkCopied = false
     private var linkCopiedTimer: DispatchWorkItem?

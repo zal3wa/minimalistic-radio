@@ -9,7 +9,7 @@ struct PanelView: View {
         VStack(spacing: 0) {
             HeaderView(model: model)
             PanelDivider()
-            if !inApplications {
+            if !inApplications && !model.picturesMode {
                 Text(L("Move Minimalistic Radio to Applications to get updates."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
