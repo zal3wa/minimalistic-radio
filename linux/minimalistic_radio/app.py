@@ -146,7 +146,9 @@ class RadioApplication(Adw.Application):
         if not change & Change.STATE:
             return
         if self.controller.active and not self._inhibit_cookie:
-            self._inhibit_cookie = self.inhibit(self.window, Gtk.ApplicationInhibitFlags.SUSPEND,
+            # A hidden window (the radio plays on in the background) crashes GTK here: only a shown one is named.
+            window = self.window if self.window is not None and self.window.is_visible() else None
+            self._inhibit_cookie = self.inhibit(window, Gtk.ApplicationInhibitFlags.SUSPEND,
                                                 self._("Playing internet radio"))
         elif not self.controller.active and self._inhibit_cookie:
             self.uninhibit(self._inhibit_cookie)
