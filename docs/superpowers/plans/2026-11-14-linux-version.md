@@ -642,7 +642,7 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - Produces: `StationDialog(parent, station: Station | None, on_save: Callable[[Station], AddResult])`.
 
 - Also implements station suggestions per `docs/superpowers/specs/2026-11-14-station-suggestions-design.md` (binding; the Recommended stationuuids, clean-up rules, spam rule and strings are there). On Linux nothing is filtered by codec.
-  - Core additions in `core/directory.py`, pure, with tests in `tests/unit/test_directory.py`: `RECOMMENDED_IDS`, `recommended_url(server)`, `popular_url(server, country: str | None)`, `looks_like_spam(name) -> bool`, `name_key(name) -> str` (lower case, whole word "radio" removed, letters and digits only), `clean_popular(items, recommended, limit=15)`, `country_from_locale(env) -> str | None` (from `LC_ALL`/`LC_MESSAGES`/`LANG`: `pl_PL.UTF-8` → `PL`; `C`/`POSIX`/missing → `None`), and `suggestions(country, fetch) -> tuple[list[DirectoryStation], list[DirectoryStation]]`.
+  - Core additions in `core/directory.py`, pure, with tests in `tests/unit/test_directory.py`: `RECOMMENDED_IDS`, `recommended_url(server)`, `popular_url(server, country: str | None)`, `looks_like_spam(name) -> bool`, `name_key(name) -> str` (lower case, whole word "radio" removed, letters and digits only), `clean_popular(items, recommended, limit=15)`, `country_from_locale(env) -> str | None` (from `LC_ALL`/`LC_MESSAGES`/`LANG`: `pl_PL.UTF-8` → `PL`; `C`/`POSIX`/missing → `None`), `country_for(language: str, system_country: str | None) -> str | None` (section 1 of `docs/superpowers/specs/2026-11-15-languages-and-country-design.md`: the radio's language decides, using its table; unit cases (pl, US)→PL, (pl, None)→PL, (es, MX)→MX, (es, US)→ES, (en, US)→US, (en, None)→None, (de, AT)→AT, (pt, BR)→BR), and `suggestions(country, fetch) -> tuple[list[DirectoryStation], list[DirectoryStation]]`.
   - Unit tests use the Windows self-test cases:
     - spam: "-- # TOP 100 CHARTS ---", "0R - LO-FI || LoFi, Chill, Study, Hip Hop, Relax", "*Chill", "Lofi || Chill", "Hits #1", "Top ***", "a, b, c, d, e"
     - not spam: "RMF FM", "102.7 KIIS FM Los Angeles", "Radio ZET Chilli", "Rock, Pop, Jazz, Blues"
@@ -681,7 +681,7 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - [ ] **Step 1: Write the failing tests** [Linux].
   - `test_history_rows`: each row shows the title and "Station · HH:MM". Its menu has "Copy", "Search on Spotify" and "Search on YouTube"; the launched URIs are `https://open.spotify.com/search/<quoted title>` and `https://www.youtube.com/results?search_query=<quoted title>` (check through a patched `Gtk.UriLauncher`). "Clear history" empties it. With no history, the text "Songs the radio plays will show up here." shows.
   - `test_settings_rows`:
-    - language combo options "Same as system", "Polski", "English"; choosing one saves it and rebuilds the window on the settings page
+    - language combo options "Same as system", "Polski", "English" (Task 16b adds the other seven); choosing one saves it and rebuilds the window on the settings page
     - "Show station changes" switch bound to the preference
     - Export writes the Windows-shaped file; Import reports "Stations added: N." or the errors from Task 5
     - "About" opens `Adw.AboutDialog` with the version, MIT, the GitHub link and the credit "Icons: Lucide (ISC)"
@@ -775,6 +775,26 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - [ ] **Step 3: Implement.** Active only when `/.flatpak-info` exists. `--updated` shows the toast "Updated to version {VERSION}." once the window opens, or nothing when started hidden.
 - [ ] **Step 4: Run them again.** Expected: PASS.
 - [ ] **Step 5: Commit.** `git commit -m "Linux: updates via Flathub"`
+
+---
+
+### Task 16b: Translations into seven more languages
+
+**Files:**
+- Create: `linux/po/de.po`, `uk.po`, `cs.po`, `es.po`, `fr.po`, `it.po`, `pt.po`
+- Modify: `linux/po/LINGUAS`, `linux/minimalistic_radio/i18n.py`, `ui/settings_page.py` (language combo), `linux/data/*.desktop.in`/`*.metainfo.xml.in` (translated through the po files)
+- Test: `linux/tests/unit/test_i18n.py`, `linux/tests/integration/test_ui_pages.py`
+
+Implements section 2 of `docs/superpowers/specs/2026-11-15-languages-and-country-design.md` for Linux (binding).
+
+- [ ] **Step 1: Write the failing tests.**
+  - `test_every_catalog_complete`: every msgid in `minimalistic-radio.pot` (regenerated) has a non-empty msgstr in every `.po`. Missing ones are listed in the failure.
+  - `test_language_combo_native_names`: the options are "Same as system", Polski, English, Deutsch, Українська, Čeština, Español, Français, Italiano, Português.
+  - `test_auto_language_picks_first_supported`: `languages_for("auto", ["uk_UA", "en"])` gives Ukrainian; `["ru_RU", "de_DE"]` gives German; `["ru_RU"]` gives English.
+- [ ] **Step 2: Run them and see them fail.**
+- [ ] **Step 3: Translate.** Natural, concise GNOME terminology in each language. Strings shared with the Windows app use the Windows translations in `src/Lang/*.po` (on main, branch i18n, once merged) wherever they exist, so both platforms say the same thing.
+- [ ] **Step 4: Run them again; `meson test` passes.** Check the window in German and Ukrainian in a screenshot for truncation.
+- [ ] **Step 5: Commit.** `git commit -m "Linux: seven more languages"`
 
 ---
 
