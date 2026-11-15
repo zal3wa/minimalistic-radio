@@ -26,7 +26,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gnome-shell gnome-shell-extension-appindicator \
             yaru-theme-gnome-shell yaru-theme-gtk yaru-theme-icon fonts-ubuntu fonts-cantarell ubuntu-wallpapers \
-            xwayland xvfb dconf-service dconf-cli libglib2.0-bin libgl1-mesa-dri libegl-mesa0
+            xwayland xvfb dconf-service dconf-cli libglib2.0-bin libgl1-mesa-dri libegl-mesa0 pulseaudio
           gnome-shell --version
           ls /usr/share/gnome-shell/modes /usr/share/gnome-shell/extensions
           cat /usr/share/gnome-shell/modes/ubuntu.json || true

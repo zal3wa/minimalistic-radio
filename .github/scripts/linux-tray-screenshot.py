@@ -63,6 +63,15 @@ const button = Object.values(Main.panel.statusArea).find(b => b && b._indicator 
     (b._indicator.id === '{APP_ID}' || b._indicator.title === '{APP_NAME}'));
 const labels = m => m._getMenuItems().map(i => (i.label && i.label.text) || '-');
 """
+# Hides the indicator GNOME Shell shows while --unsafe-mode is on; returns the icons left in the system area.
+HIDE_UNSAFE_MODE = """(() => {
+    const icons = [];
+    const walk = actor => { for (const child of actor.get_children()) {
+        if (child.icon_name === 'channel-insecure-symbolic') child.visible = false;
+        else if (child.icon_name && child.visible) icons.push(child.icon_name);
+        walk(child); } };
+    walk(Main.panel.statusArea.quickSettings);
+    return icons; })()"""
 
 
 def log(*parts: object) -> None:
@@ -247,6 +256,11 @@ class Desktop:
         wait("the AppIndicator extension's StatusNotifierWatcher",
              lambda: self.alive() and has_owner("org.kde.StatusNotifierWatcher"), 30)
 
+    def hide_unsafe_mode(self) -> None:
+        """The warning icon of --unsafe-mode belongs to this way of taking the pictures, not to the desktop. (Done
+        late: the shell adds its system icons a moment after it starts.)"""
+        log("  unsafe-mode icon hidden; system icons left:", info(HIDE_UNSAFE_MODE))
+
     def screenshot(self, path: Path) -> Path:
         ok, used = call("org.gnome.Shell.Screenshot", "/org/gnome/Shell/Screenshot", "org.gnome.Shell.Screenshot",
                         "Screenshot", GLib.Variant("(bbs)", (False, False, str(path))), "(bs)", 30000)
@@ -258,7 +272,8 @@ class Desktop:
 
     def start_radio(self) -> None:
         write_radio_config()
-        env = dict(os.environ, GTK_A11Y="none")
+        # No settings portal here: libadwaita reads light or dark from GSettings (what the portal would pass on).
+        env = dict(os.environ, GTK_A11Y="none", ADW_DISABLE_PORTAL="1")
         if self.display == "wayland":
             env.pop("DISPLAY", None)
             env.update(GDK_BACKEND="wayland", WAYLAND_DISPLAY=WAYLAND_SOCKET)
@@ -276,7 +291,8 @@ class Desktop:
         def shown():
             self.alive()
             seen.update(shell(state))
-            return seen if seen.get("found") and seen["mapped"] and seen["w"] > 0 and seen["items"] else None
+            # Before its first layout the button has no size yet (NaN, null in JSON).
+            return seen if seen.get("found") and seen["mapped"] and (seen["w"] or 0) > 0 and seen["items"] else None
 
         try:
             wait("the radio's icon in the top bar", shown, 60)
@@ -334,6 +350,7 @@ def take(look: str, display: str, out: Path, logs: Path) -> None:
         desktop.start_shell()
         desktop.start_radio()
         desktop.wait_for_icon()
+        desktop.hide_unsafe_mode()
         desktop.screenshot(logs / f"{look}-{display}-icon-full.png")
         desktop.shoot_menu(out)
         try:
@@ -352,12 +369,45 @@ def take(look: str, display: str, out: Path, logs: Path) -> None:
         desktop.stop()
 
 
+def start_sound(logs: Path) -> subprocess.Popen | None:
+    """A sound server without a sound card (PulseAudio's null sink), as a desktop has one: the top bar shows its
+    volume icon. Optional."""
+    try:
+        output = open(logs / "pulseaudio.log", "w")
+        server = subprocess.Popen(["pulseaudio", "--daemonize=no", "--exit-idle-time=-1", "--log-target=stderr"],
+                                  stdout=output, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+    except OSError as error:
+        log(f"no sound server: {error}")
+        return None
+    time.sleep(2)
+    log("sound server:", "running" if server.poll() is None else f"exited with {server.returncode}")
+    return server
+
+
 def main() -> int:
     out, logs = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
     out.mkdir(parents=True, exist_ok=True)
     logs.mkdir(parents=True, exist_ok=True)
     log("session modes:", sorted(p.name for p in MODES.glob("*.json")))
     log("extensions:", sorted(p.name for p in Path("/usr/share/gnome-shell/extensions").glob("*")))
+    sound = start_sound(logs)
+    try:
+        used = take_all(out, logs)
+    finally:
+        if sound is not None and sound.poll() is None:
+            sound.terminate()
+            sound.wait(10)
+    summary = "\n".join(f"- {look}: {used.get(look, 'FAILED')}" for look in LOOKS)
+    log("Display server used:\n" + summary)
+    (logs / "summary.txt").write_text(summary + "\n", encoding="utf-8")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:
+            file.write("### Tray screenshots\n" + summary + "\n")
+    return 0 if len(used) == len(LOOKS) else 1
+
+
+def take_all(out: Path, logs: Path) -> dict[str, str]:
+    """Each look's pictures; returns the display server each look used."""
     displays = ["wayland", "x11"]
     used: dict[str, str] = {}
     for look in LOOKS:
@@ -374,13 +424,7 @@ def main() -> int:
             used[look] = display
             displays = [display]   # the next look goes straight to what worked
             break
-    summary = "\n".join(f"- {look}: {used.get(look, 'FAILED')}" for look in LOOKS)
-    log("Display server used:\n" + summary)
-    (logs / "summary.txt").write_text(summary + "\n", encoding="utf-8")
-    if os.environ.get("GITHUB_STEP_SUMMARY"):
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as file:
-            file.write("### Tray screenshots\n" + summary + "\n")
-    return 0 if len(used) == len(LOOKS) else 1
+    return used
 
 
 if __name__ == "__main__":
