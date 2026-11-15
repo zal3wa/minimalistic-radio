@@ -1,14 +1,18 @@
 #if SELFTEST
 // Only in a build made with -p:SelfTest=true (docs/BUILDING.md): the README pictures and the --preview ones.
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
+using static Lang;
 using Path = System.Windows.Shapes.Path;
 using Rectangle = System.Windows.Shapes.Rectangle;
 
@@ -87,6 +91,80 @@ internal sealed partial class Radio
             SavePng(Snapshot((FrameworkElement)visual, VisualTreeHelper.GetDpi(visual).DpiScaleX), name, dark);
         }
         Theme.Apply(app);
+    }
+
+    // The landing page's animated demo (minimalistic-radio.github.io), made only of real pictures: the stations page
+    // playing → History → a song's ⋯ menu with "Search on Spotify" under the pointer → Statistics → ← back. Each frame
+    // is a shot-demo-*.png like the other README pictures (light and dark, the same size and shadow margin), and
+    // MinimalisticRadio-shot-demo-hotspots.json says where the pointer clicks in each: the centre of the element, in
+    // that picture's own pixels, measured on the element itself.
+    private async Task TakeDemoShots()
+    {
+        var frames = new List<string>();
+        double scale = 1;
+        Point Centre(FrameworkElement element, Point offset = default)
+        {
+            Point centre = element.TranslatePoint(new Point(element.ActualWidth / 2, element.ActualHeight / 2), element is MenuItem ? (UIElement)ItemsControl.ItemsControlFromItemContainer(element) : playerPanel);
+            return new Point(Math.Round((centre.X + offset.X) * scale), Math.Round((centre.Y + offset.Y) * scale));
+        }
+        string Spot(string name, Point at) => string.Format(CultureInfo.InvariantCulture, "\"{0}\": [{1}, {2}]", name, at.X, at.Y);
+        void Frame(string name, params string[] spots) => frames.Add(string.Format(CultureInfo.InvariantCulture,
+            "    \"{0}\": {{ \"file\": \"MinimalisticRadio-shot-demo-{0}-light.png\", \"width\": {1}, \"height\": {2}, {3} }}", name,
+            Math.Ceiling(playerPanel.ActualWidth * scale), Math.Ceiling(playerPanel.ActualHeight * scale), string.Join(", ", spots)));
+        Button Find(Func<Button, bool> match)
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<Button>().First(button => button.IsVisible && match(button));
+        }
+        bool Says(Button button, string text) => Descendants(button).OfType<TextBlock>().Any(block => block.Text == text);
+        void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+
+        FillSampleStatistics();   // a year of listening, in memory only, so the Statistics frame has something to show
+        OpenPlayer();
+        await Task.Delay(3000);   // logos and the cover arrive over the network
+        scale = VisualTreeHelper.GetDpi(playerPanel).DpiScaleX;
+
+        // The stations page, playing; the pointer goes to [History].
+        Button history = Find(button => Says(button, L("History")));
+        await SavePreview(playerPanel, "shot-demo-stations");
+        Frame("stations", Spot("history", Centre(history)));
+
+        // Song history; the pointer goes to the first song's ⋯, and later to [Statistics].
+        Click(history);
+        await Task.Delay(2000);
+        Button more = Find(button => button.ToolTip as string == L("More"));
+        Button statistics = Find(button => Says(button, L("Statistics")));
+        await SavePreview(playerPanel, "shot-demo-history");
+        Frame("history", Spot("more", Centre(more)), Spot("statistics", Centre(statistics)));
+
+        // Its menu open, "Search on Spotify" highlighted as under the pointer; the menu has to be inside the picture.
+        var menu = (ContextMenu)more.Tag;
+        Click(more);
+        await Task.Delay(500);
+        var spotify = menu.Items.OfType<MenuItem>().First(item => item.Header as string == L("Search on Spotify"));
+        spotify.Focus();
+        if (!spotify.IsHighlighted)
+            typeof(MenuItem).GetProperty("IsHighlighted").SetValue(spotify, true);   // as the pointer would
+        await Task.Delay(300);
+        Point origin = playerPanel.PointToScreen(new Point()), at = menu.PointToScreen(new Point());
+        var offset = new Point((at.X - origin.X) / scale, (at.Y - origin.Y) / scale);
+        if (offset.X < 0 || offset.Y < 0 || offset.X + menu.ActualWidth > playerPanel.ActualWidth || offset.Y + menu.ActualHeight > playerPanel.ActualHeight)
+            throw new InvalidOperationException("Menu utworu wychodzi poza obrazek demo.");
+        await SaveWithMenu(playerPanel, menu, "shot-demo-history-menu");
+        Frame("history-menu", Spot("spotify", Centre(spotify, offset)));
+        menu.IsOpen = false;
+        await Task.Delay(300);
+
+        // Statistics (this month); the pointer goes to ←, which leads back to Song history and from there to the stations.
+        Click(statistics);
+        await Task.Delay(2000);
+        Button back = Find(button => button.ToolTip as string == L("Back"));
+        await SavePreview(playerPanel, "shot-demo-statistics");
+        Frame("statistics", Spot("back", Centre(back)));
+        playerPanel.Close();
+
+        File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "MinimalisticRadio-shot-demo-hotspots.json"),
+            "{\n  \"scale\": " + scale.ToString(CultureInfo.InvariantCulture) + ",\n  \"frames\": {\n" + string.Join(",\n", frames) + "\n  }\n}\n");
     }
 
     // The panel with one of its menus open over it (a menu is a window of its own, so it is drawn on where it is).

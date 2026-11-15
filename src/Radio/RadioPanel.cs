@@ -1047,6 +1047,9 @@ internal sealed partial class Radio
                     () => OpenWebPage("https://www.youtube.com/results?search_query=" + query)));
                 Hold(menu);
                 more.Click += (_, _) => menu.IsOpen = true;
+#if SELFTEST
+                more.Tag = menu;   // the README pictures read the menu from here
+#endif
                 var row = (Grid)Columns((badge, Auto), (text, Star), (more, Auto));
                 row.MinHeight = 50;
                 row.Margin = new Thickness(10, 0, 4, 0);

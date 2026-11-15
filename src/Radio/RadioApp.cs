@@ -556,6 +556,7 @@ internal sealed partial class Radio
                 await Task.Delay(1000);
                 await SavePreview(playerPanel, "shot-shared");
                 playerPanel.Close();
+                await TakeDemoShots();
                 ShowStationPopup();
                 await Task.Delay(2000);
                 await SavePreview(osd, "shot-card");
