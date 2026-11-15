@@ -30,6 +30,7 @@ python.install_sources(
 python.install_sources(
   'platform/__init__.py',
   'platform/menu_model.py',
+  'platform/mpris.py',
   subdir: 'minimalistic_radio/platform',
 )
 
