@@ -245,34 +245,31 @@ extension AppDelegate {
             return run.terminationStatus == 0
         }
         guard capturePanel(before) else { return nil }
+
+        // First where Search on Spotify's row comes when the menu opens under the ⋯; then the menu opened with that
+        // row at that place, which macOS shows highlighted, as under the pointer (moving the pointer alone doesn't).
+        var row: CGRect?
+        showMenu(menu, positioning: nil, at: place, in: content, closingAfter: 0.8) { menuWindow in
+            row = self.menuItemRow(spotify.title, in: menuWindow)
+        }
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        guard let row else {
+            print("demo: \(spotify.title) wasn't found in the open menu")
+            return nil
+        }
+        let rowPlace = content.convert(window.convertPoint(fromScreen: CGPoint(x: row.minX, y: row.maxY)), from: nil)
         var menuFrame: CGRect?
         var itemCentre: CGPoint?
         var captured = false
-        let point = Timer(timeInterval: 0.5, repeats: false) { _ in
-            MainActor.assumeIsolated {
-                guard let menuWindow = NSApp.windows.first(where: {
-                    $0.isVisible && $0 !== window && String(describing: type(of: $0)).contains("Menu")
-                }) else { return }
-                menuFrame = menuWindow.frame
-                let centre = self.menuItemCentre(spotify.title, in: menuWindow) ?? {
-                    // Not found by its text: three equal rows inside 5 pt of padding.
-                    print("demo: \(spotify.title) found by position, not by its view")
-                    let frame = menuWindow.frame, height = (frame.height - 10) / 3
-                    return CGPoint(x: frame.midX, y: frame.maxY - 5 - height * 1.5)
-                }()
-                itemCentre = centre
-                CGWarpMouseCursorPosition(CGPoint(x: centre.x, y: screenTop - centre.y))   // highlights it
+        showMenu(menu, positioning: spotify, at: rowPlace, in: content, closingAfter: 1.4, whileOpen: { menuWindow in
+            menuFrame = menuWindow.frame
+            if let row = self.menuItemRow(spotify.title, in: menuWindow) {
+                itemCentre = CGPoint(x: row.midX, y: row.midY)
+                CGWarpMouseCursorPosition(CGPoint(x: row.midX, y: screenTop - row.midY))   // and the pointer on it
             }
-        }
-        let shot = Timer(timeInterval: 1.4, repeats: false) { _ in
-            MainActor.assumeIsolated {
-                captured = capturePanel(after)
-                menu.cancelTracking()
-            }
-        }
-        RunLoop.main.add(point, forMode: .common)
-        RunLoop.main.add(shot, forMode: .common)
-        _ = menu.popUp(positioning: nil, at: place, in: content)   // returns when the menu closes
+        }, beforeClosing: {
+            captured = capturePanel(after)
+        })
         try? await Task.sleep(nanoseconds: 300_000_000)
 
         guard captured, let menuFrame, let itemCentre,
@@ -334,18 +331,43 @@ extension AppDelegate {
         }
     }
 
-    /// A menu item's row in an open menu's window, found by its title, as a screen point (its centre).
-    private func menuItemCentre(_ title: String, in menuWindow: NSWindow) -> CGPoint? {
+    /// A menu item's row in an open menu's window, found by its title, in screen coordinates.
+    private func menuItemRow(_ title: String, in menuWindow: NSWindow) -> CGRect? {
         guard let root = menuWindow.contentView?.superview ?? menuWindow.contentView else { return nil }
         for view in subviews(of: root) {
             let text = (view as? NSTextField)?.stringValue ?? view.accessibilityTitle() ?? view.accessibilityLabel()
             guard text == title else { continue }
             var row = view   // the row: the outermost view around the text that is still one item high
             while let parent = row.superview, parent !== root, parent.frame.height <= 32 { row = parent }
-            let rect = row.convert(row.bounds, to: nil)
-            return menuWindow.convertPoint(toScreen: CGPoint(x: rect.midX, y: rect.midY))
+            return menuWindow.convertToScreen(row.convert(row.bounds, to: nil))
         }
         return nil
+    }
+
+    /// Opens `menu` (a picture's real AppKit menu) and closes it after `seconds`; half a second after it opens,
+    /// `whileOpen` gets its window. Returns when the menu has closed.
+    private func showMenu(_ menu: NSMenu, positioning item: NSMenuItem?, at place: NSPoint, in view: NSView,
+                          closingAfter seconds: Double, whileOpen: @escaping (NSWindow) -> Void,
+                          beforeClosing: @escaping () -> Void = {}) {
+        let window = view.window
+        let open = Timer(timeInterval: 0.5, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                if let menuWindow = NSApp.windows.first(where: {
+                    $0.isVisible && $0 !== window && String(describing: type(of: $0)).contains("Menu")
+                }) {
+                    whileOpen(menuWindow)
+                }
+            }
+        }
+        let close = Timer(timeInterval: seconds, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                beforeClosing()
+                menu.cancelTracking()
+            }
+        }
+        RunLoop.main.add(open, forMode: .common)
+        RunLoop.main.add(close, forMode: .common)
+        _ = menu.popUp(positioning: item, at: place, in: view)
     }
 
     /// The same 2× picture as `render`, as an image.
