@@ -182,10 +182,23 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     assert page.stations_group.get_description() == "This isn't a Minimalistic Radio station list."
 
     assert [w.get_name() for w in (page.language_row, page.autostart_row, page.popup_row, page.export_button,
-                                   page.import_button, page.statistics_button, page.about_row, page.website_button,
-                                   page.quit_button)] == [
-        "language-row", "autostart-row", "popup-row", "export-button", "import-button", "statistics-button",
-        "about-row", "website-button", "quit-button"]
+                                   page.import_button, page.statistics_row, page.statistics_button, page.about_row,
+                                   page.website_button, page.quit_button)] == [
+        "language-row", "autostart-row", "popup-row", "export-button", "import-button", "statistics-row",
+        "statistics-button", "about-row", "website-button", "quit-button"]
+
+    # Statistics: on by default; off is saved and shown on the Statistics page; since when it collects.
+    assert page.statistics_row.get_active() and page.collected_label.get_text() == "Nothing collected yet"
+    page.statistics_row.set_active(False)
+    assert controller.prefs.collect_statistics is False and window.statistics_page.off.get_visible()
+    assert window.statistics_page.off.get_text() == "Statistics are off. Nothing new is recorded."
+    page.statistics_row.set_active(True)
+    assert controller.prefs.collect_statistics is True and not window.statistics_page.off.get_visible()
+    controller.statistics.sessions.append(ListeningSession("Alpha", "http://s0.example/live",
+                                                           datetime(2025, 3, 2, 12).astimezone(timezone.utc),
+                                                           datetime(2025, 3, 2, 13).astimezone(timezone.utc)))
+    page.refresh(Change.STATISTICS)   # as the controller's change does
+    assert page.collected_label.get_text() == "Collected since 2 March 2025"
 
     # About: the round app icon, the version and a link to GitHub (no About dialog any more).
     assert page.about_row.get_subtitle() == f"Version {VERSION} · MIT"

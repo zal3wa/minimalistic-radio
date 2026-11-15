@@ -99,6 +99,8 @@ class StatisticsPage(Adw.NavigationPage):
                                    self._period_chosen)
         self.switch.select(self.period)
 
+        self.off = _label(_("Statistics are off. Nothing new is recorded."), "dim-label", wrap=True,
+                          margin_start=4, margin_end=4, visible=not controller.prefs.collect_statistics)
         self.empty = _label(_("Nothing here yet. Listen for a while and come back."), "dim-label", wrap=True,
                             margin_top=12, margin_start=4, margin_end=4)
 
@@ -171,6 +173,7 @@ class StatisticsPage(Adw.NavigationPage):
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12, margin_bottom=16,
                        margin_start=12, margin_end=12)
         body.append(self.switch)
+        body.append(self.off)
         body.append(self.stack)
         self.scroller = Gtk.ScrolledWindow(child=Adw.Clamp(child=body, maximum_size=600), vexpand=True,
                                            hscrollbar_policy=Gtk.PolicyType.NEVER)
@@ -192,6 +195,8 @@ class StatisticsPage(Adw.NavigationPage):
     # ---- From the controller and the user ----
 
     def refresh(self, change: Change) -> None:
+        if change & Change.PREFERENCES:
+            self.off.set_visible(not self.controller.prefs.collect_statistics)
         if change & (Change.STATISTICS | Change.STATIONS) and self.get_mapped():
             self.update()
 

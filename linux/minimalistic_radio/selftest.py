@@ -165,6 +165,11 @@ def _check_statistics(window: RadioWindow) -> None:
         pump(20)
         _check(page.stack.get_visible_child_name() == "data" and page.stations_list.get_row_at_index(0) is not None,
                f"the Statistics page shows nothing for {period.value}")
+    window.settings_page.statistics_row.set_active(False)
+    pump(20)
+    _check(not controller.prefs.collect_statistics and page.off.get_visible(),
+           "switching the statistics off doesn't show on the Statistics page")
+    window.settings_page.statistics_row.set_active(True)
     controller.clear_statistics()
     pump(20)
     _check(page.stack.get_visible_child_name() == "empty", "the Statistics page isn't empty after clearing")

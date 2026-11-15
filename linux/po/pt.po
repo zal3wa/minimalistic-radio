@@ -577,3 +577,16 @@ msgstr "novembro"
 msgctxt "date"
 msgid "December"
 msgstr "dezembro"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "Collected since {date}"
+msgstr "Recolhidas desde {date}"
+
+#: minimalistic_radio/core/statistics.py
+msgid "Nothing collected yet"
+msgstr "Ainda não foi recolhido nada"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "As estatísticas estão desligadas. Nada de novo é registado."

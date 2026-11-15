@@ -14,6 +14,8 @@ from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
 from .. import APP_ID, APP_NAME, VERSION  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
+from ..core.statistics import collected_since  # noqa: E402
+from ..i18n import C_  # noqa: E402
 from .bars import subpage_bar  # noqa: E402
 
 if TYPE_CHECKING:
@@ -83,15 +85,22 @@ class SettingsPage(Adw.NavigationPage):
         self.buttons_row = Adw.PreferencesRow(child=buttons, activatable=False, focusable=False)
         self.stations_group.add(self.buttons_row)
 
-        # Statistics: a card of its own, without a heading
+        # Statistics: a card of its own, without a heading. The switch, then since when and the page.
         statistics_group = Adw.PreferencesGroup()
-        self.statistics_row = Adw.ActionRow(title=_("Statistics"),
-                                            subtitle=_("Collected only on this computer, never sent anywhere"))
+        self.statistics_row = Adw.SwitchRow(title=_("Statistics"),
+                                            subtitle=_("Collected only on this computer, never sent anywhere"),
+                                            active=controller.prefs.collect_statistics)
+        self.statistics_row.connect("notify::active",
+                                    lambda row, _p: controller.set_collect_statistics(row.get_active()))
+        statistics_group.add(self.statistics_row)
+        self.collected_label = Gtk.Label(xalign=0, hexpand=True, wrap=True, css_classes=["caption", "dim-label"])
         self.statistics_button = Gtk.Button(label=_("Show"), valign=Gtk.Align.CENTER)
         self.statistics_button.connect("clicked", lambda _button: window.show_page("statistics"))
-        self.statistics_row.add_suffix(self.statistics_button)
-        self.statistics_row.set_activatable_widget(self.statistics_button)
-        statistics_group.add(self.statistics_row)
+        collected = Gtk.Box(spacing=12, margin_top=8, margin_bottom=8, margin_start=12, margin_end=12)
+        collected.append(self.collected_label)
+        collected.append(self.statistics_button)
+        statistics_group.add(Adw.PreferencesRow(child=collected, activatable=False, focusable=False))
+        self._show_collected()
 
         # About: the app's icon, name and version, and its page on GitHub
         about_group = Adw.PreferencesGroup(title=_("About"))
@@ -112,7 +121,8 @@ class SettingsPage(Adw.NavigationPage):
 
         for widget, name in ((self.language_row, "language-row"), (self.autostart_row, "autostart-row"),
                              (self.popup_row, "popup-row"), (self.export_button, "export-button"),
-                             (self.import_button, "import-button"), (self.statistics_button, "statistics-button"),
+                             (self.import_button, "import-button"), (self.statistics_row, "statistics-row"),
+                             (self.statistics_button, "statistics-button"),
                              (self.about_row, "about-row"), (self.website_button, "website-button"),
                              (self.quit_button, "quit-button")):
             widget.set_name(name)   # the ids the tests and the screenshots find them by
@@ -131,6 +141,12 @@ class SettingsPage(Adw.NavigationPage):
             if self.autostart_row.get_active() != on:
                 with self.autostart_row.handler_block(self._autostart_handler):
                     self.autostart_row.set_active(on)
+        if change & Change.STATISTICS:
+            self._show_collected()
+
+    def _show_collected(self) -> None:
+        """"Collected since 2 March 2025", or "Nothing collected yet"."""
+        self.collected_label.set_text(collected_since(self.controller.statistics, None, self._, C_))
 
     # ---- Language ----
 
