@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish_repo:
+        description: 'Run on main: sign this build into the Flatpak repository on GitHub Pages and check it (no GitHub release)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -125,13 +130,34 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Branch stable, as in the published repository. This bundle is only for the checks below: the bundle in a
+      # release is made by the repo job, from the signed repository.
       - name: Build
         id: build
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           manifest-path: linux/flatpak/io.github.zal3wa.minimalistic-radio.yml
+          branch: stable
           bundle: minimalistic-radio.flatpak
-          artifact-name: minimalistic-radio.flatpak
+          artifact-name: flatpak-ci-bundle
+
+      # The unsigned build, for the repo job to sign. Only when that job runs (see its condition).
+      - name: Pack the build for signing
+        if: >-
+          (startsWith(github.ref, 'refs/tags/linux-v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) ||
+          (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish_repo || inputs.dry_run))
+        run: tar -C repo -cf flatpak-build-repo.tar .
+
+      - name: Upload the build for signing
+        if: >-
+          (startsWith(github.ref, 'refs/tags/linux-v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) ||
+          (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish_repo || inputs.dry_run))
+        uses: actions/upload-artifact@v7
+        with:
+          name: flatpak-build-repo
+          path: flatpak-build-repo.tar
+          retention-days: 3
+          if-no-files-found: error
 
       # Errors that only this repository's build has (raw output first, then the verdict):
       # - appstream-external-screenshot-url, appstream-screenshots-not-mirrored-in-ostree: Flathub's
@@ -293,11 +319,303 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_stream.py'
 
+  # The signed Flatpak repository that testers install from (the .flatpakref) and get their updates from, on GitHub
+  # Pages. One branch, stable, for betas and full releases. Runs for a linux-v* tag, and for a manual run on main with
+  # publish_repo (publishes, no GitHub release) or dry_run (signs, publishes nothing). Never for a pull request.
+  # Only people who can write to the repository can start a manual run.
+  repo:
+    if: >-
+      (startsWith(github.ref, 'refs/tags/linux-v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish_repo || inputs.dry_run))
+    needs: [unit, integration, flatpak]
+    runs-on: ubuntu-24.04
+    outputs:
+      commit: ${{ steps.sign.outputs.commit }}
+    env:
+      APP: io.github.zal3wa.minimalistic-radio
+      SITE: https://zal3wa.github.io/minimalistic-radio
+      PUBLIC_KEY: linux/flatpak/minimalistic-radio.gpg
+    steps:
+      - uses: actions/checkout@v7
+
+      # Testers get what is published at once, so a tag whose version is wrong stops here, before the release job.
+      - name: Check the tag
+        if: startsWith(github.ref, 'refs/tags/linux-v')
+        run: |
+          full="${GITHUB_REF_NAME#linux-v}"
+          version="${full%%-*}"
+          code=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' linux/minimalistic_radio/__init__.py)
+          meta=$(grep -o '<release version="[^"]*"' linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in | head -n 1 | cut -d'"' -f2)
+          echo "tag=$GITHUB_REF_NAME version=$version code=$code metainfo=$meta"
+          if [ "$version" != "$code" ] || [ "$version" != "$meta" ]; then
+            echo "::error::Tag version $version differs from VERSION ($code) or the newest metainfo release ($meta)"; exit 1
+          fi
+
+      - name: Install Flatpak and OSTree
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak ostree
+          flatpak --version
+
+      - name: Download the build
+        uses: actions/download-artifact@v7
+        with:
+          name: flatpak-build-repo
+          path: build
+
+      - name: Unpack the build
+        run: |
+          mkdir build/repo
+          tar -xf build/flatpak-build-repo.tar -C build/repo
+          ostree refs --repo=build/repo
+
+      # The repository as published now. Its newest version stays (a client may still read the old summary for a
+      # few minutes) and gets a static delta to the new one. Nothing published yet (404): a new repository.
+      - name: Fetch the published repository
+        run: |
+          mkdir -p site
+          ostree init --repo=site/repo --mode=archive
+          status=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/repo/summary")
+          echo "Published summary: HTTP $status"
+          if [ "$status" = 200 ]; then
+            ostree remote add --repo=site/repo --gpg-import="$PUBLIC_KEY" --set=gpg-verify-summary=true published "$SITE/repo/"
+            ostree pull --repo=site/repo --mirror published
+            ostree remote delete --repo=site/repo published
+            rm -f site/repo/*.trustedkeys.gpg
+          elif [ "$status" = 404 ]; then
+            echo "Nothing is published yet: a new repository."
+          else
+            echo "::error::Could not read the published repository (HTTP $status)"; exit 1
+          fi
+          ostree refs --repo=site/repo
+
+      # The private key goes into a keyring of its own in the runner's temporary folder, removed below. It must be
+      # the key whose public half is in the repository: that is the one testers trust.
+      - name: Import the signing key
+        env:
+          PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+          KEY_ID: ${{ secrets.FLATPAK_GPG_KEY_ID }}
+        run: |
+          set +x
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          install -d -m 700 "$GNUPGHOME"
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          printf '%s\n' "$PRIVATE_KEY" | gpg --batch --quiet --import
+          public=$(gpg --batch --with-colons --show-keys "$PUBLIC_KEY" | awk -F: '$1 == "fpr" { print $10; exit }')
+          secret=$(gpg --batch --with-colons --list-secret-keys "$KEY_ID" | awk -F: '$1 == "fpr" { print $10; exit }')
+          if [ -z "$public" ] || [ "$public" != "$secret" ]; then
+            echo "::error::The signing key is missing, or is not the public key in $PUBLIC_KEY"; exit 1
+          fi
+          echo "The signing key matches $PUBLIC_KEY"
+
+      - name: Add the build to the repository, signed
+        id: sign
+        env:
+          KEY_ID: ${{ secrets.FLATPAK_GPG_KEY_ID }}
+        run: |
+          set +x
+          ref="app/$APP/x86_64/stable"
+          flatpak build-commit-from --src-repo=build/repo --gpg-sign="$KEY_ID" --gpg-homedir="$GNUPGHOME" \
+            --no-update-summary site/repo "$ref"
+          flatpak build-update-repo --gpg-sign="$KEY_ID" --gpg-homedir="$GNUPGHOME" \
+            --title="Minimalistic Radio" --default-branch=stable --generate-static-deltas site/repo
+          commit=$(ostree rev-parse --repo=site/repo "$ref")
+          # A signed commit carries its signatures as detached metadata.
+          ostree show --repo=site/repo --print-detached-metadata-key=ostree.gpgsigs "$commit" > /dev/null
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          ostree log --repo=site/repo "$ref"
+          echo "Signed commit: \`$commit\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the signing key
+        if: always()
+        run: |
+          set +x
+          home="$RUNNER_TEMP/gnupg"
+          if [ -d "$home" ]; then
+            gpgconf --homedir "$home" --kill all || true
+            rm -rf "$home"
+          fi
+          test ! -e "$home"
+
+      # GNOME Software and Discover list the app from this data.
+      - name: Check the AppStream data in the repository
+        run: |
+          ostree ls --repo=site/repo appstream2/x86_64 / || true
+          if ostree cat --repo=site/repo appstream2/x86_64 /appstream.xml | grep -q "$APP"; then
+            echo "The app is in the repository's AppStream data."
+          else
+            echo "::warning::The app is missing from the repository's AppStream data"
+          fi
+
+      # The release bundle: installing it adds this repository (with its key) as the app's remote, so a bundle
+      # install gets updates too. The GNOME runtime comes from Flathub.
+      - name: Make the bundle for the release
+        run: |
+          flatpak build-bundle --arch=x86_64 --repo-url="$SITE/repo/" \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo --gpg-keys="$PUBLIC_KEY" \
+            site/repo minimalistic-radio.flatpak "$APP" stable
+          ls -l minimalistic-radio.flatpak
+
+      - name: Make the install files and the page
+        run: |
+          key=$(base64 -w0 "$PUBLIC_KEY")
+          cat > site/minimalistic-radio.flatpakref <<EOF
+          [Flatpak Ref]
+          Title=Minimalistic Radio
+          Name=$APP
+          Branch=stable
+          Url=$SITE/repo/
+          SuggestRemoteName=minimalistic-radio
+          Homepage=https://github.com/zal3wa/minimalistic-radio
+          Comment=A tiny internet radio that lives next to the clock
+          Icon=$SITE/icon.png
+          RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo
+          IsRuntime=false
+          GPGKey=$key
+          EOF
+          cat > site/minimalistic-radio.flatpakrepo <<EOF
+          [Flatpak Repo]
+          Title=Minimalistic Radio
+          Url=$SITE/repo/
+          Homepage=https://github.com/zal3wa/minimalistic-radio
+          Comment=The Flatpak repository of Minimalistic Radio
+          Icon=$SITE/icon.png
+          DefaultBranch=stable
+          GPGKey=$key
+          EOF
+          cp linux/flatpak/site/index.html site/index.html
+          cp docs/icon.png site/icon.png
+          find site/repo/tmp -mindepth 1 -delete
+          cat site/minimalistic-radio.flatpakref site/minimalistic-radio.flatpakrepo
+          du -sh site site/repo
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: minimalistic-radio.flatpak
+          path: minimalistic-radio.flatpak
+          if-no-files-found: error
+
+      - name: Upload the site
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    if: >-
+      (startsWith(github.ref, 'refs/tags/linux-v') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !inputs.dry_run) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_repo && !inputs.dry_run)
+    needs: repo
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  # The published repository, as a tester's computer sees it: a clean Ubuntu with Flatpak from its own packages and
+  # no remotes. The GNOME runtime comes from Flathub.
+  verify:
+    needs: [repo, deploy]
+    runs-on: ubuntu-24.04
+    env:
+      APP: io.github.zal3wa.minimalistic-radio
+      SITE: https://zal3wa.github.io/minimalistic-radio
+      EXPECTED: ${{ needs.repo.outputs.commit }}
+    steps:
+      - name: Install Flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak ostree xvfb dbus-x11
+          # Bubblewrap (the sandbox) needs user namespaces, which Ubuntu limits to programs it knows.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          runtime="$RUNNER_TEMP/xdg-runtime"
+          install -d -m 700 "$runtime"
+          echo "XDG_RUNTIME_DIR=$runtime" >> "$GITHUB_ENV"
+          echo "FLATPAK_REPO=$HOME/.local/share/flatpak/repo" >> "$GITHUB_ENV"
+          flatpak --version
+
+      - name: Wait until GitHub Pages serves the new commit
+        run: |
+          for attempt in $(seq 60); do
+            served=$(curl -sf "$SITE/repo/refs/heads/app/$APP/x86_64/stable" || true)
+            if [ "$served" = "$EXPECTED" ]; then echo "Served: $served"; exit 0; fi
+            echo "Attempt $attempt: served '${served:-nothing}', expected $EXPECTED"
+            sleep 10
+          done
+          echo "::error::GitHub Pages does not serve commit $EXPECTED"; exit 1
+
+      # What a tester does: one command (or one click on the link in a browser), with no remotes yet.
+      - name: Install from the .flatpakref
+        run: |
+          flatpak install --user --noninteractive --assumeyes "$SITE/minimalistic-radio.flatpakref"
+          flatpak remotes --user --show-details
+          origin=$(flatpak info --user --show-origin "$APP")
+          commit=$(flatpak info --user --show-commit "$APP")
+          echo "origin=$origin commit=$commit"
+          [ "$origin" = minimalistic-radio ] && [ "$commit" = "$EXPECTED" ]
+
+      - name: Self-test (installed from the .flatpakref)
+        run: dbus-run-session -- xvfb-run -a flatpak run "$APP" --self-test
+
+      - name: Add the remote from the .flatpakrepo and install from it
+        run: |
+          flatpak uninstall --user --noninteractive --assumeyes "$APP"
+          flatpak remote-delete --user minimalistic-radio
+          flatpak remote-add --user --if-not-exists minimalistic-radio "$SITE/minimalistic-radio.flatpakrepo"
+          for key in gpg-verify gpg-verify-summary; do
+            value=$(ostree config --repo="$FLATPAK_REPO" get --group='remote "minimalistic-radio"' "$key")
+            echo "$key=$value"
+            [ "$value" = true ]
+          done
+          remote=$(flatpak remote-info --user --show-commit minimalistic-radio "$APP//stable")
+          echo "remote-info commit: $remote"
+          [ "$remote" = "$EXPECTED" ]
+          flatpak install --user --noninteractive --assumeyes minimalistic-radio "$APP//stable"
+          [ "$(flatpak info --user --show-commit "$APP")" = "$EXPECTED" ]
+          ostree show --repo="$FLATPAK_REPO" --gpg-verify-remote=minimalistic-radio "$EXPECTED" | tee show.txt
+          grep -q "Good signature" show.txt
+
+      - name: Self-test (installed from the remote)
+        run: dbus-run-session -- xvfb-run -a flatpak run "$APP" --self-test
+
+      - name: Download the release bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: minimalistic-radio.flatpak
+          path: bundle
+
+      # A bundle install must bring this repository as its remote, so it gets updates as well.
+      - name: Install the release bundle, and update from its remote
+        run: |
+          flatpak uninstall --user --noninteractive --assumeyes "$APP"
+          flatpak remote-delete --user minimalistic-radio
+          flatpak install --user --noninteractive --assumeyes --bundle bundle/minimalistic-radio.flatpak
+          origin=$(flatpak info --user --show-origin "$APP")
+          url=$(ostree config --repo="$FLATPAK_REPO" get --group="remote \"$origin\"" url)
+          verify=$(ostree config --repo="$FLATPAK_REPO" get --group="remote \"$origin\"" gpg-verify)
+          echo "origin=$origin url=$url gpg-verify=$verify"
+          [ "$url" = "$SITE/repo/" ] && [ "$verify" = true ]
+          [ "$(flatpak remote-info --user --show-commit "$origin" "$APP//stable")" = "$EXPECTED" ]
+          flatpak update --user --noninteractive --assumeyes
+          [ "$(flatpak info --user --show-commit "$APP")" = "$EXPECTED" ]
+
   # A release for a linux-v* tag. A manual run with dry_run and a tag does every check and prints the
   # commands instead of running them. Linux releases are never marked latest (that stays with Windows).
+  # The .flatpak comes from the repo job (signed, it tracks the repository); the release waits for the
+  # repository to be published and checked, which a dry run skips.
   release:
-    if: startsWith(github.ref, 'refs/tags/linux-v') || (github.event_name == 'workflow_dispatch' && inputs.dry_run)
-    needs: [unit, integration, flatpak, snap]
+    if: ${{ !cancelled() && !failure() && (startsWith(github.ref, 'refs/tags/linux-v') || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) }}
+    needs: [unit, integration, flatpak, snap, repo, verify]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -358,6 +676,7 @@ jobs:
           CHANNEL: ${{ steps.plan.outputs.channel }}
           FLATPAK: ${{ steps.plan.outputs.flatpak }}
           SNAP: ${{ steps.plan.outputs.snap }}
+          REPO_COMMIT: ${{ needs.repo.outputs.commit }}
         run: |
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "The release $TAG exists already: only its files are replaced."
@@ -372,11 +691,13 @@ jobs:
             echo "DRY RUN (nothing is published). Would run:"
             echo "$printed"
             echo "snapcore/action-publish: snap=$SNAP release=$CHANNEL"
+            echo "Flatpak repository: signed commit $REPO_COMMIT, not deployed"
             {
               echo "### Dry run for $TAG"
               echo '```'
               echo "$printed"
               echo "snap publish: $SNAP to the $CHANNEL channel"
+              echo "Flatpak repository: signed commit $REPO_COMMIT, not deployed"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           else

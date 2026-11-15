@@ -2,3 +2,4 @@
 * text=auto
 *.ico binary
 *.png binary
+*.gpg binary
