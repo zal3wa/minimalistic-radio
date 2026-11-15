@@ -272,17 +272,19 @@ jobs:
           path: release
           merge-multiple: true
 
+      # The one place that reads the tag: the steps below take the version, pre-release and channel from here.
       - name: Check the tag and the artifacts
         id: plan
         env:
           EVENT: ${{ github.event_name }}
           INPUT_TAG: ${{ inputs.tag }}
-          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ "$EVENT" = workflow_dispatch ]; then tag="$INPUT_TAG"; else tag="$GITHUB_REF_NAME"; fi
-          case "$tag" in linux-v[0-9]*) ;; *) echo "::error::'$tag' is not a linux-vX.Y.Z tag"; exit 1 ;; esac
+          if [ "$EVENT" = workflow_dispatch ]; then tag="${INPUT_TAG:-$GITHUB_REF_NAME}"; else tag="$GITHUB_REF_NAME"; fi
+          if ! [[ "$tag" =~ ^linux-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::'$tag' is not a linux-vX.Y.Z or linux-vX.Y.Z-suffix tag"; exit 1
+          fi
           full="${tag#linux-v}"
-          version="${full%%-*}"   # the pre-release suffix is not part of the app version
+          version="${full%%-*}"   # the pre-release suffix (after the version) is not part of the app version
           if [ "$full" != "$version" ]; then prerelease=true; channel=beta; else prerelease=false; channel=stable; fi
 
           code=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' linux/minimalistic_radio/__init__.py)
@@ -296,38 +298,51 @@ jobs:
           snap=$(ls release/minimalistic-radio_*_amd64.snap | head -n 1)
           test -s "$flatpak"
           test -s "$snap"
-
-          args=(--title "Minimalistic Radio for Linux $version" --notes-from-tag --latest=false)
-          if [ "$prerelease" = true ]; then args+=(--prerelease); fi
           {
             echo "tag=$tag"
+            echo "version=$version"
+            echo "prerelease=$prerelease"
             echo "channel=$channel"
             echo "flatpak=$flatpak"
             echo "snap=$snap"
           } >> "$GITHUB_OUTPUT"
-          if [ "$DRY_RUN" = true ]; then
-            echo "DRY RUN (nothing is published). Would run:"
-            echo "gh release create $tag $flatpak $snap ${args[*]@Q}"
-            echo "snapcore/action-publish: snap=$snap release=$channel"
-            {
-              echo "### Dry run for $tag"
-              echo '```'
-              echo "gh release create $tag $flatpak $snap ${args[*]@Q}"
-              echo "snap publish: $snap to the $channel channel"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
 
+      # Safe to run again ("Re-run failed jobs" after the Snap Store step failed): a release that exists already
+      # only gets its files replaced. A dry run runs this same code and prints the command instead.
       - name: Create the GitHub release
-        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          TAG: ${{ steps.plan.outputs.tag }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          PRERELEASE: ${{ steps.plan.outputs.prerelease }}
+          CHANNEL: ${{ steps.plan.outputs.channel }}
+          FLATPAK: ${{ steps.plan.outputs.flatpak }}
+          SNAP: ${{ steps.plan.outputs.snap }}
         run: |
-          tag='${{ steps.plan.outputs.tag }}'
-          version="${tag#linux-v}"; version="${version%%-*}"
-          args=(--title "Minimalistic Radio for Linux $version" --notes-from-tag --latest=false)
-          case "$tag" in *-*) args+=(--prerelease) ;; esac
-          gh release create "$tag" '${{ steps.plan.outputs.flatpak }}' '${{ steps.plan.outputs.snap }}' "${args[@]}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "The release $TAG exists already: only its files are replaced."
+            command=(gh release upload "$TAG" "$FLATPAK" "$SNAP" --clobber)
+          else
+            command=(gh release create "$TAG" "$FLATPAK" "$SNAP"
+                     --title "Minimalistic Radio for Linux $VERSION" --notes-from-tag --latest=false)
+            if [ "$PRERELEASE" = true ]; then command+=(--prerelease); fi
+          fi
+          if [ "$DRY_RUN" = true ]; then
+            printed=$(printf '%q ' "${command[@]}")
+            echo "DRY RUN (nothing is published). Would run:"
+            echo "$printed"
+            echo "snapcore/action-publish: snap=$SNAP release=$CHANNEL"
+            {
+              echo "### Dry run for $TAG"
+              echo '```'
+              echo "$printed"
+              echo "snap publish: $SNAP to the $CHANNEL channel"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            "${command[@]}"
+          fi
 
       - name: Check for the Snap Store credentials
         id: store
