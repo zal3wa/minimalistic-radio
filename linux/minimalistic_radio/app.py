@@ -15,15 +15,18 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, GLib  # noqa: E402
+from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
 from . import APP_ID  # noqa: E402
 from .audio.player import GstPlayer  # noqa: E402
-from .controller import RadioController  # noqa: E402
+from .controller import Change, RadioController  # noqa: E402
 from .core import net  # noqa: E402
 from .core.storage import default_paths  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
+from .platform.background import Autostart  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
+from .platform.notifications import StationNotifier  # noqa: E402
+from .platform.session import SessionWatcher  # noqa: E402
 from .platform.tray import TrayIcon  # noqa: E402
 from .ui.window import RadioWindow  # noqa: E402
 
@@ -82,6 +85,9 @@ class RadioApplication(Adw.Application):
         self.window: RadioWindow | None = None
         self.tray: TrayIcon | None = None
         self.mpris: MprisService | None = None
+        self.session: SessionWatcher | None = None
+        self.notifier: StationNotifier | None = None
+        self._inhibit_cookie = 0
         self.updated = False
         self.screenshot_dir: str | None = None
         self._started = False
@@ -131,6 +137,30 @@ class RadioApplication(Adw.Application):
         self.mpris.publish()
         self.tray = TrayIcon(self)
         self.tray.start()
+        self.notifier = StationNotifier(self)
+        self.session = SessionWatcher(self.controller)
+        self.controller.subscribe(self._playback_changed)
+
+    def _playback_changed(self, change: Change) -> None:
+        """Playing keeps the computer from suspending, like the Windows version."""
+        if not change & Change.STATE:
+            return
+        if self.controller.active and not self._inhibit_cookie:
+            self._inhibit_cookie = self.inhibit(self.window, Gtk.ApplicationInhibitFlags.SUSPEND,
+                                                self._("Playing internet radio"))
+        elif not self.controller.active and self._inhibit_cookie:
+            self.uninhibit(self._inhibit_cookie)
+            self._inhibit_cookie = 0
+
+    def _window_closing(self, _window: Gtk.Window) -> bool:
+        controller = self.controller
+        if (self.tray is None or not self.tray.visible) and not controller.prefs.no_tray_hint_shown:
+            controller.set_no_tray_hint_shown()
+            note = Gio.Notification.new(self._("The radio keeps playing"))
+            note.set_body(self._("Open it again from your apps, or control it from the clock menu."))
+            note.set_default_action("app.show-panel")
+            self.send_notification("no-tray-hint", note)
+        return False   # the window hides, as before
 
     def do_handle_local_options(self, options: GLib.VariantDict) -> int:
         # A self-test or screenshot run is its own instance: never handed to (and quitting) a running radio.
@@ -160,6 +190,10 @@ class RadioApplication(Adw.Application):
 
     def do_shutdown(self) -> None:
         # A clean exit, like Shutdown on Windows: the stream is closed before the process ends.
+        if self.session is not None:
+            self.session.close()
+        if self.notifier is not None:
+            self.notifier.close()
         if self.mpris is not None:
             self.mpris.unpublish()
         if self.tray is not None:
@@ -183,6 +217,7 @@ class RadioApplication(Adw.Application):
             self._start_radio(True)   # an action from outside before any launch: the radio, but not playing
             self.window = self._create_window()
             self.window.set_hide_on_close(True)
+            self.window.connect("close-request", self._window_closing)
         self.window.present()
 
     def rebuild_window(self, page: str) -> None:
@@ -199,13 +234,13 @@ class RadioApplication(Adw.Application):
             return GLib.SOURCE_REMOVE
         GLib.idle_add(rebuild)   # not from inside the signal of a widget that is about to be destroyed
 
-    # ---- Start with the system (Task 14 replaces these bodies) ----
+    # ---- Start with the system ----
 
     def autostart_enabled(self) -> bool:
-        return self.controller.prefs.autostart
+        return Autostart(self.controller).enabled()
 
     def set_autostart(self, on: bool) -> None:
-        self.controller.set_autostart_preference(on)
+        Autostart(self.controller).set(on)
 
     def _open_page(self, page: str) -> None:
         self.show_window()

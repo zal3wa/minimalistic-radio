@@ -662,6 +662,11 @@ class RadioController:
         self._save_preferences()
         self._emit(Change.PREFERENCES)
 
+    def set_no_tray_hint_shown(self) -> None:
+        if not self.prefs.no_tray_hint_shown:
+            self.prefs.no_tray_hint_shown = True
+            self._save_preferences()
+
     def set_autostart_preference(self, on: bool) -> None:
         """Remembers the "Start with the system" choice (the application makes it happen)."""
         if on != self.prefs.autostart:

@@ -398,3 +398,19 @@ msgstr "stacje"
 #: minimalistic_radio/ui/settings_page.py
 msgid "Icons: Lucide (ISC)"
 msgstr "Ikony: Lucide (ISC)"
+
+#: minimalistic_radio/platform/notifications.py
+msgid "Connecting…"
+msgstr "Łączenie…"
+
+#: minimalistic_radio/app.py
+msgid "Playing internet radio"
+msgstr "Gra internetowe radio"
+
+#: minimalistic_radio/app.py
+msgid "The radio keeps playing"
+msgstr "Radio gra dalej"
+
+#: minimalistic_radio/app.py
+msgid "Open it again from your apps, or control it from the clock menu."
+msgstr "Otwórz je ponownie z listy aplikacji albo steruj nim z menu przy zegarze."
