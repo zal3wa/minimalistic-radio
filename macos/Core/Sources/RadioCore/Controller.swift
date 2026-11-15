@@ -455,7 +455,9 @@ public final class RadioController {
         history.insert(HistoryEntry(title: title, station: station, time: scheduler.now()), at: 0)
         if history.count > historyLimit { history.removeLast(history.count - historyLimit) }
         saveHistoryFile()
-        statistics.songs.append(PlayedSong(station: station, title: title, time: scheduler.now()))   // saved with the session
+        if prefs.collectStatistics {
+            statistics.songs.append(PlayedSong(station: station, title: title, time: scheduler.now()))   // saved with the session
+        }
         return true
     }
 
@@ -468,9 +470,9 @@ public final class RadioController {
     // MARK: - Statistics
 
     /// Audio started: continues the last session if this station was playing less than 2 minutes ago (a reconnect),
-    /// otherwise starts a new one.
+    /// otherwise starts a new one. Nothing while the statistics are switched off.
     private func listeningStarted() {
-        guard !listening, stations.indices.contains(current) else { return }
+        guard prefs.collectStatistics, !listening, stations.indices.contains(current) else { return }
         let now = scheduler.now()
         if let last = statistics.sessions.last, sameStream(last.url, url), now.timeIntervalSince(last.end) <= sessionRejoin {
             statistics.sessions[statistics.sessions.count - 1].end = max(last.end, now)
@@ -771,6 +773,20 @@ public final class RadioController {
         guard on != prefs.updateByDownload else { return }
         prefs.updateByDownload = on
         savePrefs()
+        emit(.preferences)
+    }
+
+    /// Settings › Statistics. Off ends the running session (what was collected stays); on counts the station
+    /// playing now from here.
+    public func setCollectStatistics(_ on: Bool) {
+        guard on != prefs.collectStatistics else { return }
+        prefs.collectStatistics = on
+        savePrefs()
+        if on {
+            if status == .playing { listeningStarted() }
+        } else {
+            listeningStopped()
+        }
         emit(.preferences)
     }
 }

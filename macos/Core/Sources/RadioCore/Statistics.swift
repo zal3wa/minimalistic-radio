@@ -43,6 +43,11 @@ public struct StatisticsLog: Equatable, Sendable {
         self.sessions = sessions
         self.songs = songs
     }
+
+    /// Settings' "Collected since": the start of the first session, nil before any.
+    public var since: Date? {
+        sessions.map(\.start).min()
+    }
 }
 
 public enum StatisticsPeriod: String, CaseIterable, Sendable {

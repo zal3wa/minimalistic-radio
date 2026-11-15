@@ -99,6 +99,7 @@ public func loadPreferences(_ url: URL) -> Preferences {
     if let value = data["ShowStationPopup"] as? NSNumber, isBool(value) { prefs.showStationPopup = value.boolValue }
     if let value = data["CheckUpdates"] as? NSNumber, isBool(value) { prefs.checkUpdates = value.boolValue }
     if let value = data["UpdateByDownload"] as? NSNumber, isBool(value) { prefs.updateByDownload = value.boolValue }
+    if let value = data["CollectStatistics"] as? NSNumber, isBool(value) { prefs.collectStatistics = value.boolValue }
     if let text = data["LastUpdateCheck"] as? String { prefs.lastUpdateCheck = parseTime(text) }
     return prefs
 }
@@ -112,6 +113,7 @@ public func savePreferences(_ url: URL, _ prefs: Preferences) throws {
         "CheckUpdates": prefs.checkUpdates,
         "LastUpdateCheck": prefs.lastUpdateCheck.map(formatTime) ?? NSNull(),
         "UpdateByDownload": prefs.updateByDownload,
+        "CollectStatistics": prefs.collectStatistics,
     ]
     try writeJSON(url, data)
 }
