@@ -72,11 +72,37 @@ def read_po(path: Path) -> dict[str, str]:
     return entries
 
 
+INTENTS = APP / "Intents"
+ANY_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
+PHRASE_PARTS = {r"\(.applicationName)": "${applicationName}", r"\(\.$station)": "${station}"}
+
+
+def intent_texts() -> tuple[list[str], list[str]]:
+    """(texts, phrases) of the Shortcuts and Siri code: every string literal there is shown to people. Phrases
+    become Apple's ${applicationName} / ${station} form; other interpolated literals are left out."""
+    texts: dict[str, None] = {}
+    phrases: dict[str, None] = {}
+    for path in sorted(INTENTS.glob("*.swift")):
+        for match in ANY_LITERAL.finditer(path.read_text(encoding="utf-8")):
+            raw = match.group(1)
+            if "\\(" not in raw:
+                texts.setdefault(swift_unescape(raw), None)
+            elif ".applicationName" in raw:
+                for part, name in PHRASE_PARTS.items():
+                    raw = raw.replace(part, name)
+                if "\\(" not in raw:
+                    phrases.setdefault(raw, None)
+    return list(texts), list(phrases)
+
+
 def used_texts() -> list[str]:
     seen: dict[str, None] = {}
     for path in sorted(APP.rglob("*.swift")) + sorted(CORE.rglob("*.swift")):
         for match in LITERAL.finditer(path.read_text(encoding="utf-8")):
             seen.setdefault(swift_unescape(match.group(1)), None)
+    texts, phrases = intent_texts()
+    for text in texts + phrases:
+        seen.setdefault(text, None)
     return list(seen)
 
 

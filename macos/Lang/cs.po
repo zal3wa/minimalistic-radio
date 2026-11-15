@@ -17,6 +17,9 @@ msgstr "Otevírat při přihlášení"
 msgid "Quit"
 msgstr "Ukončit"
 
+msgid "Add a station first."
+msgstr "Nejdřív přidejte stanici."
+
 msgid "This station uses a format that can't be played."
 msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
 
@@ -103,3 +106,60 @@ msgstr "Vypnuto"
 
 msgid "Settings"
 msgstr "Nastavení"
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "Minimalistic Radio ještě není připravené. Zkuste to znovu."
+
+msgid "Plays the last station."
+msgstr "Pustí poslední stanici."
+
+msgid "Play Station"
+msgstr "Pustit stanici"
+
+msgid "Plays one of your stations."
+msgstr "Pustí jednu z vašich stanic."
+
+msgid "Stops the radio."
+msgstr "Zastaví rádio."
+
+msgid "Next Station"
+msgstr "Další stanice"
+
+msgid "Switches to the next station on your list."
+msgstr "Přepne na další stanici ve vašem seznamu."
+
+msgid "Previous Station"
+msgstr "Předchozí stanice"
+
+msgid "Switches to the previous station on your list."
+msgstr "Přepne na předchozí stanici ve vašem seznamu."
+
+msgid "Set Sleep Timer"
+msgstr "Nastavit časovač vypnutí"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Zastaví rádio po zvoleném počtu minut. 0 časovač vypne."
+
+msgid "Minutes"
+msgstr "Minuty"
+
+msgid "Set Volume"
+msgstr "Nastavit hlasitost"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Nastaví hlasitost rádia od 0 do 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Pusť ${station} v ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Pusť ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Zastav ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Další stanice v ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Předchozí stanice v ${applicationName}"

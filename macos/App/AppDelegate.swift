@@ -66,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         nowPlaying?.update()
         if change.contains(.switched) { showCard() }
         if change.contains(.message), let notice = controller.notice { showCard(notice) }
+        if change.contains(.stations) { RadioShortcuts.updateAppShortcutParameters() }
     }
 
     /// Starting the radio again (Finder, Spotlight, the Dock) opens the panel, as on Windows.
@@ -165,6 +166,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                       bytesPerRow: 0, bitsPerPixel: 0)
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
+
+        if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
+        let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
+                                    paths: Paths(support: folder.appendingPathComponent("empty"), cache: folder.appendingPathComponent("empty-cache")),
+                                    fetch: { _, done in done(nil) }, fetchFile: { _, _, done in done(false) }, localize: L)
+        empty.start(autostart: true)
+        do {
+            try RadioIntents.play(nil, on: empty)
+            failures.append("Play with no stations didn't say to add one")
+        } catch let error as RadioIntentError {
+            if String(localized: error.localizedStringResource) != L("Add a station first.") {
+                failures.append("Play with no stations says something else")
+            }
+        } catch {
+            failures.append("Play with no stations failed differently: \(error)")
+        }
 
         let bans = BanList.load(Bundle.main.url(forResource: "banned-stations", withExtension: "json") ?? folder)
         if bans == .none { failures.append("the banned-stations list isn't in the app") }

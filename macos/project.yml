@@ -4,7 +4,7 @@ options:
   bundleIdPrefix: io.github.zal3wa
   deploymentTarget:
     macOS: "13.0"
-  preGenCommand: tools/make_icons.sh
+  preGenCommand: tools/make_icons.sh && python3 tools/intents_strings.py
   createIntermediateGroups: true
 settings:
   base:

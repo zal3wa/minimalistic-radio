@@ -17,6 +17,9 @@ msgstr "Otwieraj przy logowaniu"
 msgid "Quit"
 msgstr "Zakończ"
 
+msgid "Add a station first."
+msgstr "Najpierw dodaj stację."
+
 msgid "This station uses a format that can't be played."
 msgstr "Ta stacja nadaje w formacie, którego nie da się odtworzyć."
 
@@ -103,3 +106,60 @@ msgstr "Wył."
 
 msgid "Settings"
 msgstr "Ustawienia"
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "Minimalistic Radio nie jest jeszcze gotowe. Spróbuj ponownie."
+
+msgid "Plays the last station."
+msgstr "Włącza ostatnią stację."
+
+msgid "Play Station"
+msgstr "Włącz stację"
+
+msgid "Plays one of your stations."
+msgstr "Włącza jedną z Twoich stacji."
+
+msgid "Stops the radio."
+msgstr "Zatrzymuje radio."
+
+msgid "Next Station"
+msgstr "Następna stacja"
+
+msgid "Switches to the next station on your list."
+msgstr "Przełącza na następną stację z Twojej listy."
+
+msgid "Previous Station"
+msgstr "Poprzednia stacja"
+
+msgid "Switches to the previous station on your list."
+msgstr "Przełącza na poprzednią stację z Twojej listy."
+
+msgid "Set Sleep Timer"
+msgstr "Ustaw wyłącznik czasowy"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Zatrzymuje radio po wybranej liczbie minut. 0 wyłącza odliczanie."
+
+msgid "Minutes"
+msgstr "Minuty"
+
+msgid "Set Volume"
+msgstr "Ustaw głośność"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Ustawia głośność radia, od 0 do 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Włącz ${station} w ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Włącz ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Zatrzymaj ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Następna stacja w ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Poprzednia stacja w ${applicationName}"

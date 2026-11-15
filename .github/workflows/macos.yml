@@ -58,6 +58,8 @@ jobs:
           case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *) echo "not universal"; exit 1 ;; esac
           test "$(plutil -extract NSAppTransportSecurity.NSAllowsArbitraryLoads raw "$APP/Contents/Info.plist")" = true
           test -f "$APP/Contents/Resources/banned-stations.json"
+          test -d "$APP/Contents/Resources/Metadata.appintents" || { echo "::error::No App Intents metadata (Shortcuts and Siri)"; exit 1; }
+          test -f "$APP/Contents/Resources/pl.lproj/AppShortcuts.strings"
           size=$(du -sk "$APP" | cut -f1); echo "app size: ${size} KB"; test "$size" -lt 10240
           "$binary" --self-test
 

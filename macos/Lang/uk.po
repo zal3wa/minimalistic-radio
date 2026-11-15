@@ -17,6 +17,9 @@ msgstr "Відкривати під час входу"
 msgid "Quit"
 msgstr "Вийти"
 
+msgid "Add a station first."
+msgstr "Спершу додайте станцію."
+
 msgid "This station uses a format that can't be played."
 msgstr "Ця станція мовить у форматі, який не вдається відтворити."
 
@@ -103,3 +106,60 @@ msgstr "Вимк."
 
 msgid "Settings"
 msgstr "Налаштування"
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "Minimalistic Radio ще не готове. Спробуйте ще раз."
+
+msgid "Plays the last station."
+msgstr "Вмикає останню станцію."
+
+msgid "Play Station"
+msgstr "Увімкнути станцію"
+
+msgid "Plays one of your stations."
+msgstr "Вмикає одну з ваших станцій."
+
+msgid "Stops the radio."
+msgstr "Зупиняє радіо."
+
+msgid "Next Station"
+msgstr "Наступна станція"
+
+msgid "Switches to the next station on your list."
+msgstr "Перемикає на наступну станцію зі списку."
+
+msgid "Previous Station"
+msgstr "Попередня станція"
+
+msgid "Switches to the previous station on your list."
+msgstr "Перемикає на попередню станцію зі списку."
+
+msgid "Set Sleep Timer"
+msgstr "Встановити таймер сну"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Зупиняє радіо через вибрану кількість хвилин. 0 вимикає таймер."
+
+msgid "Minutes"
+msgstr "Хвилини"
+
+msgid "Set Volume"
+msgstr "Встановити гучність"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Встановлює гучність радіо від 0 до 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Увімкни ${station} у ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Увімкни ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Зупини ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Наступна станція в ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Попередня станція в ${applicationName}"
