@@ -10,7 +10,7 @@ using System.Windows.Threading;
 using static Lang;
 
 // A small card like the Windows 11 media flyout, shown for a few seconds when the station changes from
-// outside the panel (media keys, Win+A, the tray menu, the Windhawk taskbar player). Windows has no API
+// outside the panel (media keys, Win+A, the tray menu, taskbar media players). Windows has no API
 // that lets an app show its own flyout, so this stands in for it. It never takes focus or clicks.
 internal sealed partial class Radio
 {
@@ -117,7 +117,7 @@ internal sealed partial class Radio
     private void RefreshOsd()
     {
         osdTitle.Text = osdCopied ?? StationName;
-        osdText.Text = osdCopied != null ? T("Skopiowano do schowka", "Copied to clipboard") : track ?? (session == null ? status : playing ? T("Teraz gra", "Now playing") : status);
+        osdText.Text = osdCopied != null ? L("Copied to clipboard") : track ?? (session == null ? status : playing ? L("Now playing") : status);
         string picture = CoverUrl;
         if (picture == osdPicture) return;
         osdPicture = picture;

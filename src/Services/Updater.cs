@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using static Lang;
 
 internal sealed class Release
 {
@@ -74,7 +75,7 @@ internal static class Updater
     internal static async Task<string> Download(Release release, Action<int> progress)
     {
         if (release.Download == null || !release.Download.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException(Lang.T("Wydanie nie zawiera pliku programu.", "The release has no program file."));
+            throw new InvalidOperationException(L("The release has no program file."));
         string file = Path.Combine(Path.GetTempPath(), "Minimalistic Radio " + release.Version.ToString(3) + ".exe");
         string actual;
         using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) })
@@ -106,7 +107,7 @@ internal static class Updater
         if (release.Sha256 != null && !string.Equals(actual, release.Sha256, StringComparison.OrdinalIgnoreCase))
         {
             File.Delete(file);
-            throw new InvalidDataException(Lang.T("Pobrany plik jest uszkodzony.", "The downloaded file is damaged."));
+            throw new InvalidDataException(L("The downloaded file is damaged."));
         }
         return file;
     }

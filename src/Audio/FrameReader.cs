@@ -1,12 +1,11 @@
 using System;
 using System.IO;
+using static Lang;
 
 // The stream is not MP3/AAC (Ogg/Opus, FLAC, HLS playlist…): Windows can't play it, so trying again won't help.
 internal sealed class UnsupportedFormatException : StationRefusedException
 {
-    internal UnsupportedFormatException() : base(Lang.T(
-        "Ta stacja nadaje w formacie, którego Windows nie odtwarza (tylko MP3 i AAC).",
-        "This station uses a format Windows can't play (only MP3 and AAC).")) { }
+    internal UnsupportedFormatException() : base(L("This station uses a format Windows can't play (only MP3 and AAC).")) { }
 }
 
 internal sealed class Frame
@@ -67,7 +66,7 @@ internal sealed class FrameReader
             if (++skipped > (locked == null ? 64 * 1024 : 512 * 1024))
             {
                 if (locked == null) throw new UnsupportedFormatException();
-                throw new InvalidDataException(Lang.T("Stacja przesyła uszkodzone dane.", "The station is sending damaged data."));
+                throw new InvalidDataException(L("The station is sending damaged data."));
             }
         }
     }

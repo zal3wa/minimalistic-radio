@@ -1,0 +1,408 @@
+# Portuguese (Portugal) translation of Minimalistic Radio.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Project-Id-Version: Minimalistic Radio 2.5.0\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "The station doesn't send song titles"
+msgstr "A estação não envia os títulos"
+
+msgid "Ready to play"
+msgstr "Pronto a reproduzir"
+
+msgid "Connecting to the station…"
+msgstr "A ligar à estação…"
+
+msgid "Updated to version {0}"
+msgstr "Atualizado para a versão {0}"
+
+msgid "Play"
+msgstr "Reproduzir"
+
+msgid "Stop"
+msgstr "Parar"
+
+msgid "Station"
+msgstr "Estação"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Up 5%"
+msgstr "Aumentar 5%"
+
+msgid "Down 5%"
+msgstr "Diminuir 5%"
+
+msgid "Mute"
+msgstr "Desativar som"
+
+msgid "Sleep timer"
+msgstr "Temporizador para desligar"
+
+msgid "Update to {0}"
+msgstr "Atualizar para {0}"
+
+msgid "Settings"
+msgstr "Definições"
+
+msgid "Quit"
+msgstr "Sair"
+
+msgid "Couldn't copy the title."
+msgstr "Não foi possível copiar o título."
+
+msgid "Stops at {0}"
+msgstr "Desliga às {0}"
+
+#. {0}: minutes, in the sleep timer menu.
+msgid "{0} min"
+msgstr "{0} min"
+
+#. The sleep timer menu: no timer.
+msgid "Off"
+msgstr "Desativado"
+
+msgid "Stopped by the sleep timer"
+msgstr "Parado pelo temporizador"
+
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Ligação perdida. Nova tentativa em {0} s…"
+
+msgid "The broadcast has ended"
+msgstr "A transmissão terminou"
+
+msgid "Stopped"
+msgstr "Parado"
+
+msgid "Click to copy the song"
+msgstr "Clique para copiar a música"
+
+msgid "Copy song: {0}"
+msgstr "Copiar música: {0}"
+
+msgid "Checking…"
+msgstr "A verificar…"
+
+msgid "You have the latest version."
+msgstr "Tem a versão mais recente."
+
+msgid "Downloading version {0}…"
+msgstr "A transferir a versão {0}…"
+
+msgid "Couldn't check for updates."
+msgstr "Não foi possível procurar atualizações."
+
+msgid "Couldn't install it. Opening the page with the new version."
+msgstr "Não foi possível instalar. A abrir a página da nova versão."
+
+#. The label next to an on/off switch, as in Windows Settings.
+msgctxt "switch"
+msgid "On"
+msgstr "Ativado"
+
+#. The label next to an on/off switch, as in Windows Settings.
+msgctxt "switch"
+msgid "Off"
+msgstr "Desativado"
+
+msgid "Station name"
+msgstr "Nome da estação"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Endereço da transmissão (HTTP ou HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Endereço do logótipo (opcional)"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Type a station name"
+msgstr "Escreva o nome de uma estação"
+
+msgid "Search"
+msgstr "Procurar"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Procurar no diretório radio-browser.info"
+
+msgid "Add by address"
+msgstr "Adicionar por endereço"
+
+msgid "Song history"
+msgstr "Histórico de músicas"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Ocultar o painel (o rádio continua a tocar)"
+
+msgid "Update Ready!"
+msgstr "Atualização pronta!"
+
+msgid "Stations"
+msgstr "Estações"
+
+msgid "Back"
+msgstr "Voltar"
+
+msgid "Couldn't save the station list."
+msgstr "Não foi possível guardar a lista de estações."
+
+msgid "Searching…"
+msgstr "A procurar…"
+
+msgid "No results."
+msgstr "Sem resultados."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Diretório indisponível. Tente novamente."
+
+msgid "Loading suggestions…"
+msgstr "A carregar sugestões…"
+
+msgid "Recommended"
+msgstr "Recomendadas"
+
+msgid "Popular in your country"
+msgstr "Populares no seu país"
+
+msgid "Popular worldwide"
+msgstr "Populares no mundo"
+
+msgid "History"
+msgstr "Histórico"
+
+msgid "Add a station"
+msgstr "Adicionar estação"
+
+msgid "This station is already on the list."
+msgstr "Esta estação já está na lista."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr ""
+"Introduza um nome e um endereço de transmissão válido. O logótipo é "
+"opcional."
+
+msgid "This address is already on the list."
+msgstr "Este endereço já está na lista."
+
+msgid "Already on your list"
+msgstr "Já está na sua lista"
+
+msgid "Add to your stations"
+msgstr "Adicionar às suas estações"
+
+msgid "Station options"
+msgstr "Opções da estação"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Remove"
+msgstr "Remover"
+
+msgid "Songs the radio plays will show up here."
+msgstr "As músicas que o rádio tocar aparecem aqui."
+
+msgid "More"
+msgstr "Mais"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "The clipboard is busy."
+msgstr "A área de transferência está ocupada."
+
+msgid "Search on Spotify"
+msgstr "Procurar no Spotify"
+
+msgid "Search on YouTube"
+msgstr "Procurar no YouTube"
+
+msgid "Clear history"
+msgstr "Limpar histórico"
+
+msgid "Same as Windows"
+msgstr "Igual ao Windows"
+
+msgid "General"
+msgstr "Geral"
+
+msgid "Language"
+msgstr "Idioma"
+
+#. {0}: the name of a language, as in the entries at the end ("Polish", "English"...).
+msgid "In Windows: {0}"
+msgstr "No Windows: {0}"
+
+msgid "Start with Windows"
+msgstr "Iniciar com o Windows"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Espera junto ao relógio, sem tocar sozinho"
+
+msgid "Show station changes"
+msgstr "Mostrar mudanças de estação"
+
+msgid "A card at the bottom after a media key or menu switch"
+msgstr "Um cartão em baixo após mudar com uma tecla multimédia ou no menu"
+
+msgid "Export…"
+msgstr "Exportar…"
+
+msgid "Import…"
+msgstr "Importar…"
+
+#. Part of the file name of an exported station list: "Minimalistic Radio - stations.json".
+msgid "stations"
+msgstr "estações"
+
+msgid "Station list"
+msgstr "Lista de estações"
+
+msgid "Stations saved: {0}."
+msgstr "Estações guardadas: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Não foi possível guardar o ficheiro."
+
+msgid "All files"
+msgstr "Todos os ficheiros"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Isto não é uma lista de estações do Minimalistic Radio."
+
+msgid "All stations from this file are already on the list."
+msgstr "Todas as estações deste ficheiro já estão na lista."
+
+msgid "Stations added: {0}."
+msgstr "Estações adicionadas: {0}."
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Uma cópia num ficheiro, p. ex. para amigos"
+
+msgid "Version {0} is ready to install"
+msgstr "A versão {0} está pronta a instalar"
+
+msgid "Looks for a new version every few hours"
+msgstr "Procura uma nova versão de poucas em poucas horas"
+
+msgid "Not checked yet."
+msgstr "Ainda não verificado."
+
+msgid "Last checked: {0}"
+msgstr "Última verificação: {0}"
+
+msgid "Update"
+msgstr "Atualizar"
+
+msgid "Check now"
+msgstr "Verificar agora"
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Version {0}"
+msgstr "Versão {0}"
+
+#. After "Version 2.5.0 · MIT · "; Lucide is a name.
+msgid "Lucide icons"
+msgstr "ícones Lucide"
+
+msgid "Updates"
+msgstr "Atualizações"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Sair do Minimalistic Radio"
+
+msgid "Stops the radio and removes it from next to the clock"
+msgstr "Para o rádio e remove o ícone junto ao relógio"
+
+msgid "Unmute"
+msgstr "Ativar som"
+
+msgid "Copy title"
+msgstr "Copiar título"
+
+msgid "Now playing"
+msgstr "A tocar agora"
+
+msgid "Copied to clipboard"
+msgstr "Copiado para a área de transferência"
+
+msgid "The radio is already running. Look for its icon next to the clock."
+msgstr "O rádio já está em execução. Procure o ícone junto ao relógio."
+
+msgid "This station uses a format Windows can't play (only MP3 and AAC)."
+msgstr "Esta estação usa um formato que o Windows não reproduz (só MP3 e AAC)."
+
+msgid "The station is sending damaged data."
+msgstr "A estação está a enviar dados danificados."
+
+msgid "The station's server refused access (403)."
+msgstr "O servidor da estação recusou o acesso (403)."
+
+msgid "The station's server returned error {0}."
+msgstr "O servidor da estação devolveu o erro {0}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Não foi possível ligar à estação. Verifique a ligação à Internet."
+
+msgid "The connection to the station was lost."
+msgstr "A ligação à estação foi interrompida."
+
+msgid "The station isn't sending any sound."
+msgstr "A estação não está a enviar som."
+
+msgid "Couldn't play the station. Try again."
+msgstr "Não foi possível reproduzir a estação. Tente novamente."
+
+msgid "Couldn't reach the station directory."
+msgstr "Não foi possível aceder ao diretório de estações."
+
+msgid "The release has no program file."
+msgstr "A versão não contém o ficheiro do programa."
+
+msgid "The downloaded file is damaged."
+msgstr "O ficheiro transferido está danificado."
+
+msgid "Internet radio"
+msgstr "Rádio na Internet"
+
+#. Language names, after "In Windows: ".
+msgid "Polish"
+msgstr "polaco"
+
+msgid "German"
+msgstr "alemão"
+
+msgid "Ukrainian"
+msgstr "ucraniano"
+
+msgid "Czech"
+msgstr "checo"
+
+msgid "Spanish"
+msgstr "espanhol"
+
+msgid "French"
+msgstr "francês"
+
+msgid "Italian"
+msgstr "italiano"
+
+msgid "Portuguese"
+msgstr "português"
+
+msgid "English"
+msgstr "inglês"

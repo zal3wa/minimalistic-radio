@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using static Lang;
 
 // Same JSON shape as earlier versions: [{"Name":…,"Url":…,"Logo":…}] and {"Volume":…,"LastPlayed":…}.
 public sealed class SavedStation
@@ -22,7 +23,7 @@ public sealed class Preferences
 {
     public int Volume { get; set; }
     public string LastPlayed { get; set; }
-    public string Language { get; set; }   // "auto", "pl", "en"
+    public string Language { get; set; }   // "auto" or a language code (Lang.Languages)
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
@@ -37,7 +38,7 @@ public sealed class HistoryEntry
 
 internal sealed class DirectoryStation
 {
-    internal string Id, Name, Country, Url, ResolvedUrl, Logo, Codec, Tags;
+    internal string Id, Name, Country, CountryCode, Url, ResolvedUrl, Logo, Codec, Tags;
     internal int Bitrate;
     internal bool Hls, Working = true;
 }
@@ -197,6 +198,49 @@ internal static class Storage
     internal static string NameKey(string name) => new string(string.Join(" ", (name ?? "").ToLowerInvariant().Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
         .Where(word => word != "radio")).Where(char.IsLetterOrDigit).ToArray());
 
+    // Stations never shown in search or suggestions: data/banned-stations.json, embedded. Missing or malformed: nothing is hidden.
+    sealed class Banned { internal string[] Hosts, Uuids, Names; internal string Country; }
+
+    internal static bool BannedListValid { get; private set; }
+    static readonly List<Banned> BannedList = LoadBanned();
+
+    static List<Banned> LoadBanned()
+    {
+        var list = new List<Banned>();
+        try
+        {
+            using (Stream stream = typeof(Storage).Assembly.GetManifestResourceStream("banned-stations.json"))
+            {
+                if (stream == null) return list;
+                var root = new JavaScriptSerializer().DeserializeObject(new StreamReader(stream).ReadToEnd()) as Dictionary<string, object>;
+                string[] Strings(Dictionary<string, object> item, string key) =>
+                    (item.TryGetValue(key, out object value) ? value as object[] : null)?.OfType<string>().Select(text => text.Trim().ToLowerInvariant()).ToArray() ?? new string[0];
+                foreach (var item in ((root["stations"] as object[]) ?? throw new InvalidOperationException()).Cast<Dictionary<string, object>>())
+                    list.Add(new Banned
+                    {
+                        Hosts = Strings(item, "hosts").Select(host => host.TrimEnd('.')).ToArray(), Uuids = Strings(item, "uuids"), Names = Strings(item, "names"),
+                        Country = (item.TryGetValue("country", out object country) ? country as string : null)?.Trim().ToUpperInvariant()
+                    });
+                BannedListValid = true;
+                return list;
+            }
+        }
+        catch (Exception error) when (error is InvalidOperationException || error is ArgumentException || error is InvalidCastException ||
+            error is KeyNotFoundException || error is IOException)
+        {
+            Debug.WriteLine(error);
+            return new List<Banned>();
+        }
+    }
+
+    internal static bool Hidden(DirectoryStation entry)
+    {
+        string host = Uri.TryCreate(AddressOf(entry), UriKind.Absolute, out Uri uri) ? uri.Host.ToLowerInvariant().TrimEnd('.') : "";
+        string key = NameKey(entry.Name), code = entry.CountryCode?.ToUpperInvariant(), id = entry.Id?.ToLowerInvariant();
+        return BannedList.Any(ban => (host.Length > 0 && ban.Hosts.Any(hidden => host == hidden || host.EndsWith("." + hidden))) ||
+            (id != null && ban.Uuids.Contains(id)) || (code != null && code == ban.Country && key.Length > 0 && ban.Names.Contains(key)));
+    }
+
     // The popular list as shown: playable, not already recommended, no duplicates, no spam, the first 15.
     internal static DirectoryStation[] CleanPopular(IEnumerable<DirectoryStation> popular, IEnumerable<DirectoryStation> recommended)
     {
@@ -221,7 +265,7 @@ internal static class Storage
         try { popular = CleanPopular((await Fetch(client, route, token)).Where(entry => entry.Working), recommended); }
         catch (HttpRequestException error) { Debug.WriteLine(error); complete = false; }   // the recommended ones are still shown
         if (recommended.Length == 0 && popular.Length == 0)
-            throw new HttpRequestException(Lang.T("Nie udało się połączyć z katalogiem stacji.", "Couldn't reach the station directory."));
+            throw new HttpRequestException(L("Couldn't reach the station directory."));
         return new SuggestionList { Recommended = recommended, Popular = popular, Country = country, Complete = complete };
     }
 
@@ -248,14 +292,14 @@ internal static class Storage
                             string Text(string key) => item.TryGetValue(key, out object value) ? value as string : null;
                             var entry = new DirectoryStation
                             {
-                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), Url = Text("url"),
+                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), CountryCode = Text("countrycode"), Url = Text("url"),
                                 ResolvedUrl = Text("url_resolved"), Logo = Text("favicon"),
                                 Codec = Text("codec"), Tags = Text("tags"),
                                 Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0,
                                 Hls = item.TryGetValue("hls", out object flag) && flag is int on && on == 1,
                                 Working = !(item.TryGetValue("lastcheckok", out object ok) && ok is int check && check == 0)
                             };
-                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(AddressOf(entry))) found.Add(entry);
+                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(AddressOf(entry)) && !Hidden(entry)) found.Add(entry);
                         }
                         return found;
                     }
@@ -267,6 +311,6 @@ internal static class Storage
                 Debug.WriteLine(error);
             }
         }
-        throw new HttpRequestException(Lang.T("Nie udało się połączyć z katalogiem stacji.", "Couldn't reach the station directory."));
+        throw new HttpRequestException(L("Couldn't reach the station directory."));
     }
 }

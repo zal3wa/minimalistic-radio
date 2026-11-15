@@ -14,7 +14,7 @@
     <DebugType>none</DebugType>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-    <Version>2.4.0</Version>
+    <Version>2.5.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Minimalistic Radio</Product>
     <Copyright></Copyright>
@@ -55,7 +55,45 @@
       <Private>false</Private>
     </Reference>
     <Page Remove="Theme\Theme.xaml" />
+    <EmbeddedResource Include="../data/banned-stations.json" LogicalName="banned-stations.json" />
     <EmbeddedResource Include="Theme\Theme.xaml" LogicalName="Theme.xaml" />
     <EmbeddedResource Include="Assets\Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
+  </ItemGroup>
+
+  <!-- Translations: each Lang\<code>.po goes into the exe compressed (deflate) as the resource "Lang.<code>"; Lang.cs reads it. -->
+  <ItemGroup>
+    <Catalog Include="Lang\*.po" />
+  </ItemGroup>
+  <UsingTask TaskName="DeflateCatalogs" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Folder Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        Directory.CreateDirectory(Folder);
+        foreach (var file in Files)
+            using (var input = File.OpenRead(file.ItemSpec))
+            using (var output = File.Create(Path.Combine(Folder, Path.GetFileNameWithoutExtension(file.ItemSpec) + ".deflate")))
+            using (var packed = new DeflateStream(output, CompressionLevel.Optimal))
+                input.CopyTo(packed);
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="DeflateCatalogs" Inputs="@(Catalog)" Outputs="@(Catalog->'$(IntermediateOutputPath)Lang\%(Filename).deflate')">
+    <DeflateCatalogs Files="@(Catalog)" Folder="$(IntermediateOutputPath)Lang" />
+  </Target>
+  <Target Name="EmbedCatalogs" DependsOnTargets="DeflateCatalogs" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <PackedCatalog Include="@(Catalog->'$(IntermediateOutputPath)Lang\%(Filename).deflate')" />
+      <EmbeddedResource Include="@(PackedCatalog)" LogicalName="Lang.%(PackedCatalog.Filename)" WithCulture="false" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The self-test checks that each catalog translates every L("…") in the code, so the test build carries the code. -->
+  <ItemGroup Condition="'$(SelfTest)' == 'true'">
+    <EmbeddedResource Include="@(Compile)" LogicalName="Source/%(Filename)%(Extension)" WithCulture="false" />
   </ItemGroup>
 </Project>
