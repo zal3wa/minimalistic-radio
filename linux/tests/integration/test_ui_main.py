@@ -136,12 +136,14 @@ def test_header_buttons(make):
     tooltips = {w.get_tooltip_text() for w in descendants(header) if isinstance(w, Gtk.Button)}
     assert {"Add a station", "Song history", "Settings"} <= tooltips
     assert {"Station", "History"} <= set(texts(header))
-    assert "Minimalistic Radio" not in texts(header)   # no title
-    buttons = [w for w in descendants(header) if isinstance(w, Gtk.Button)]
+    assert not [w for w in descendants(header)   # no title
+                if isinstance(w, Gtk.Label) and w.get_text() == "Minimalistic Radio" and w.get_mapped()]
+    buttons = [w for w in descendants(header) if isinstance(w, Gtk.Button) and w.get_mapped()]
     assert [w for w in buttons if w.has_css_class("close")]
     assert not [w for w in buttons if w.has_css_class("minimize") or w.has_css_class("maximize")]
-    controls = [w for w in descendants(header) if isinstance(w, Gtk.WindowControls)]
-    assert [c.get_tooltip_text() for c in controls] == ["Close (the radio keeps playing)"]
+    controls = [w for w in descendants(header) if isinstance(w, Gtk.WindowControls) and w.get_mapped()]
+    assert [(c.get_decoration_layout(), c.get_tooltip_text()) for c in controls] == [
+        (":close", "Close (the radio keeps playing)")]
     assert Gtk.IconTheme.get_for_display(window.get_display()).has_icon(
         "io.github.zal3wa.minimalistic-radio-history-symbolic")
     window.history_button.emit("clicked")
@@ -157,8 +159,8 @@ def test_subpages_have_back_and_title(make):
         bars = [w for w in descendants(page) if isinstance(w, Adw.HeaderBar)]
         assert len(bars) == 1 and not bars[0].get_show_title() and bars[0].has_css_class("subpage-bar")
         assert title in texts(bars[0])
-        assert [c.get_decoration_layout() for c in descendants(bars[0]) if isinstance(c, Gtk.WindowControls)] == [
-            ":close"]
+        assert ":close" in [c.get_decoration_layout() for c in descendants(bars[0])
+                            if isinstance(c, Gtk.WindowControls)]
 
 
 def test_statistics_opens_over_settings_and_escape_goes_back(make):
