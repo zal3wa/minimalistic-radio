@@ -366,7 +366,7 @@ class StationsPage(Adw.NavigationPage):
         drag.target = drag.origin
         self._offsets = [0.0] * len(self.rows)
 
-        picture = Gtk.Picture(paintable=Gtk.WidgetPaintable.new(row).get_current_image(), can_target=False,
+        picture = Gtk.Picture(paintable=self._image_of(row, own), can_target=False,
                               overflow=Gtk.Overflow.HIDDEN, css_classes=["drag-lift"])
         picture.set_size_request(round(own.get_width()), round(drag.height))
         self._float.put(picture, drag.left, drag.top)
@@ -375,6 +375,14 @@ class StationsPage(Adw.NavigationPage):
         row.add_css_class("dragging")
         row.set_opacity(0)   # the floating copy stands in for it
         row.set_cursor_from_name("grabbing")
+
+    def _image_of(self, row: StationRow, bounds: Graphene.Rect) -> Gdk.Paintable:
+        """A still picture of the row as it looks now. Drawn here: the last frame may not have drawn it
+        since it last changed (the press focuses it), so Gtk.WidgetPaintable could still be empty."""
+        snapshot = Gtk.Snapshot()
+        snapshot.translate(_point(-bounds.get_x(), -bounds.get_y()))
+        self.listbox.snapshot_child(row, snapshot)
+        return snapshot.to_paintable(Graphene.Size().init(bounds.get_width(), bounds.get_height()))
 
     def _follow(self, drag: _Drag, dy: float) -> None:
         """Moves the floating copy with the pointer (within the list) and the gap with it."""
