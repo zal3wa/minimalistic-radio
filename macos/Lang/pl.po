@@ -22,3 +22,39 @@ msgstr "Wyłączono wyłącznikiem czasowym"
 
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "To nie jest lista stacji Minimalistic Radio."
+
+msgid "Stop"
+msgstr "Zatrzymaj"
+
+msgid "Play"
+msgstr "Odtwórz"
+
+msgid "Station"
+msgstr "Stacja"
+
+msgid "Up 5%"
+msgstr "Zwiększ o 5%"
+
+msgid "Down 5%"
+msgstr "Zmniejsz o 5%"
+
+msgid "Mute"
+msgstr "Wycisz"
+
+msgid "Volume"
+msgstr "Głośność"
+
+msgid "Stops at {0}"
+msgstr "Wyłączy się o {0}"
+
+msgid "Sleep timer"
+msgstr "Wyłącznik czasowy"
+
+msgid "{0} min"
+msgstr "{0} min"
+
+msgid "Off"
+msgstr "Wył."
+
+msgid "Settings"
+msgstr "Ustawienia"

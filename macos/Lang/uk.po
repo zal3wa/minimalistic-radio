@@ -22,3 +22,39 @@ msgstr "Зупинено таймером сну"
 
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Це не список станцій Minimalistic Radio."
+
+msgid "Stop"
+msgstr "Зупинити"
+
+msgid "Play"
+msgstr "Відтворити"
+
+msgid "Station"
+msgstr "Станція"
+
+msgid "Up 5%"
+msgstr "Гучніше на 5%"
+
+msgid "Down 5%"
+msgstr "Тихіше на 5%"
+
+msgid "Mute"
+msgstr "Вимкнути звук"
+
+msgid "Volume"
+msgstr "Гучність"
+
+msgid "Stops at {0}"
+msgstr "Вимкнеться о {0}"
+
+msgid "Sleep timer"
+msgstr "Таймер сну"
+
+msgid "{0} min"
+msgstr "{0} хв"
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "Settings"
+msgstr "Налаштування"

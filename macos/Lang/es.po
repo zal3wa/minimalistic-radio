@@ -22,3 +22,39 @@ msgstr "Detenido por el temporizador"
 
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "No es una lista de emisoras de Minimalistic Radio."
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Play"
+msgstr "Reproducir"
+
+msgid "Station"
+msgstr "Emisora"
+
+msgid "Up 5%"
+msgstr "Subir un 5%"
+
+msgid "Down 5%"
+msgstr "Bajar un 5%"
+
+msgid "Mute"
+msgstr "Silenciar"
+
+msgid "Volume"
+msgstr "Volumen"
+
+msgid "Stops at {0}"
+msgstr "Se apaga a las {0}"
+
+msgid "Sleep timer"
+msgstr "Temporizador de apagado"
+
+msgid "{0} min"
+msgstr "{0} min"
+
+msgid "Off"
+msgstr "Desactivado"
+
+msgid "Settings"
+msgstr "Configuración"

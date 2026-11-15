@@ -22,3 +22,39 @@ msgstr "Arrêté par le minuteur"
 
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Ce n'est pas une liste de stations Minimalistic Radio."
+
+msgid "Stop"
+msgstr "Arrêter"
+
+msgid "Play"
+msgstr "Lire"
+
+msgid "Station"
+msgstr "Station"
+
+msgid "Up 5%"
+msgstr "Augmenter de 5%"
+
+msgid "Down 5%"
+msgstr "Baisser de 5%"
+
+msgid "Mute"
+msgstr "Couper le son"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Stops at {0}"
+msgstr "S'arrête à {0}"
+
+msgid "Sleep timer"
+msgstr "Minuteur d'arrêt"
+
+msgid "{0} min"
+msgstr "{0} min"
+
+msgid "Off"
+msgstr "Désactivé"
+
+msgid "Settings"
+msgstr "Paramètres"
