@@ -114,11 +114,12 @@ class StatisticsPage(Adw.NavigationPage):
         for widget in (top, self.total_label, self.per_day_label):
             listening.append(widget)
 
-        # Three tiles: the label at the top, the value at the bottom (in one row even if a label wraps).
+        # Three tiles: the label at the top, the value at the bottom (in one row even if a label wraps). A value
+        # wraps too rather than widen the window ("4 Std. 50 Min." in German, wide fonts).
         tiles = Gtk.Box(spacing=8, homogeneous=True)
         self.tile_values: list[Gtk.Label] = []
         for text in (_("Song titles"), _("Stations"), _("Longest")):
-            value = _label("", "title-4", "numeric", valign=Gtk.Align.END)
+            value = _label("", "title-4", "numeric", valign=Gtk.Align.END, wrap=True)
             tile = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, margin_top=10, margin_bottom=10,
                            margin_start=12, margin_end=12)
             tile.append(_label(text, "caption", "dim-label", wrap=True, vexpand=True, valign=Gtk.Align.START))

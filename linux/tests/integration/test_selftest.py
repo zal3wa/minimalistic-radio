@@ -52,5 +52,5 @@ def test_screenshots_written(tmp_path):
     # Five pages in light and dark, and the settings and statistics scrolled to their end.
     assert len(files) == 14
     assert {f.name for f in files} >= {"linux-statistics-light.png", "linux-settings-end-dark.png"}
-    for file in files:
-        assert 300 < png_width(file) <= 412, file.name
+    widths = {file.name: png_width(file) for file in files}
+    assert all(300 < width <= 412 for width in widths.values()), widths   # nothing widens the window
