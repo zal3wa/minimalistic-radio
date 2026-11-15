@@ -14,8 +14,6 @@ finish-args:
   - --device=dri
   # The tray icon. MPRIS needs nothing: Flatpak lets every app own org.mpris.MediaPlayer2.<app id>.
   - --talk-name=org.kde.StatusNotifierWatcher
-  # Stop before the computer sleeps (PrepareForSleep).
-  - --system-talk-name=org.freedesktop.login1
 modules:
   - name: minimalistic-radio
     buildsystem: meson

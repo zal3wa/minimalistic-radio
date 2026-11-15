@@ -124,15 +124,13 @@ jobs:
           artifact-name: minimalistic-radio.flatpak
 
       # Errors that only this repository's build has (raw output first, then the verdict):
-      # - finish-args-login1-system-talk-name: logind's PrepareForSleep stops the radio before sleep;
-      #   no portal has it. Flathub grants it on request, with that reason.
       # - appstream-external-screenshot-url, appstream-screenshots-not-mirrored-in-ostree: Flathub's
       #   build mirrors the screenshots; this one keeps the GitHub URLs, which a .flatpak from a release can show.
       # - appstream-missing-screenshots: only while the screenshots are not on main yet.
       - name: Lint
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          allowed='"finish-args-login1-system-talk-name","appstream-external-screenshot-url", "appstream-screenshots-not-mirrored-in-ostree"'
+          allowed='"appstream-external-screenshot-url", "appstream-screenshots-not-mirrored-in-ostree"'
           if ! curl -sfI https://raw.githubusercontent.com/zal3wa/minimalistic-radio/main/docs/screenshots/linux-stations-light.png > /dev/null; then
             echo "::warning::The screenshots are not on main yet."
             allowed="$allowed, \"appstream-missing-screenshots\""
