@@ -240,7 +240,12 @@ internal sealed partial class Radio
                 throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
             if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
                 throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
-            if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
+            // "Popular in your country" follows the radio's language (design: languages and country, section 1).
+            foreach (var (language, system, expected) in new (string, string, string)[] { ("pl", "US", "PL"), ("pl", null, "PL"), ("es", "MX", "MX"), ("es", "US", "ES"),
+                ("en", "US", "US"), ("en", null, null), ("de", "AT", "AT"), ("pt", "BR", "BR") })
+                if (Storage.CountryFor(language, system) != expected)
+                    throw new InvalidOperationException($"Błędny kraj popularnych stacji: ({language}, {system}) → {Storage.CountryFor(language, system)}.");
+            if (Storage.RecommendedIds.Length != 10 ||Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
                 throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
             // Where a dragged station lands: after a row once its top edge passes that row's middle (49 px apart, as on the panel).
             double[] rows = { 49, 49, 49, 49, 49 }, mixed = { 30, 60, 30 };

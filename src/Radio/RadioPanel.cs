@@ -510,7 +510,8 @@ internal sealed partial class Radio
             string loadingText = T("Wczytuję propozycje…", "Loading suggestions…");
             string unavailable = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
                 "The station directory is unavailable right now. Try again.");
-            Storage.SuggestionList shown = suggestions;
+            // A change of language can change the country (Storage.CurrentCountry): then they load again.
+            Storage.SuggestionList shown = suggestions?.Country == Storage.CurrentCountry() ? suggestions : null;
             if (shown == null)
             {
                 results.Items.Clear();

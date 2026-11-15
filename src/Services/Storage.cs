@@ -139,8 +139,32 @@ internal static class Storage
         internal bool Complete;    // false: the popular request failed, so this is not kept for the run
     }
 
-    // The country from the system settings ("Country or region"), never from the IP address; null when unknown.
-    internal static string CurrentCountry()
+    // "Popular in your country": the country that goes with the radio's language, never from the IP address; null: worldwide.
+    internal static string CurrentCountry() => CountryFor(Lang.Code, SystemCountry());
+
+    // Where each of the radio's languages is spoken, its home country first. English isn't here: it keeps the system country.
+    private static readonly Dictionary<string, string[]> LanguageCountries = new Dictionary<string, string[]>
+    {
+        ["pl"] = new[] { "PL" },
+        ["de"] = new[] { "DE", "AT", "CH", "LI", "LU" },
+        ["uk"] = new[] { "UA" },
+        ["cs"] = new[] { "CZ" },
+        ["es"] = new[] { "ES", "MX", "AR", "CO", "CL", "PE", "VE", "EC", "GT", "CU", "BO", "DO", "HN", "PY", "SV", "NI", "CR", "PA", "UY", "PR" },
+        ["fr"] = new[] { "FR", "BE", "CH", "LU", "MC", "CA" },
+        ["it"] = new[] { "IT", "CH", "SM" },
+        ["pt"] = new[] { "PT", "BR", "AO", "MZ" }
+    };
+
+    // The system country if the language is spoken there (Spanish in Mexico: Mexico), otherwise the language's home
+    // country (Polish in the USA: Poland). English, or a language not in the table, keeps the system country (null: unknown).
+    internal static string CountryFor(string language, string systemCountry)
+    {
+        if (language == null || !LanguageCountries.TryGetValue(language, out string[] countries)) return systemCountry;
+        return countries.Contains(systemCountry) ? systemCountry : countries[0];
+    }
+
+    // The country from the system settings ("Country or region"); null when unknown.
+    static string SystemCountry()
     {
         // "Country or region" first (RegionInfo follows the regional format, which may differ), then RegionInfo.
         try

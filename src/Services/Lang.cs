@@ -10,6 +10,9 @@ internal static class Lang
 
     internal static bool Polish => Setting == "pl" || (Setting != "en" && SystemPolish);
 
+    // The language the radio is using: "pl" or "en".
+    internal static string Code => Polish ? "pl" : "en";
+
     internal static string T(string polish, string english) => Polish ? polish : english;
 
     // Like Store apps: the first supported language in the user's preferred languages
