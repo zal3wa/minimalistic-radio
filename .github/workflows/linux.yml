@@ -180,8 +180,14 @@ jobs:
       - name: HE-AAC check in the sandbox
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
-          dbus-run-session -- xvfb-run -a flatpak run --command=python3 io.github.zal3wa.minimalistic-radio \
-            /app/share/minimalistic-radio/check_aac.py
+          # Exit 2 means the network or the station was inconclusive: retry once. Exit 1 fails at once.
+          run_check() {
+            dbus-run-session -- xvfb-run -a flatpak run --command=python3 io.github.zal3wa.minimalistic-radio \
+              /app/share/minimalistic-radio/check_aac.py
+          }
+          code=0; run_check || code=$?
+          if [ "$code" = 2 ]; then echo "Inconclusive (exit 2), retrying once"; sleep 20; code=0; run_check || code=$?; fi
+          exit "$code"
 
       # The player tests on the runtime's GStreamer, for information only (--devel: the SDK, which has pip).
       - name: Player tests in the sandbox
@@ -237,7 +243,12 @@ jobs:
 
       - name: HE-AAC check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_aac.py'
+        run: |
+          # Exit 2 means the network or the station was inconclusive: retry once. Exit 1 fails at once.
+          run_check() { snap run --shell minimalistic-radio -c 'python3 $SNAP/usr/share/minimalistic-radio/check_aac.py'; }
+          code=0; run_check || code=$?
+          if [ "$code" = 2 ]; then echo "Inconclusive (exit 2), retrying once"; sleep 20; code=0; run_check || code=$?; fi
+          exit "$code"
 
       - name: HLS check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

@@ -57,3 +57,15 @@ tools/IconMaker  draws radio.ico in all sizes: dotnet run --project tools/IconMa
 ## Linux: the banned-stations list
 
 `data/banned-stations.json` is the one list of stations the radio never shows, shared with Windows. Meson cannot read outside `linux/`, so the Linux build installs a copy, `linux/data/banned-stations.json`. After editing the repo-root file, copy it over the Linux copy (`cp data/banned-stations.json linux/data/`); a unit test fails if the two differ.
+
+## Linux
+
+The Linux version is in `linux/` (Python, GTK 4, libadwaita and GStreamer). It never touches `src/`.
+
+- **Unit tests** run anywhere with Python 3.12 or newer: `cd linux && python -m pytest -q` (install `pytest` first; use a venv at `linux/.venv`). They cover `core/` and `controller.py`, which don't import GTK.
+- **Integration tests** (GStreamer playback against a local server, the window) need a Linux system with PyGObject, GTK and GStreamer: see the `integration` job of `.github/workflows/linux.yml` for the packages. Run them with `cd linux && dbus-run-session -- xvfb-run -a python3 -m pytest tests/integration -q`.
+- **Meson build:** `meson setup _build linux --prefix "$PWD/_installed" && meson compile -C _build && meson test -C _build && meson install -C _build`. The installed app runs a quick check with `_installed/bin/minimalistic-radio --self-test`.
+- **Flatpak:** `flatpak-builder --user --install --force-clean _flatpak linux/flatpak/io.github.zal3wa.minimalistic-radio.yml` (GNOME 51 runtime and SDK).
+- **Snap:** `cd linux && snapcraft` (see `linux/snap/snapcraft.yaml`).
+- **Translations:** `linux/po/*.po`, one catalogue per language, gettext domain `minimalistic-radio`. They are separate from the Windows catalogues in `src/Lang`.
+- **Release:** bump `VERSION` in `linux/minimalistic_radio/__init__.py` and add a `<release>` to `linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in` first, then push an annotated tag `linux-vX.Y.Z` (pre-releases: `linux-vX.Y.Z-beta.N`). GitHub Actions builds the Flatpak and the Snap, creates the release (never marked "latest") and publishes the Snap. Step by step, with the store accounts: [LINUX-PUBLISHING.md](LINUX-PUBLISHING.md). Beta testers: [LINUX-TEST-CHECKLIST.md](LINUX-TEST-CHECKLIST.md).
