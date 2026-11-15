@@ -3,7 +3,7 @@ import Foundation
 // Share a station: a link that opens a page on minimalistic-radio.github.io, which opens the radio with the station
 // (docs/superpowers/specs/2026-11-15-share-station-design.md). The same rules as on Windows, Linux and the page.
 
-/// A station from a share link, checked: a name of 1–100 characters, an http(s) address, an https logo or none.
+/// A station from a share link, checked: a name of 1–100 characters, an http(s) address, an http(s) logo or none.
 public struct SharedStation: Equatable, Sendable {
     public let name: String
     public let url: String
@@ -29,11 +29,20 @@ let shareScheme = "minimalistic-radio"
 let shareMaxAddress = 2048
 let shareMaxName = 100
 
-/// n=name&u=address(&l=logo), form-encoded as the page's URLSearchParams writes it.
+/// n=name&u=address(&l=logo), form-encoded as the page's URLSearchParams writes it. The logo only when it is one a
+/// link may carry.
 public func shareQuery(_ station: Station) -> String {
     var query = "n=" + formEncode(station.name) + "&u=" + formEncode(station.url)
-    if let logo = station.logo, !logo.isEmpty { query += "&l=" + formEncode(logo) }
+    if let logo = shareableLogo(station.logo) { query += "&l=" + formEncode(logo) }
     return query
+}
+
+/// A logo a link carries: an absolute http or https address of at most 2048 characters (the page shows http logos
+/// through https). Anything else is left out, when building and when reading a link.
+func shareableLogo(_ logo: String?) -> String? {
+    guard let address = logo?.trimmingCharacters(in: .whitespacesAndNewlines), address.count <= shareMaxAddress,
+          isWebURL(address) else { return nil }
+    return address
 }
 
 /// The link to send: the page, which offers to open the radio.
@@ -89,10 +98,7 @@ func sharedStation(name: String?, url: String?, logo: String?) -> SharedStation?
         .filter { !CharacterSet.controlCharacters.contains($0) })
     let cleaned = String(String(visible).prefix(shareMaxName)).trimmingCharacters(in: .whitespacesAndNewlines)
     guard !cleaned.isEmpty else { return nil }
-    let picture = logo?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let goodLogo = picture.flatMap { $0.count <= shareMaxAddress && isWebURL($0)
-        && URLComponents(string: $0)?.scheme?.lowercased() == "https" ? $0 : nil }
-    return SharedStation(name: cleaned, url: address, logo: goodLogo)
+    return SharedStation(name: cleaned, url: address, logo: shareableLogo(logo))
 }
 
 /// "Already on the list": the same address after trimming, the scheme and host in any case, the rest exactly, and
