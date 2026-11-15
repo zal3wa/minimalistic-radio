@@ -265,8 +265,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if contains(view, AVRoutePickerView.self) != (page == .stations) {
                 failures.append("the player \(page == .stations ? "doesn't show" : "shows") on \(page)")
             }
+            print("self-test: \(page) controls: \(Set(controlTexts(view)).sorted().joined(separator: " | "))")
+            print("self-test: \(page) views: \(Set(viewClasses(view)).sorted().joined(separator: ", "))")
             let texts = Set(accessibilityTexts(view))
-            print("self-test: \(texts.count) accessibility texts on \(page)")
             guard texts.count >= 3 else { continue }   // no tree built for this process: nothing to check
             for text in present where !texts.contains(where: { $0.contains(text) }) {
                 failures.append("\(page) has no \"\(text)\"")
@@ -279,6 +280,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func contains<T: NSView>(_ view: NSView, _ type: T.Type) -> Bool {
         view is T || view.subviews.contains { contains($0, type) }
+    }
+
+    private func viewClasses(_ view: NSView) -> [String] {
+        [String(describing: type(of: view))] + view.subviews.flatMap(viewClasses)
+    }
+
+    /// The titles and tooltips of the AppKit controls in `view`.
+    private func controlTexts(_ view: NSView) -> [String] {
+        var texts: [String] = [view.toolTip].compactMap { $0 }
+        if let button = view as? NSButton { texts.append(button.title) }
+        if let field = view as? NSTextField { texts.append(field.stringValue) }
+        if let segments = view as? NSSegmentedControl {
+            texts += (0..<segments.segmentCount).compactMap { segments.label(forSegment: $0) }
+        }
+        return texts.filter { !$0.isEmpty } + view.subviews.flatMap(controlTexts)
     }
 
     /// Every label, title and tooltip in an accessibility tree.

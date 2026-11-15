@@ -125,7 +125,7 @@ extension AppDelegate {
         var log = StatisticsLog()
         for back in stride(from: 620, through: 0, by: -1) {
             guard let day = calendar.date(byAdding: .day, value: -back, to: today) else { continue }
-            var hours = [7, 8, 12, 17, 18, 19, 20, 20, 20, 21, 21, 22]   // evenings most often
+            var hours = [7, 12, 17, 18, 19, 19, 20, 20, 20, 20, 21, 21, 21, 22]   // evenings most often
             var picked: [Int] = []
             for _ in 0..<(random.next(upTo: 3) + (back < 40 ? 1 : 0)) {
                 let hour = hours.remove(at: random.next(upTo: hours.count))
