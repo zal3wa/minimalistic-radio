@@ -43,6 +43,11 @@ final class FakeScheduler: Scheduler {
 
     var pending: Int { timers.count }
 
+    /// Seconds until the next timer, nil when none is set.
+    var nextDelay: Double? {
+        timers.values.map(\.due).min().map { $0 - time }
+    }
+
     func advance(_ seconds: Double) {
         let target = time + seconds
         while let next = timers.min(by: { ($0.value.due, $0.key) < ($1.value.due, $1.key) }), next.value.due <= target + 1e-9 {
