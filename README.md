@@ -25,14 +25,14 @@
 
 <table align="center">
   <tr>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#left-click-the-player"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stations-dark.png">
         <img src="docs/screenshots/stations-light.png" width="400" alt="Left click on the tray icon opens the player">
       </picture></a>
       <br><b>Left click</b>: the player
     </td>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#station-search"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
         <img src="docs/screenshots/search-light.png" width="400" alt="Station search with logos, country, codec and bitrate">
@@ -41,14 +41,14 @@
     </td>
   </tr>
   <tr>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#song-history"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
         <img src="docs/screenshots/history-light.png" width="400" alt="Song history">
       </picture></a>
       <br>Song history
     </td>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#settings"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
         <img src="docs/screenshots/settings-light.png" width="400" alt="Settings">
@@ -97,14 +97,14 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
 
 <table align="center">
   <tr>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#linux-stations"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-stations-dark.png">
         <img src="docs/screenshots/linux-stations-light.png" width="400" alt="The station list on Linux">
       </picture></a>
       <br>Stations
     </td>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#linux-station-search"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-search-dark.png">
         <img src="docs/screenshots/linux-search-light.png" width="400" alt="Station search on Linux">
@@ -113,14 +113,14 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
     </td>
   </tr>
   <tr>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#linux-song-history"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-history-dark.png">
         <img src="docs/screenshots/linux-history-light.png" width="400" alt="Song history on Linux">
       </picture></a>
       <br>Song history
     </td>
-    <td align="center" valign="top">
+    <td align="center" valign="top" width="50%">
       <a href="docs/screenshots/README.md#linux-settings"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-settings-dark.png">
         <img src="docs/screenshots/linux-settings-light.png" width="400" alt="Settings on Linux">
