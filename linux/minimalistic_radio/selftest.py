@@ -116,10 +116,11 @@ def _render(window: Gtk.Window, path: Path) -> None:
 
 
 def _prepare(window: RadioWindow, page: str) -> None:
+    if page == "search":
+        window.search_page._suggested = ([], [], None)   # no suggestions: nothing goes to the network
     window.show_page(page)
     if page == "search":
         search = window.search_page
-        search._suggested = ([], [], None)   # no suggestions: nothing goes to the network
         search.entry.set_text("jazz")
         found = directory.parse_results(json.loads(FIXTURE.read_text(encoding="utf-8")))
         search._found(search._generation, found)
@@ -134,12 +135,11 @@ def take_screenshots(app: Any, folder: Path) -> int:
         styles = Adw.StyleManager.get_default()
         with tempfile.TemporaryDirectory() as temp:
             controller = _controller(Path(temp), STATIONS)
-            for song in SONGS[:-1]:
-                controller.on_player_title(song)
             controller.select(0)
             controller.play()
             controller.on_player_started()
-            controller.on_player_title(SONGS[-1])
+            for song in SONGS:   # the last one stays as the current song
+                controller.on_player_title(song)
             window = RadioWindow(controller, translate)
             window.present()
             pump(600)
