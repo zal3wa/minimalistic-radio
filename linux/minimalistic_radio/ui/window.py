@@ -25,7 +25,7 @@ from .stations_page import StationsPage  # noqa: E402
 from .statistics_page import StatisticsPage  # noqa: E402
 
 PAGES = ("stations", "search", "history", "settings", "statistics")
-PARENT = {"statistics": "settings"}   # opened from that page, and back goes there
+OPENS_STATISTICS = ("settings", "history")   # Statistics opens over these, and back goes there
 EVERYTHING = (Change.STATE | Change.STATIONS | Change.TRACK | Change.COVER | Change.VOLUME | Change.SLEEP
               | Change.STATISTICS)
 HISTORY_ICON = "io.github.zal3wa.minimalistic-radio-history-symbolic"
@@ -140,11 +140,16 @@ class RadioWindow(Adw.ApplicationWindow):
         return [stack.get_item(i).get_tag() for i in range(stack.get_n_items())]
 
     def show_page(self, tag: str) -> None:
-        """Opens `tag` with the pages it is reached through under it (Statistics opens over Settings)."""
+        """Opens `tag` with the pages it is reached through under it: Statistics opens over Song history or
+        Settings, whichever is open (Settings otherwise), so back goes there."""
         if tag not in PAGES:
             return
-        wanted = ["stations"] + ([PARENT[tag]] if tag in PARENT else []) + ([tag] if tag != "stations" else [])
         shown = self.shown_pages()
+        if tag == "statistics":
+            parent = shown[1] if len(shown) > 1 and shown[1] in OPENS_STATISTICS else "settings"
+            wanted = ["stations", parent, tag]
+        else:
+            wanted = ["stations"] + ([tag] if tag != "stations" else [])
         if shown == wanted:
             return
         if shown[:len(wanted)] == wanted:

@@ -30,6 +30,7 @@ from .glib_scheduler import GLibScheduler  # noqa: E402
 from .pictures import picture  # noqa: E402
 from .platform.menu_model import build_tray_menu  # noqa: E402
 from .platform.mpris import MprisService  # noqa: E402
+from .ui.history_page import STATISTICS_ICON  # noqa: E402
 from .ui.window import HISTORY_ICON, PAGES, RadioWindow  # noqa: E402
 
 TEST_STATIONS = [Station("Radio 357", "http://s0.example/live"), Station("RMF FM", "http://s1.example/live")]
@@ -175,6 +176,12 @@ def _check_statistics(window: RadioWindow) -> None:
     _check(page.shown == "empty", "the Statistics page isn't empty after clearing")
     theme = Gtk.IconTheme.get_for_display(window.get_display())
     _check(theme.has_icon(HISTORY_ICON), "the History button's icon is missing")
+    _check(theme.has_icon(STATISTICS_ICON), "the Statistics button's icon is missing")
+    window.show_page("history")
+    pump(50)
+    window.history_page.statistics_button.emit("clicked")
+    pump(50)
+    _check(window.shown_pages() == ["stations", "history", "statistics"], "Statistics doesn't open over Song history")
 
 
 def _check_polish() -> None:

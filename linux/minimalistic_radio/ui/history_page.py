@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from .window import RadioWindow
 
 LOGO_SIZE = 40
+STATISTICS_ICON = "io.github.zal3wa.minimalistic-radio-statistics-symbolic"   # in the app's icons (window.py)
 
 
 def search_query(title: str) -> str:
@@ -95,8 +96,14 @@ class HistoryPage(Adw.NavigationPage):
         self.stack.add_named(self.empty, "empty")
         self.stack.add_named(self.scroller, "list")
 
+        # [Statistics] left of the ✕, labelled like the stations page's buttons.
+        bar = subpage_bar(self.get_title(), _)
+        self.statistics_button = Gtk.Button(child=Adw.ButtonContent(icon_name=STATISTICS_ICON, label=_("Statistics")),
+                                            css_classes=["raised"])
+        self.statistics_button.connect("clicked", lambda _button: window.show_page("statistics"))
+        bar.pack_end(self.statistics_button)
         toolbar = Adw.ToolbarView(content=self.stack)
-        toolbar.add_top_bar(subpage_bar(self.get_title(), _))
+        toolbar.add_top_bar(bar)
         self.set_child(toolbar)
         self._fill()
 

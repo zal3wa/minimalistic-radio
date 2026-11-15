@@ -26,10 +26,11 @@ install_data(
   'icons/hicolor/symbolic/apps' / app_id + '-symbolic.svg',
   install_dir: get_option('datadir') / 'icons/hicolor/symbolic/apps',
 )
-# The app's own button icons (the History button's clock), only for the app: ui/window.py adds this folder to
-# its icon theme, so they stay out of the desktop's.
+# The app's own button icons (History's clock, Statistics' columns), only for the app: ui/window.py adds this
+# folder to its icon theme, so they stay out of the desktop's.
 install_data(
   'icons/hicolor/symbolic/actions' / app_id + '-history-symbolic.svg',
+  'icons/hicolor/symbolic/actions' / app_id + '-statistics-symbolic.svg',
   install_dir: pkgdatadir / 'icons',
 )
 

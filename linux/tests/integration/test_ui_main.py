@@ -163,7 +163,7 @@ def test_subpages_have_back_and_title(make):
                             if isinstance(c, Gtk.WindowControls)]
 
 
-def test_statistics_opens_over_settings_and_escape_goes_back(make):
+def test_statistics_opens_over_settings_or_history_and_escape_goes_back(make):
     window, _ = make()
     window.show_page("statistics")
     assert wait_for(lambda: window.shown_pages() == ["stations", "settings", "statistics"])
@@ -173,8 +173,21 @@ def test_statistics_opens_over_settings_and_escape_goes_back(make):
     assert wait_for(lambda: window.shown_pages() == ["stations", "settings", "statistics"])
     window.show_page("history")
     assert wait_for(lambda: window.shown_pages() == ["stations", "history"])
+    # From Song history, its [Statistics] button: back (and Escape) return to Song history.
+    button = window.history_page.statistics_button
+    assert "Statistics" in texts(button) and button.has_css_class("raised")
+    assert any(isinstance(w, Gtk.Image) and w.get_icon_name() == "io.github.zal3wa.minimalistic-radio-statistics-symbolic"
+               for w in descendants(button))
+    assert Gtk.IconTheme.get_for_display(window.get_display()).has_icon(
+        "io.github.zal3wa.minimalistic-radio-statistics-symbolic")
+    button.emit("clicked")
+    assert wait_for(lambda: window.shown_pages() == ["stations", "history", "statistics"])
+    window._key_pressed(None, Gdk.KEY_Escape, 0, NO_MODIFIERS)
+    assert wait_for(lambda: window.shown_pages() == ["stations", "history"])
     window.show_page("stations")
     assert wait_for(lambda: window.shown_pages() == ["stations"])
+    window.show_page("statistics")   # from elsewhere (the stations page): over Settings
+    assert wait_for(lambda: window.shown_pages() == ["stations", "settings", "statistics"])
 
 
 def test_station_rows(make):
