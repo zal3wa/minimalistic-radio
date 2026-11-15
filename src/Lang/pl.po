@@ -428,3 +428,54 @@ msgstr "Pokaż"
 
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Zbierane tylko na tym komputerze, nigdzie niewysyłane"
+
+msgid "All"
+msgstr "Wszystko"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Miesiąc"
+
+msgid "Listening time"
+msgstr "Czas słuchania"
+
+msgid "Since {0}"
+msgstr "Od {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} dziennie"
+
+msgid "Song titles"
+msgstr "Tytuły utworów"
+
+msgid "Longest"
+msgstr "Najdłużej bez przerwy"
+
+msgid "Top stations"
+msgstr "Najczęściej słuchane stacje"
+
+msgid "Top artists"
+msgstr "Najczęściej grani wykonawcy"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Na podstawie tytułów podawanych przez stacje · {0} czasu słuchania"
+
+msgid "Not enough song titles yet"
+msgstr "Jeszcze za mało tytułów utworów"
+
+msgid "When you listen"
+msgstr "Kiedy słuchasz"
+
+msgid "Most often {0}"
+msgstr "Najczęściej {0}"
+
+msgid "Clear statistics"
+msgstr "Wyczyść statystyki"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Wyczyścić wszystkie statystyki? Tego nie da się cofnąć."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Na razie nic tu nie ma. Posłuchaj chwilę radia i wróć tutaj."

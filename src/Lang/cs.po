@@ -428,3 +428,54 @@ msgstr "Zobrazit"
 
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Shromažďují se jen v tomto počítači, nikam se neposílají"
+
+msgid "All"
+msgstr "Vše"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Měsíc"
+
+msgid "Listening time"
+msgstr "Doba poslechu"
+
+msgid "Since {0}"
+msgstr "Od {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} denně"
+
+msgid "Song titles"
+msgstr "Názvy skladeb"
+
+msgid "Longest"
+msgstr "Nejdéle v kuse"
+
+msgid "Top stations"
+msgstr "Nejposlouchanější stanice"
+
+msgid "Top artists"
+msgstr "Nejhranější interpreti"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Podle názvů skladeb, které posílají stanice · {0} doby poslechu"
+
+msgid "Not enough song titles yet"
+msgstr "Zatím málo názvů skladeb"
+
+msgid "When you listen"
+msgstr "Kdy posloucháte"
+
+msgid "Most often {0}"
+msgstr "Nejčastěji {0}"
+
+msgid "Clear statistics"
+msgstr "Vymazat statistiky"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Vymazat všechny statistiky? Tuto akci nelze vrátit."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."

@@ -429,3 +429,54 @@ msgstr "Ver"
 
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Se recopilan solo en este equipo y nunca se envían a ninguna parte"
+
+msgid "All"
+msgstr "Todo"
+
+msgid "Year"
+msgstr "Año"
+
+msgid "Month"
+msgstr "Mes"
+
+msgid "Listening time"
+msgstr "Tiempo de escucha"
+
+msgid "Since {0}"
+msgstr "Desde el {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} al día"
+
+msgid "Song titles"
+msgstr "Títulos de canciones"
+
+msgid "Longest"
+msgstr "Sesión más larga"
+
+msgid "Top stations"
+msgstr "Emisoras más escuchadas"
+
+msgid "Top artists"
+msgstr "Artistas más escuchados"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Según los títulos que envían las emisoras · {0} del tiempo de escucha"
+
+msgid "Not enough song titles yet"
+msgstr "Aún no hay suficientes títulos de canciones"
+
+msgid "When you listen"
+msgstr "Cuándo escuchas"
+
+msgid "Most often {0}"
+msgstr "Más a menudo: {0}"
+
+msgid "Clear statistics"
+msgstr "Borrar estadísticas"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "¿Borrar todas las estadísticas? No se puede deshacer."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Aún no hay nada. Escucha un rato y vuelve."

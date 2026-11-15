@@ -43,12 +43,13 @@ internal static class Lang
         Format(Translate(context + "\u0004" + english, english), english, values);
 
     // A text with a number, in the form the language needs for it: Ln("{0} play", "{0} plays", 3) is "3 plays", in
-    // Polish "3 odtworzenia". {0} is the number. The catalog has the forms as msgstr[0], msgstr[1]…
+    // Polish "3 odtworzenia". {0} is the number, written the language's way ("1,288", "1 288"). The catalog has the
+    // forms as msgstr[0], msgstr[1]…
     internal static string Ln(string singular, string plural, long count)
     {
         string english = count == 1 ? singular : plural;
         string text = Code != "en" && Catalog(Code).TryGetValue(singular + "\u0001" + PluralForm(Code, count), out string found) ? found : english;
-        return Format(text, english, new object[] { count });
+        return Format(text, english, new object[] { count.ToString("N0", Culture) });
     }
 
     // Which msgstr[n] a number takes, as each catalog's Plural-Forms header says.
@@ -238,8 +239,8 @@ internal static class Lang
             Setting = "pl";
             string polish = string.Join("|", new[] { 1, 3, 5, 22 }.Select(count => Ln("{0} play", "{0} plays", count)));
             Setting = "en";
-            string english = string.Join("|", new[] { 1, 14 }.Select(count => Ln("{0} play", "{0} plays", count)));
-            if (polish != "1 odtworzenie|3 odtworzenia|5 odtworzeń|22 odtworzenia" || english != "1 play|14 plays")
+            string english = string.Join("|", new[] { 1, 14, 1288 }.Select(count => Ln("{0} play", "{0} plays", count)));
+            if (polish != "1 odtworzenie|3 odtworzenia|5 odtworzeń|22 odtworzenia" || english != "1 play|14 plays|1,288 plays")
                 throw new InvalidOperationException("Błędna liczba mnoga: " + polish + ", " + english);
         }
         finally { Setting = saved; }

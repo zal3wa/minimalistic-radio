@@ -427,3 +427,54 @@ msgstr "Показати"
 
 msgid "Collected only on this computer, never sent anywhere"
 msgstr "Збирається лише на цьому комп’ютері, нікуди не надсилається"
+
+msgid "All"
+msgstr "Усе"
+
+msgid "Year"
+msgstr "Рік"
+
+msgid "Month"
+msgstr "Місяць"
+
+msgid "Listening time"
+msgstr "Час слухання"
+
+msgid "Since {0}"
+msgstr "З {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} на день"
+
+msgid "Song titles"
+msgstr "Назви пісень"
+
+msgid "Longest"
+msgstr "Найдовше без перерви"
+
+msgid "Top stations"
+msgstr "Найпопулярніші станції"
+
+msgid "Top artists"
+msgstr "Найпопулярніші виконавці"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "За назвами пісень, які надсилають станції · {0} часу слухання"
+
+msgid "Not enough song titles yet"
+msgstr "Поки що замало назв пісень"
+
+msgid "When you listen"
+msgstr "Коли ви слухаєте"
+
+msgid "Most often {0}"
+msgstr "Найчастіше {0}"
+
+msgid "Clear statistics"
+msgstr "Очистити статистику"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Очистити всю статистику? Цю дію не можна скасувати."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Тут поки нічого немає. Послухайте радіо трохи й поверніться."

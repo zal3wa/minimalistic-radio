@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -660,7 +661,7 @@ internal sealed partial class Radio
             }
             if (target == "statistics")
             {
-                FillStatistics();
+                FillStatistics(StatisticsPeriod.Month);   // the page opens on this month
                 statisticsPane.ScrollToTop();
             }
             if (stations) ShowActiveStationAfterLayout(false);
@@ -932,7 +933,224 @@ internal sealed partial class Radio
             historyPane.Content = content;
         }
 
-        void FillStatistics() { }
+        // Statistics page (Settings › Statistics › Show): the period switch, then that period's numbers. The counting is
+        // in Statistics.cs; here they are only laid out.
+        void FillStatistics(StatisticsPeriod period)
+        {
+            statistics.Tick(DateTime.UtcNow);   // the station playing now counts up to now
+            StatisticsSummary summary = statistics.Summarize(period, DateTime.UtcNow, TimeZoneInfo.Local);
+            CultureInfo culture = Culture;
+            var content = new StackPanel { Margin = new Thickness(Gutter) };
+
+            // All | Year | Month, the chosen one filled with the accent colour.
+            var segments = new UniformGrid { Rows = 1 };
+            foreach (var (label, value) in new[] { (L("All"), StatisticsPeriod.All), (L("Year"), StatisticsPeriod.Year), (L("Month"), StatisticsPeriod.Month) })
+            {
+                Button segment = NewButton(value == period ? "AccentButton" : "GhostButton", label);
+                segment.Height = 30;
+                segment.Padding = new Thickness(4, 0, 4, 0);
+                segment.Margin = new Thickness(1, 0, 1, 0);
+                if (value == period) segment.FontWeight = FontWeights.SemiBold;
+                else segment.Click += (_, _) => FillStatistics(value);
+                segments.Children.Add(segment);
+            }
+            var switcher = new Border
+            {
+                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(1, 2, 1, 2), Child = segments
+            };
+            switcher.SetResourceReference(Border.BackgroundProperty, "Card");
+            switcher.SetResourceReference(Border.BorderBrushProperty, "Line");
+            content.Children.Add(switcher);
+            statisticsPane.Content = content;
+            if (summary.Empty)
+            {
+                TextBlock nothing = Note(L("Nothing here yet. Listen for a while and come back."));
+                nothing.Margin = new Thickness(2, Gutter, 2, 0);
+                content.Children.Add(nothing);
+                return;
+            }
+
+            Border Box(FrameworkElement child, Thickness padding, double top)
+            {
+                Border box = CardFrame(child, padding);
+                box.Margin = new Thickness(0, top, 0, 0);
+                return box;
+            }
+            TextBlock Small(string text, double size = 13)
+            {
+                TextBlock small = Note(text);
+                small.FontSize = size;
+                small.TextWrapping = TextWrapping.NoWrap;
+                small.VerticalAlignment = VerticalAlignment.Center;
+                return small;
+            }
+            Border Bar(double height, CornerRadius corners)
+            {
+                var bar = new Border { Height = height, CornerRadius = corners };
+                bar.SetResourceReference(Border.BackgroundProperty, "Accent");
+                return bar;
+            }
+
+            // Listening time: the period on the right, the total in large type, the average per day under it.
+            string since = period == StatisticsPeriod.Month ? summary.Since.ToString("Y", culture)
+                : period == StatisticsPeriod.Year ? summary.Since.Year.ToString(CultureInfo.InvariantCulture)
+                : L("Since {0}", summary.Since.ToString(DatePattern(culture), culture));
+            since = since.Substring(0, 1).ToUpper(culture) + since.Substring(1);   // "listopad 2026" as a label: "Listopad 2026"
+            TextBlock periodLabel = Small(since, 12.5);
+            periodLabel.Margin = new Thickness(12, 0, 0, 0);
+            content.Children.Add(Box(Spaced(Orientation.Vertical, 2,
+                Columns((Small(L("Listening time"), 12.5), Star), (periodLabel, Auto)),
+                new TextBlock { Text = Statistics.Duration(summary.Total), FontSize = 30, FontWeight = FontWeights.SemiBold },
+                Note(L("≈ {0} a day", Statistics.Duration(summary.PerDay)))), new Thickness(16, 14, 16, 14), Gutter));
+
+            // Three tiles: the label on top, the value at the bottom, so the values stay in one row if a label wraps.
+            var tiles = new Grid { Margin = new Thickness(0, Gutter, 0, 0) };
+            var values = new (string Label, string Value)[]
+            {
+                (L("Song titles"), summary.Songs.ToString("N0", culture)), (L("Stations"), summary.Stations.ToString("N0", culture)),
+                (L("Longest"), Statistics.Duration(summary.Longest))
+            };
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (i > 0) tiles.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+                tiles.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+                var value = new TextBlock
+                {
+                    Text = values[i].Value, FontSize = 17, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0)
+                };
+                var tile = new DockPanel();
+                DockPanel.SetDock(value, Dock.Bottom);
+                tile.Children.Add(value);
+                tile.Children.Add(Note(values[i].Label));
+                Border box = Box(tile, new Thickness(12, 10, 12, 10), 0);
+                Grid.SetColumn(box, 2 * i);
+                tiles.Children.Add(box);
+            }
+            content.Children.Add(tiles);
+
+            // Top stations: logo, name, time, and a bar as long as the time next to the first one's.
+            content.Children.Add(Group(L("Top stations")));
+            var stationRows = new StackPanel();
+            foreach (var (stationName, address, time) in summary.TopStations)
+            {
+                if (stationRows.Children.Count > 0) stationRows.Children.Add(Divider(new Thickness(0)));
+                SavedStation known = Stations.FirstOrDefault(item => address != null && Storage.SameStream(item.Url, address))
+                    ?? Stations.FirstOrDefault(item => item.Name == stationName);
+                Grid badge = LogoBadge(known?.Logo, 24);
+                badge.Margin = new Thickness(0, 0, 10, 0);
+                TextBlock timeText = Small(Statistics.Duration(time));
+                timeText.Margin = new Thickness(8, 0, 0, 0);
+                var nameText = new TextBlock { Text = stationName, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+                double share = Math.Max(0.03, (double)time.Ticks / summary.TopStations[0].Time.Ticks);
+                var bar = new Grid { Margin = new Thickness(34, 6, 0, 0) };
+                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
+                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - share, GridUnitType.Star) });
+                bar.Children.Add(Bar(6, new CornerRadius(3)));
+                var entry = new StackPanel { Margin = new Thickness(0, 10, 0, 10) };
+                entry.Children.Add(Columns((badge, Auto), (nameText, Star), (timeText, Auto)));
+                entry.Children.Add(bar);
+                stationRows.Children.Add(entry);
+            }
+            content.Children.Add(Box(stationRows, new Thickness(14, 4, 14, 4), 0));
+
+            // Top artists, from the song titles: only when the stations sent titles for at least 20 % of the time.
+            TextBlock artistsTitle = Group(L("Top artists"));
+            artistsTitle.Margin = new Thickness(2, 18, 0, 2);
+            content.Children.Add(artistsTitle);
+            TextBlock source = Note(L("From song titles sent by the stations · {0} of listening time", summary.TitlesShare.ToString("P0", culture)));
+            source.Margin = new Thickness(2, 0, 2, 8);
+            content.Children.Add(source);
+            if (summary.EnoughTitles)
+            {
+                var artistRows = new StackPanel();
+                for (int i = 0; i < summary.TopArtists.Count; i++)
+                {
+                    if (i > 0) artistRows.Children.Add(Divider(new Thickness(0)));
+                    TextBlock rank = Small((i + 1).ToString(culture));
+                    rank.Width = 16;
+                    rank.TextAlignment = TextAlignment.Right;
+                    rank.Margin = new Thickness(0, 0, 12, 0);
+                    TextBlock plays = Small(Ln("{0} play", "{0} plays", summary.TopArtists[i].Plays));
+                    plays.Margin = new Thickness(8, 0, 0, 0);
+                    var artist = new TextBlock
+                    {
+                        Text = summary.TopArtists[i].Name, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center
+                    };
+                    var row = (Grid)Columns((rank, Auto), (artist, Star), (plays, Auto));
+                    row.Height = 40;
+                    artistRows.Children.Add(row);
+                }
+                content.Children.Add(Box(artistRows, new Thickness(14, 2, 14, 2), 0));
+            }
+            else content.Children.Add(Box(Note(L("Not enough song titles yet")), new Thickness(14, 12, 14, 12), 0));
+
+            // When you listen: the busiest hour, and a bar for each hour of the day.
+            content.Children.Add(Group(L("When you listen")));
+            string Hour(int hour) => new DateTime(2000, 1, 1, hour % 24, 0, 0).ToString("HH:mm", CultureInfo.InvariantCulture);
+            var hours = new Grid { Height = 64 };
+            double busiest = summary.Hours.Max();
+            for (int hour = 0; hour < 24; hour++)
+            {
+                hours.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+                double minutes = summary.Hours[hour];
+                // Any listening at all keeps a sliver, so a quiet hour doesn't look like none.
+                Border bar = Bar(minutes <= 0 ? 0 : Math.Max(2, Math.Round(minutes / busiest * 60)), new CornerRadius(2, 2, 0, 0));
+                bar.VerticalAlignment = VerticalAlignment.Bottom;
+                bar.Margin = new Thickness(1, 0, 1, 0);
+                Grid.SetColumn(bar, hour);
+                hours.Children.Add(bar);
+            }
+            var axis = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Child = hours };
+            axis.SetResourceReference(Border.BorderBrushProperty, "Line");
+            var marks = new Grid();
+            for (int i = 0; i <= 4; i++)
+            {
+                if (i > 0) marks.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+                marks.ColumnDefinitions.Add(new ColumnDefinition { Width = Auto });
+                TextBlock mark = Small((i * 6).ToString("00", CultureInfo.InvariantCulture), 11);
+                Grid.SetColumn(mark, 2 * i);
+                marks.Children.Add(mark);
+            }
+            content.Children.Add(Box(Spaced(Orientation.Vertical, 6,
+                Note(L("Most often {0}", Hour(summary.BusiestHour) + "–" + Hour(summary.BusiestHour + 1))), axis, marks),
+                new Thickness(16, 14, 16, 10), 0));
+
+            // Clear statistics, after a question (the history stays).
+            var clear = SmallButton("LinkButton", L("Clear statistics"));
+            clear.HorizontalAlignment = HorizontalAlignment.Left;
+            clear.Margin = new Thickness(-4, 10, 0, 0);
+            var confirmClear = RowButton(L("Clear statistics"));
+            confirmClear.SetResourceReference(Control.ForegroundProperty, "Danger");
+            var keep = RowButton(L("Cancel"));
+            keep.Margin = new Thickness(8, 0, 0, 0);
+            TextBlock question = Note(L("Clear all statistics? This can't be undone."));
+            question.Margin = new Thickness(0, 0, 0, 8);
+            var confirmation = new StackPanel { Margin = new Thickness(2, Gutter, 0, 0), Visibility = Visibility.Collapsed };
+            confirmation.Children.Add(question);
+            confirmation.Children.Add(Columns((confirmClear, Auto), (keep, Auto), (new Border(), Star)));
+            clear.Click += (_, _) =>
+            {
+                clear.Visibility = Visibility.Collapsed;
+                confirmation.Visibility = Visibility.Visible;
+                confirmation.BringIntoView();
+            };
+            keep.Click += (_, _) =>
+            {
+                confirmation.Visibility = Visibility.Collapsed;
+                clear.Visibility = Visibility.Visible;
+            };
+            confirmClear.Click += (_, _) =>
+            {
+                ClearStatistics();
+                FillStatistics(period);
+            };
+            content.Children.Add(clear);
+            content.Children.Add(confirmation);
+        }
+
+        // A date without the weekday in the language's long format ("2 March 2025", "March 2, 2025", "2. března 2025").
+        static string DatePattern(CultureInfo culture) =>
+            Regex.Replace(culture.DateTimeFormat.LongDatePattern, @"dddd[,.]?\s*", "").Trim(' ', ',');
 
         // Settings page, laid out like the Windows 11 Settings app (and like the Linux and Mac apps): General, Stations,
         // Statistics, Updates, About and Quit, each one card of rows.
