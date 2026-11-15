@@ -479,3 +479,15 @@ msgstr "Vymazat všechny statistiky? Tuto akci nelze vrátit."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
+
+msgid "Automatic updates"
+msgstr "Automatické aktualizace"
+
+msgid "Collected since {0}"
+msgstr "Shromažďují se od {0}"
+
+msgid "Nothing collected yet"
+msgstr "Zatím nic není shromážděno"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."

@@ -56,9 +56,23 @@ internal sealed class Statistics
 
     internal bool Recording => open != null;
 
+    // Settings › Statistics' switch. Off, nothing new is recorded; what was collected stays.
+    internal bool Collecting { get; private set; } = true;
+
+    // "Collected since": when the first recorded session started (UTC); none yet: null.
+    internal DateTime? FirstSession => Sessions.Count == 0 ? (DateTime?)null : Sessions.Min(session => session.Start);
+
+    // Switching off ends a running session there, as a Stop would.
+    internal void SetCollecting(bool on, DateTime now)
+    {
+        if (!on) End(now, false);
+        Collecting = on;
+    }
+
     // Audio started (also again after a reconnect). All times are UTC.
     internal void Begin(string station, string url, DateTime now)
     {
+        if (!Collecting) return;
         if (open != null && Storage.SameStream(open.Url, url))
         {
             Tick(now);
@@ -104,6 +118,7 @@ internal sealed class Statistics
     // A song the history recorded (the same filters: no ads, station names or repeats).
     internal void AddSong(string station, string title, DateTime now)
     {
+        if (!Collecting) return;
         Songs.Add(new PlayedSong { Station = station, Title = title, Time = now });
         MarkTitles();
     }
@@ -402,6 +417,24 @@ internal sealed class Statistics
         recorded.End(t.AddHours(9), true);
         recorded.Begin("Radio A", "https://a.example/live", t.AddHours(9));
         Check(recorded.Sessions.Count == 2 && recorded.Sessions[0].End == t.AddMinutes(45), "sesja po uśpieniu komputera.");
+
+        // Switched off: the running session ends there, nothing new is recorded, what was collected stays.
+        var paused = new Statistics();
+        Check(paused.Collecting && paused.FirstSession == null, "statystyki są domyślnie włączone i puste.");
+        paused.Begin("Radio A", "https://a.example/live", t);
+        paused.AddSong("Radio A", "Queen - A Kind Of Magic", t.AddMinutes(1));
+        paused.SetCollecting(false, t.AddMinutes(10));
+        Check(!paused.Collecting && !paused.Recording && paused.Sessions.Count == 1 && paused.Sessions[0].End == t.AddMinutes(10),
+            "wyłączenie kończy trwającą sesję.");
+        paused.Begin("Radio A", "https://a.example/live", t.AddMinutes(11));
+        paused.MarkTitles();
+        paused.AddSong("Radio A", "Editors - Shadow", t.AddMinutes(12));
+        paused.Tick(t.AddMinutes(15));
+        Check(!paused.Recording && paused.Sessions.Count == 1 && paused.Songs.Count == 1 && paused.Sessions[0].End == t.AddMinutes(10),
+            "wyłączone statystyki nic nie zapisują.");
+        paused.SetCollecting(true, t.AddMinutes(16));
+        paused.Begin("Radio A", "https://a.example/live", t.AddMinutes(16));   // on again: a new session, not the one switched off
+        Check(paused.Recording && paused.Sessions.Count == 2 && paused.FirstSession == t, "ponowne włączenie statystyk.");
 
         // Top lists, the songs, the share of song titles and the 20 % threshold.
         Statistics top = Played(("Antyradio Hard", At(2026, 11, 2, 20), At(2026, 11, 2, 22), true), ("Radio 357", At(2026, 11, 3, 20), At(2026, 11, 3, 23), false),

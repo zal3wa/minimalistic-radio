@@ -18,7 +18,7 @@ dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out-tes
 ```
 
 - `out-test\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
-- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history, statistics (a year of sample listening, only in memory: this month and everything), the station form, Add a station and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
+- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history, statistics (a year of sample listening, only in memory: this month, switched off, and everything), the station form, Add a station and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots` (without the `MinimalisticRadio-shot-` prefix). The `tray-menu` picture puts the real menu above a drawn corner of the Windows 11 taskbar, as wide as the Linux tray picture. The stations, songs and cover are the same as in the Linux pictures, and only in memory. Don't touch the mouse while it runs: the panel closes when it loses focus, and a hovered menu item shows up highlighted.
 
 ## Translations
@@ -38,7 +38,7 @@ Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release wi
 - Song titles come from the stream's ICY metadata; cover art from the iTunes Search API, used only when the artist matches.
 - Windows media controls (Win+A, media keys, lock screen) are fed through `SystemMediaTransportControls`. A Start menu shortcut with the app's ID lets Windows and taskbar media players know the app.
 - Updates: every 6 hours the latest GitHub release is checked and downloaded in the background; a click on the green arrow renames the running exe to `*.old`, puts the new one in its place and restarts.
-- Statistics (Settings › Statistics): a session runs while a station plays (a reconnect to the same station within 2 minutes continues it) and is saved every 5 minutes; songs are recorded with the history's entries. Both go to `statistics.json` next to the history and never leave the computer. The counting (periods in local time, sessions over a period's edge, top lists, hours) is in `Services/Statistics.cs`, without WPF, and the self-test checks it.
+- Statistics (Settings › Statistics): a session runs while a station plays (a reconnect to the same station within 2 minutes continues it) and is saved every 5 minutes; songs are recorded with the history's entries. Both go to `statistics.json` next to the history and never leave the computer. Switched off in Settings (kept in `preferences.json`), nothing new is recorded and what was collected stays. The counting (periods in local time, sessions over a period's edge, top lists, hours) is in `Services/Statistics.cs`, without WPF, and the self-test checks it.
 
 ## Project structure
 

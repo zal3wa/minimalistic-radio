@@ -480,3 +480,15 @@ msgstr "¿Borrar todas las estadísticas? No se puede deshacer."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Aún no hay nada. Escucha un rato y vuelve."
+
+msgid "Automatic updates"
+msgstr "Actualizaciones automáticas"
+
+msgid "Collected since {0}"
+msgstr "Recopiladas desde el {0}"
+
+msgid "Nothing collected yet"
+msgstr "Aún no se ha recopilado nada"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Las estadísticas están desactivadas. No se registra nada nuevo."

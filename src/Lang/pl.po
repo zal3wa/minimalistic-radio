@@ -479,3 +479,15 @@ msgstr "Wyczyścić wszystkie statystyki? Tego nie da się cofnąć."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Na razie nic tu nie ma. Posłuchaj chwilę radia i wróć tutaj."
+
+msgid "Automatic updates"
+msgstr "Automatyczne aktualizacje"
+
+msgid "Collected since {0}"
+msgstr "Zbierane od {0}"
+
+msgid "Nothing collected yet"
+msgstr "Jeszcze nic nie zebrano"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."

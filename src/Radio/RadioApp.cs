@@ -385,19 +385,36 @@ internal sealed partial class Radio
                 string expected = preview ? L("Top stations") : L("Nothing here yet. Listen for a while and come back.");
                 if (!Descendants(playerPanel).OfType<TextBlock>().Any(text => text.Text == expected))
                     throw new InvalidOperationException("Strona statystyk bez: " + expected);
+                bool Titled(string title)
+                {
+                    playerPanel.UpdateLayout();   // a part shown for the first time gets its content only now
+                    return Descendants(playerPanel).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == title);
+                }
+                // Switched off (Settings › Statistics), a new song isn't recorded; the page says so (statistics-off).
+                int songsBefore = statistics.Songs.Count;
+                SetStatisticsCollecting(false);
+                AddToHistory("Statystyki - Wyłączone");
+                bool ignored = !statistics.Collecting && statistics.Songs.Count == songsBefore && history[0].Title == "Statystyki - Wyłączone";
+                playerPanel.Close();
+                OpenPlayer("statistics");
                 if (preview)
                 {
+                    await Task.Delay(1000);
+                    await SavePreview(playerPanel, "statistics-off");
+                }
+                ignored &= Titled(L("Statistics are off. Nothing new is recorded."));
+                SetStatisticsCollecting(true);
+                if (!ignored) throw new InvalidOperationException("Wyłączone statystyki nadal coś zapisują albo strona tego nie mówi.");
+                if (preview)
+                {
+                    playerPanel.Close();
+                    OpenPlayer("statistics");
                     Descendants(playerPanel).OfType<Button>().First(button => button.Content as string == L("All"))
                         .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                     await Task.Delay(1000);
                     await SaveWholePage("statistics-everything");
                 }
                 // ← goes from Statistics back to Settings, and from there to the stations.
-                bool Titled(string title)
-                {
-                    playerPanel.UpdateLayout();   // a part shown for the first time gets its content only now
-                    return Descendants(playerPanel).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == title);
-                }
                 Button Back() => Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back"));
                 Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
                 bool backToSettings = Titled(L("Settings"));
@@ -1128,6 +1145,25 @@ internal sealed partial class Radio
         SaveStatistics();
     }
 
+    // Settings › Statistics' switch. Off ends the running session cleanly and records nothing more; on while a station
+    // plays starts counting it from now.
+    private void SetStatisticsCollecting(bool on)
+    {
+        bool wasRecording = statistics.Recording;
+        statistics.SetCollecting(on, DateTime.UtcNow);
+        if (!on)
+        {
+            statisticsTimer.Stop();
+            if (wasRecording) SaveStatistics();
+        }
+        else if (playing && session != null && station >= 0 && station < Stations.Count)
+        {
+            statistics.Begin(StationName, Stations[station].Url, DateTime.UtcNow);
+            statisticsTimer.Start();
+        }
+        SavePreferences();
+    }
+
     private void ClearStatistics()
     {
         statistics.Clear(DateTime.UtcNow);
@@ -1257,6 +1293,7 @@ internal sealed partial class Radio
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
         showStationPopup = saved.ShowStationPopup ?? true;
+        statistics.SetCollecting(saved.CollectStatistics ?? true, DateTime.UtcNow);
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
     }
@@ -1271,7 +1308,8 @@ internal sealed partial class Radio
             Storage.Write(Storage.PreferencesFile, new Preferences
             {
                 Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting,
-                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup
+                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup,
+                CollectStatistics = statistics.Collecting
             });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)

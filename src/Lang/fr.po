@@ -481,3 +481,15 @@ msgstr "Effacer toutes les statistiques ? Cette action est irréversible."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Rien pour l'instant. Écoutez un moment et revenez."
+
+msgid "Automatic updates"
+msgstr "Mises à jour automatiques"
+
+msgid "Collected since {0}"
+msgstr "Collectées depuis le {0}"
+
+msgid "Nothing collected yet"
+msgstr "Rien de collecté pour l'instant"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Les statistiques sont désactivées. Rien de nouveau n'est enregistré."

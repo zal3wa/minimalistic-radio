@@ -27,6 +27,7 @@ public sealed class Preferences
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
+    public bool? CollectStatistics { get; set; }   // Settings › Statistics; on unless switched off
 }
 
 public sealed class HistoryEntry

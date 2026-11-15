@@ -109,6 +109,13 @@ internal sealed partial class Radio
         box.Padding = new Thickness(Gutter - 1, 0, Gutter - 1, 0);
     }
 
+    // A date in the language's long format without the weekday ("March 2, 2025", "2 marca 2025", "2. března 2025").
+    private static string LongDate(DateTime date)
+    {
+        CultureInfo culture = Culture;
+        return date.ToString(Regex.Replace(culture.DateTimeFormat.LongDatePattern, @"dddd[,.]?\s*", "").Trim(' ', ','), culture);
+    }
+
     // The Play/Stop button's content: a filled triangle or square, then the word.
     private static FrameworkElement PlayLabel(bool play, string text)
     {
@@ -460,6 +467,7 @@ internal sealed partial class Radio
         // The player (now playing, volume, Play/Stop) is only on the stations page; it is filled in further down.
         var footer = new Border { Margin = new Thickness(Gutter, 10, Gutter, Gutter) };
         ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane();
+        Action refreshCollected = null;   // Settings › Statistics' "Collected since", again after a clear
 
         int shownStation = station;
         void ShowActiveStation(bool centre)
@@ -633,6 +641,7 @@ internal sealed partial class Radio
         {
             if (target != "form") editing = null;
             if (page == "search" && target != "search") ResetSearch();
+            string from = page;
             page = target;
             bool stations = target == "stations";
             Visibility Shown(bool shown) => shown ? Visibility.Visible : Visibility.Collapsed;
@@ -653,7 +662,11 @@ internal sealed partial class Radio
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
                 ShowSuggestions();
             }
-            if (target == "settings") settingsPane.ScrollToTop();
+            if (target == "settings")
+            {
+                refreshCollected?.Invoke();
+                if (from != "statistics") settingsPane.ScrollToTop();   // back from Statistics: where it was left
+            }
             if (target == "history")
             {
                 FillHistory();
@@ -962,6 +975,12 @@ internal sealed partial class Radio
             switcher.SetResourceReference(Border.BorderBrushProperty, "Line");
             content.Children.Add(switcher);
             statisticsPane.Content = content;
+            if (!statistics.Collecting)
+            {
+                TextBlock off = Note(L("Statistics are off. Nothing new is recorded."));
+                off.Margin = new Thickness(2, Gutter, 2, 0);
+                content.Children.Add(off);
+            }
             if (summary.Empty)
             {
                 TextBlock nothing = Note(L("Nothing here yet. Listen for a while and come back."));
@@ -994,7 +1013,7 @@ internal sealed partial class Radio
             // Listening time: the period on the right, the total in large type, the average per day under it.
             string since = period == StatisticsPeriod.Month ? summary.Since.ToString("Y", culture)
                 : period == StatisticsPeriod.Year ? summary.Since.Year.ToString(CultureInfo.InvariantCulture)
-                : L("Since {0}", summary.Since.ToString(DatePattern(culture), culture));
+                : L("Since {0}", LongDate(summary.Since));
             since = since.Substring(0, 1).ToUpper(culture) + since.Substring(1);   // "listopad 2026" as a label: "Listopad 2026"
             TextBlock periodLabel = Small(since, 12.5);
             periodLabel.Margin = new Thickness(12, 0, 0, 0);
@@ -1148,10 +1167,6 @@ internal sealed partial class Radio
             content.Children.Add(confirmation);
         }
 
-        // A date without the weekday in the language's long format ("2 March 2025", "March 2, 2025", "2. března 2025").
-        static string DatePattern(CultureInfo culture) =>
-            Regex.Replace(culture.DateTimeFormat.LongDatePattern, @"dddd[,.]?\s*", "").Trim(' ', ',');
-
         // Settings page, laid out like the Windows 11 Settings app (and like the Linux and Mac apps): General, Stations,
         // Statistics, Updates, About and Quit, each one card of rows.
         Action refreshUpdates = null;
@@ -1246,10 +1261,20 @@ internal sealed partial class Radio
             transfer.Margin = new Thickness(14, 10, 14, 10);
             settings.Children.Add(SettingsCard(SettingRow(L("Station list"), L("A copy in a file, e.g. for friends"), null), transfer));
 
-            // Statistics: a card of its own, without a group title.
+            // Statistics: a card of its own, without a group title. The switch, then since when and [Show].
             var showStatistics = RowButton(L("Show"));
             showStatistics.Click += (_, _) => SetPage("statistics");
-            Border statisticsCard = SettingsCard(SettingRow(L("Statistics"), L("Collected only on this computer, never sent anywhere"), showStatistics));
+            TextBlock collected = Note("");
+            collected.VerticalAlignment = VerticalAlignment.Center;
+            refreshCollected = () => collected.Text = statistics.FirstSession is DateTime first
+                ? L("Collected since {0}", LongDate(first.ToLocalTime())) : L("Nothing collected yet");
+            refreshCollected();
+            var since = Columns((collected, Star), (showStatistics, Auto));
+            since.Margin = new Thickness(14, 10, 14, 10);
+            Border statisticsCard = SettingsCard(
+                SettingRow(L("Statistics"), L("Collected only on this computer, never sent anywhere"),
+                    Toggle(statistics.Collecting, SetStatisticsCollecting)),
+                since);
             statisticsCard.Margin = new Thickness(0, 18, 0, 0);
             settings.Children.Add(statisticsCard);
 
@@ -1283,7 +1308,7 @@ internal sealed partial class Radio
             var lastCheck = Columns((updateNote, Star), (checkNow, Auto));
             lastCheck.Margin = new Thickness(14, 10, 14, 10);
             settings.Children.Add(SettingsCard(
-                SettingRow(L("Updates"), updateDescription, Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); })),
+                SettingRow(L("Automatic updates"), updateDescription, Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); })),
                 lastCheck));
 
             // About: the round app icon (as many pixels as the screen shows), the version and a link to the project.

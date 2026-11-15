@@ -482,3 +482,15 @@ msgstr "Die ganze Statistik löschen? Das lässt sich nicht rückgängig machen.
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Noch nichts da. Nach einer Weile Radiohören gibt es hier mehr zu sehen."
+
+msgid "Automatic updates"
+msgstr "Automatische Updates"
+
+msgid "Collected since {0}"
+msgstr "Gesammelt seit {0}"
+
+msgid "Nothing collected yet"
+msgstr "Noch nichts gesammelt"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Die Statistik ist aus. Neues wird nicht erfasst."

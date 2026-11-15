@@ -484,3 +484,15 @@ msgstr "Cancellare tutte le statistiche? L'operazione non si può annullare."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Non c'è ancora niente. Ascolta per un po' e torna qui."
+
+msgid "Automatic updates"
+msgstr "Aggiornamenti automatici"
+
+msgid "Collected since {0}"
+msgstr "Raccolte dal {0}"
+
+msgid "Nothing collected yet"
+msgstr "Non è stato ancora raccolto nulla"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Le statistiche sono disattivate. Non viene registrato nulla di nuovo."

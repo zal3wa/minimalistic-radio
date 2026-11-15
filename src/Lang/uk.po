@@ -478,3 +478,15 @@ msgstr "Очистити всю статистику? Цю дію не можн�
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Тут поки нічого немає. Послухайте радіо трохи й поверніться."
+
+msgid "Automatic updates"
+msgstr "Автоматичні оновлення"
+
+msgid "Collected since {0}"
+msgstr "Збирається з {0}"
+
+msgid "Nothing collected yet"
+msgstr "Ще нічого не зібрано"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Статистику вимкнено. Нічого нового не записується."
