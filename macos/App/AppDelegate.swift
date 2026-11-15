@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 /// The radio lives in the menu bar (LSUIElement: no Dock icon, no menus of its own).
 @main
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     static func main() {
         let app = NSApplication.shared
