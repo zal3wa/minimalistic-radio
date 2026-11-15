@@ -30,7 +30,7 @@ def isolated_config(tmp_path, monkeypatch):
 
 @pytest.fixture
 def app_id():
-    return "io.github.zal3wa.minimalistic_radio_test" + uuid.uuid4().hex[:8]
+    return "io.github.zal3wa.minimalistic-radio-test" + uuid.uuid4().hex[:8]
 
 
 def pump(condition, timeout=10.0):

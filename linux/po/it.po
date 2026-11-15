@@ -10,15 +10,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: data/io.github.zal3wa.minimalistic_radio.desktop.in
+#: data/io.github.zal3wa.minimalistic-radio.desktop.in
 msgid "Internet radio that lives next to the clock"
 msgstr "La radio internet che vive accanto all'orologio"
 
-#: data/io.github.zal3wa.minimalistic_radio.desktop.in
+#: data/io.github.zal3wa.minimalistic-radio.desktop.in
 msgid "radio;internet radio;stream;station;"
 msgstr "radio;radio internet;stream;stazione;"
 
-#: data/io.github.zal3wa.minimalistic_radio.metainfo.xml.in
+#: data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in
 msgid "A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry."
 msgstr "Una minuscola radio internet open source che vive nell'area di notifica. Fai clic sull'icona, scegli una stazione e ascolta. Il pannello mostra cosa sta suonando con la copertina, il volume, un timer di spegnimento e la cronologia dei brani. Le stazioni si possono cercare nella directory radio-browser.info, aggiungere a mano, esportare e importare. I tasti multimediali e i controlli multimediali del desktop funzionano, e non c'è alcuna telemetria."
 

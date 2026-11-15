@@ -2,7 +2,7 @@
 Type=Application
 Name=Minimalistic Radio
 Comment=Internet radio that lives next to the clock
-Icon=io.github.zal3wa.minimalistic_radio
+Icon=io.github.zal3wa.minimalistic-radio
 Exec=minimalistic-radio
 Categories=AudioVideo;Audio;Player;
 Keywords=radio;internet radio;stream;station;

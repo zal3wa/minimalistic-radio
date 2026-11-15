@@ -1,4 +1,4 @@
-id: io.github.zal3wa.minimalistic_radio
+id: io.github.zal3wa.minimalistic-radio
 runtime: org.gnome.Platform
 runtime-version: '51'
 sdk: org.gnome.Sdk

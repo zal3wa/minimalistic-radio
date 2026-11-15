@@ -1,4 +1,4 @@
-app_id = 'io.github.zal3wa.minimalistic_radio'
+app_id = 'io.github.zal3wa.minimalistic-radio'
 
 desktop_file = i18n.merge_file(
   input: app_id + '.desktop.in',

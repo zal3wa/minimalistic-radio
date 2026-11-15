@@ -37,13 +37,13 @@ def test_self_test_passes(tmp_path, monkeypatch, capsys):
     subprocess.run([msgfmt, "-o", str(target / "minimalistic-radio.mo"), str(ROOT / "po" / "pl.po")], check=True)
     monkeypatch.setattr(main, "LOCALEDIR", str(tmp_path / "locale"))
     monkeypatch.delenv("LANGUAGE", raising=False)
-    assert run_self_test(RadioApplication(application_id="io.github.zal3wa.minimalistic_radio_selftest")) == 0, \
+    assert run_self_test(RadioApplication(application_id="io.github.zal3wa.minimalistic-radio-selftest")) == 0, \
         capsys.readouterr().err
 
 
 def test_screenshots_written(tmp_path):
     folder = tmp_path / "shots"
-    assert take_screenshots(RadioApplication(application_id="io.github.zal3wa.minimalistic_radio_shots"), folder) == 0
+    assert take_screenshots(RadioApplication(application_id="io.github.zal3wa.minimalistic-radio-shots"), folder) == 0
     files = sorted(folder.glob("linux-*.png"))
     assert len(files) == 8
     for file in files:

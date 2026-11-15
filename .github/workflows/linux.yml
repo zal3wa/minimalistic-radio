@@ -111,7 +111,7 @@ jobs:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
       options: --privileged
     env:
-      MANIFEST: linux/flatpak/io.github.zal3wa.minimalistic_radio.yml
+      MANIFEST: linux/flatpak/io.github.zal3wa.minimalistic-radio.yml
     steps:
       - uses: actions/checkout@v7
 
@@ -119,7 +119,7 @@ jobs:
         id: build
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          manifest-path: linux/flatpak/io.github.zal3wa.minimalistic_radio.yml
+          manifest-path: linux/flatpak/io.github.zal3wa.minimalistic-radio.yml
           bundle: minimalistic-radio.flatpak
           artifact-name: minimalistic-radio.flatpak
 
@@ -137,7 +137,7 @@ jobs:
             echo "::warning::The screenshots are not on main yet."
             allowed="$allowed, \"appstream-missing-screenshots\""
           fi
-          echo "{\"io.github.zal3wa.minimalistic_radio\": [$allowed]}" > /tmp/lint-exceptions.json
+          echo "{\"io.github.zal3wa.minimalistic-radio\": [$allowed]}" > /tmp/lint-exceptions.json
           flatpak-builder-lint manifest "$MANIFEST" || true
           flatpak-builder-lint repo repo || true
           flatpak-builder-lint --exceptions --user-exceptions /tmp/lint-exceptions.json manifest "$MANIFEST"
@@ -152,7 +152,7 @@ jobs:
 
       - name: Self-test in the sandbox
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: dbus-run-session -- xvfb-run -a flatpak run io.github.zal3wa.minimalistic_radio --self-test
+        run: dbus-run-session -- xvfb-run -a flatpak run io.github.zal3wa.minimalistic-radio --self-test
 
       - name: Take the screenshots in the sandbox
         id: shots
@@ -160,7 +160,7 @@ jobs:
         run: |
           mkdir -p "$PWD/linux-screenshots"
           dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" flatpak run --filesystem="$PWD/linux-screenshots" \
-            io.github.zal3wa.minimalistic_radio --screenshot "$PWD/linux-screenshots"
+            io.github.zal3wa.minimalistic-radio --screenshot "$PWD/linux-screenshots"
 
       - name: Upload the screenshots
         if: ${{ !cancelled() && steps.shots.outcome == 'success' }}
@@ -172,7 +172,7 @@ jobs:
       - name: HE-AAC check in the sandbox
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
-          dbus-run-session -- xvfb-run -a flatpak run --command=python3 io.github.zal3wa.minimalistic_radio \
+          dbus-run-session -- xvfb-run -a flatpak run --command=python3 io.github.zal3wa.minimalistic-radio \
             /app/share/minimalistic-radio/check_aac.py
 
       # The player tests on the runtime's GStreamer, for information only (--devel: the SDK, which has pip).
@@ -180,5 +180,5 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         continue-on-error: true
         run: |
-          dbus-run-session -- xvfb-run -a flatpak run --devel --filesystem="$PWD" --command=sh io.github.zal3wa.minimalistic_radio \
+          dbus-run-session -- xvfb-run -a flatpak run --devel --filesystem="$PWD" --command=sh io.github.zal3wa.minimalistic-radio \
             -c "python3 -m pip install --quiet --target /tmp/pytest pytest && cd '$PWD/linux' && PYTHONPATH=/tmp/pytest python3 -m pytest tests/integration/test_player.py -q -rs -p no:cacheprovider"

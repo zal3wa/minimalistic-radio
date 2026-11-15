@@ -11,5 +11,5 @@ minimalistic_radio/ui/stations_page.py
 minimalistic_radio/ui/search_page.py
 minimalistic_radio/ui/station_dialog.py
 minimalistic_radio/ui/footer.py
-data/io.github.zal3wa.minimalistic_radio.desktop.in
-data/io.github.zal3wa.minimalistic_radio.metainfo.xml.in
+data/io.github.zal3wa.minimalistic-radio.desktop.in
+data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in
