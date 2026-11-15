@@ -241,6 +241,12 @@ internal sealed partial class Radio
                 throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
             if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
                 throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
+            DirectoryStation Located(string name, string url, string country) => new DirectoryStation { Name = name, Url = url, CountryCode = country };
+            if (!Storage.Hidden(Located("Radio Republika", "https://ssl-1.radiotvrepublika.pl:12698/stream", "PL")) ||
+                !Storage.Hidden(Located("Republika", "https://other.example/s", "PL")) ||
+                Storage.Hidden(Located("Dominikánská Republika", "https://dr.example/s", "CZ")) ||
+                Storage.Hidden(Located("Republika ni Juan 87.5", "https://juan.example/s", "PH")))
+                throw new InvalidOperationException("Błędne ukrywanie stacji Radio Republika.");
             // "Popular in your country" follows the radio's language (design: languages and country, section 1).
             foreach (var (language, system, expected) in new (string, string, string)[] { ("pl", "US", "PL"), ("pl", null, "PL"), ("es", "MX", "MX"), ("es", "US", "ES"),
                 ("en", "US", "US"), ("en", null, null), ("de", "AT", "AT"), ("pt", "BR", "BR") })

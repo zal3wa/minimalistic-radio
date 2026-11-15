@@ -38,7 +38,7 @@ public sealed class HistoryEntry
 
 internal sealed class DirectoryStation
 {
-    internal string Id, Name, Country, Url, ResolvedUrl, Logo, Codec, Tags;
+    internal string Id, Name, Country, CountryCode, Url, ResolvedUrl, Logo, Codec, Tags;
     internal int Bitrate;
     internal bool Hls, Working = true;
 }
@@ -198,6 +198,20 @@ internal static class Storage
     internal static string NameKey(string name) => new string(string.Join(" ", (name ?? "").ToLowerInvariant().Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
         .Where(word => word != "radio")).Where(char.IsLetterOrDigit).ToArray());
 
+    // Owner decision: Radio Republika never shows, in search or in suggestions. Its stream host, or a Polish station named so.
+    static readonly string[] HiddenHosts = { "radiotvrepublika.pl", "tvrepublika.pl" };
+
+    internal static bool Hidden(DirectoryStation entry)
+    {
+        if (Uri.TryCreate(AddressOf(entry), UriKind.Absolute, out Uri uri))
+        {
+            string host = uri.Host.ToLowerInvariant().TrimEnd('.');
+            if (HiddenHosts.Any(hidden => host == hidden || host.EndsWith("." + hidden))) return true;
+        }
+        string key = NameKey(entry.Name);
+        return string.Equals(entry.CountryCode, "PL", StringComparison.OrdinalIgnoreCase) && (key == "republika" || key.Contains("tvrepublika"));
+    }
+
     // The popular list as shown: playable, not already recommended, no duplicates, no spam, the first 15.
     internal static DirectoryStation[] CleanPopular(IEnumerable<DirectoryStation> popular, IEnumerable<DirectoryStation> recommended)
     {
@@ -249,14 +263,14 @@ internal static class Storage
                             string Text(string key) => item.TryGetValue(key, out object value) ? value as string : null;
                             var entry = new DirectoryStation
                             {
-                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), Url = Text("url"),
+                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), CountryCode = Text("countrycode"), Url = Text("url"),
                                 ResolvedUrl = Text("url_resolved"), Logo = Text("favicon"),
                                 Codec = Text("codec"), Tags = Text("tags"),
                                 Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0,
                                 Hls = item.TryGetValue("hls", out object flag) && flag is int on && on == 1,
                                 Working = !(item.TryGetValue("lastcheckok", out object ok) && ok is int check && check == 0)
                             };
-                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(AddressOf(entry))) found.Add(entry);
+                            if (!string.IsNullOrWhiteSpace(entry.Name) && IsWebUrl(AddressOf(entry)) && !Hidden(entry)) found.Add(entry);
                         }
                         return found;
                     }
