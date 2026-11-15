@@ -46,7 +46,7 @@ STATIONS = [                    # from radio-browser.info
     ("RMF FM", "https://rs101-krk.rmfstream.pl/rmf_fm"),
     ("Antyradio Hard", "https://an01.cdn.eurozet.pl/ANTHAR.mp3"),
 ]
-PLAYING = "https://stream.radio357.pl/"
+PLAYING = "https://an01.cdn.eurozet.pl/ANTHAR.mp3"   # Antyradio Hard, as in the other README pictures
 LOOKS = {                       # color-scheme, GTK theme, icon theme: what Ubuntu's Appearance settings set
     "light": ("default", "Yaru", "Yaru"),
     "dark": ("prefer-dark", "Yaru-dark", "Yaru-dark"),
@@ -183,7 +183,7 @@ def prepare_settings(look: str) -> None:
 
 
 def write_radio_config() -> None:
-    """3-4 stations, Radio 357 last played, in English."""
+    """A few stations, Antyradio Hard last played, in English."""
     folder = CONFIG / "minimalistic-radio"
     folder.mkdir(parents=True, exist_ok=True)
     stations = [{"Name": name, "Url": url, "Logo": None} for name, url in STATIONS]

@@ -379,40 +379,35 @@ internal sealed partial class Radio
     }
 
     // "--test-menu --screenshot": pictures for the README (%TEMP%\MinimalisticRadio-shot-*.png), in English,
-    // with the saved station list, a real song and its cover, light and dark. Nothing is saved or played.
+    // light and dark, with the stations, songs and cover of the Linux ones (linux/minimalistic_radio/selftest.py).
+    // The stations are only in memory: nothing is saved or played.
     private async void TakeScreenshots()
     {
         try
         {
             Lang.Setting = "en";
-            LoadStations();
-            station = Math.Min(2, Stations.Count - 1);
+            Stations.AddRange(ShotStations.Select(s => new SavedStation { Name = s.Name, Url = s.Url, Logo = s.Logo }));
             using (var shot = new CancellationTokenSource())
             {
                 session = shot;
                 playing = true;
-                status = StationName;
-                string[] played = { "Daughtry - What About Now", "Dawid Podsiadło - Małomiasteczkowy", "Queen - A Kind Of Magic",
-                    "Editors - Shadow", "Leonard Cohen - Everybody Knows" };
-                int chosen = station;
-                for (int i = 0; i < played.Length; i++)
+                foreach (var (song, at) in ShotSongs)   // the oldest first; the last one is playing
                 {
-                    station = (chosen + played.Length - 1 - i) % Stations.Count;
-                    AddToHistory(played[i]);
+                    station = at;
+                    AddToHistory(song);
                 }
-                station = chosen;
-                track = played.Last();
+                status = StationName;
+                track = ShotSongs.Last().Song;
                 artworkUrl = await Covers.Find(metadataClient, track);
 
                 ShowMenu();
-                await SaveTrayShot(popup, "shot-tray-menu", false);
+                await SaveTrayShot(popup, "shot-tray-menu");
                 CloseMenu();
-                foreach (var (page, name) in new[] { ("stations", "tray-panel"), ("search:jazz", "search"), ("history", "history"), ("settings", "settings") })
+                foreach (string page in new[] { "stations", "search:jazz", "history", "settings" })
                 {
                     OpenPlayer(page);
                     await Task.Delay(page.StartsWith("search") ? 6000 : 3000);   // results, logos and the cover arrive over the network
-                    if (page == "stations") await SaveTrayShot(playerPanel, "shot-" + name, true);
-                    else await SavePreview(playerPanel, "shot-" + name);
+                    await SavePreview(playerPanel, "shot-" + page.Split(':')[0]);
                     playerPanel.Close();
                 }
                 ShowStationPopup();

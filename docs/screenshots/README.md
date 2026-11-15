@@ -12,8 +12,8 @@ Full-size pictures of Minimalistic Radio. [Back to the README](../../README.md)
 ## Left click: the player
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tray-panel-dark.png">
-  <img src="tray-panel-light.png" alt="Left click on the tray icon opens the player">
+  <source media="(prefers-color-scheme: dark)" srcset="stations-dark.png">
+  <img src="stations-light.png" alt="Left click on the tray icon opens the player">
 </picture>
 
 ## Station search

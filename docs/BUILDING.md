@@ -19,7 +19,7 @@ dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out-tes
 
 - `out-test\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
 - `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
-- `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
+- `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots` (without the `MinimalisticRadio-shot-` prefix). The `tray-menu` picture puts the real menu above a drawn corner of the Windows 11 taskbar, as wide as the Linux tray picture. The stations, songs and cover are the same as in the Linux pictures, and only in memory. Don't touch the mouse while it runs: the panel closes when it loses focus, and a hovered menu item shows up highlighted.
 
 ## Translations
 

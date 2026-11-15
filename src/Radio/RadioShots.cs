@@ -12,12 +12,36 @@ using System.Windows.Media.Imaging;
 using Path = System.Windows.Shapes.Path;
 using Rectangle = System.Windows.Shapes.Rectangle;
 
-// The first README pictures show the app where it lives: the corner of a Windows 11 taskbar with the tray
-// icon, and what a right click (the menu) or a left click (the panel) opens above it. The menu and the panel
-// are the app's real ones; the desktop and the taskbar around them are drawn.
+// The first README picture shows the app where it lives: the corner of a Windows 11 taskbar with the tray
+// icon and the menu a right click opens above it, as wide as the Linux one beside the clock. The menu is the
+// app's real one; the desktop and the taskbar around it are drawn.
 internal sealed partial class Radio
 {
-    private const double SceneHeight = 682, TaskbarHeight = 48;
+    // The README pictures' stations and songs, as in the Linux ones (linux/minimalistic_radio/selftest.py).
+    private static readonly SavedStation[] ShotStations =
+    {
+        new SavedStation { Name = "102.7 KIIS FM Los Angeles", Url = "http://stream.revma.ihrhls.com/zc185",
+            Logo = "https://i.iheart.com/v3/re/assets.brands/61d4a04fc786e58c38995162?ops=gravity(%22center%22),contain(360,360)&quality=80" },
+        new SavedStation { Name = "Radio Nowy Świat", Url = "https://stream.nowyswiat.online/mp3",
+            Logo = "https://dabplus.live/logo/ea4141ebdcca43ef81e6f8e7351b4309.png" },
+        new SavedStation { Name = "Antyradio Hard", Url = "https://an05.cdn.eurozet.pl/ANTHAR.mp3",
+            Logo = "https://gfx-player.radiozet.pl/var/player/storage/images/player-antyradio/kanaly-muzyczne/antyradio-hard/710016-10-pol-PL/Antyradio-Hard_size-228x228.jpg" },
+        new SavedStation { Name = "Radio 357", Url = "https://stream.radio357.pl/",
+            Logo = "https://radio357.pl/wp-content/uploads/2022/04/c5399c0d-1b8e-43d5-b23b-e5cef1857856.png" },
+        new SavedStation { Name = "RMF Classic", Url = "http://31.192.216.8/RMFCLASSIC48" },
+        new SavedStation { Name = "RMF Classic Rock", Url = "https://rs201-krk.rmfstream.pl/rmf_classic_rock",
+            Logo = "https://www.rmfon.pl/assets/images/favicon/apple-touch-icon.png" },
+        new SavedStation { Name = "Polskie Radio Jedynka AAC", Url = "http://stream3.polskieradio.pl:8950/;.mp3" },
+        new SavedStation { Name = "Polskie Radio - Czwórka (Program 4) (AAC+)", Url = "http://stream3.polskieradio.pl:8956/;" },
+    };
+    private static readonly (string Song, int Station)[] ShotSongs =   // the oldest first; the last one is playing
+    {
+        ("Daughtry - What About Now", 7), ("Dawid Podsiadło - Małomiasteczkowy", 5), ("Queen - A Kind Of Magic", 4),
+        ("Editors - Shadow", 3), ("Leonard Cohen - Everybody Knows", 2),
+    };
+
+    private const double SceneWidth = 778;     // the Linux tray picture's width in the README
+    private const double TaskbarHeight = 48, MenuGap = 8, DesktopAboveMenu = 24;
     // The notification area from the right edge: show desktop strip, clock, network/volume/battery, our icon.
     private const double ShowDesktopWidth = 8, ClockWidth = 76, QuickSettingsWidth = 92, TrayButtonWidth = 32;
     private const double TrayIconFromRight = ShowDesktopWidth + ClockWidth + QuickSettingsWidth + TrayButtonWidth / 2;
@@ -34,14 +58,14 @@ internal sealed partial class Radio
         Theme.Apply(app);
     }
 
-    private async Task SaveTrayShot(FrameworkElement opened, string name, bool panel)
+    private async Task SaveTrayShot(FrameworkElement opened, string name)
     {
         foreach (bool dark in new[] { false, true })
         {
             Theme.Apply(app, dark);
             await Task.Delay(400);
             double scale = VisualTreeHelper.GetDpi(opened).DpiScaleX;
-            FrameworkElement scene = TrayScene(Snapshot(opened, scale), scale, panel, dark);
+            FrameworkElement scene = TrayScene(Snapshot(opened, scale), scale, dark);
             SavePng(Snapshot(scene, scale), name, dark);
         }
         Theme.Apply(app);
@@ -64,42 +88,29 @@ internal sealed partial class Radio
             encoder.Save(file);
     }
 
-    private static FrameworkElement TrayScene(BitmapSource opened, double scale, bool panel, bool dark)
+    private static FrameworkElement TrayScene(BitmapSource opened, double scale, bool dark)
     {
         double Snap(double value) => Math.Round(value * scale) / scale;   // whole pixels keep the real UI sharp
         double openedWidth = opened.PixelWidth / scale, openedHeight = opened.PixelHeight / scale;
-        double width, left, top;
-        if (panel)
-        {
-            // The panel's card sits 12 px from the screen edge and the taskbar, inside a transparent shadow margin.
-            double card = openedWidth - 2 * ShadowMargin;
-            width = Snap(card + 24);
-            left = 12 - ShadowMargin;
-            top = SceneHeight - TaskbarHeight - 12 + ShadowMargin - openedHeight;
-        }
-        else
-        {
-            // The menu opens to the left of the pointer, just above the taskbar.
-            double menu = openedWidth - MenuShadow;
-            width = Snap(24 + menu + TrayIconFromRight);
-            left = 24;
-            top = SceneHeight - TaskbarHeight - 8 - (openedHeight - MenuShadow);
-        }
+        // The menu opens to the left of the pointer, just above the taskbar.
+        double menuWidth = openedWidth - MenuShadow, menuHeight = openedHeight - MenuShadow;
+        double width = Snap(SceneWidth), height = Snap(DesktopAboveMenu + menuHeight + MenuGap + TaskbarHeight);
+        double left = width - TrayIconFromRight - menuWidth, top = DesktopAboveMenu;
 
         Brush Solid(long argb) => new SolidColorBrush(Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb));
         Brush text = Solid(dark ? 0xFFFFFFFF : 0xFF1A1A1A);
         var scene = new Canvas
         {
-            Width = width, Height = SceneHeight,
+            Width = width, Height = height,
             Background = new LinearGradientBrush(
                 ((SolidColorBrush)Solid(dark ? 0xFF0E1A31 : 0xFFBFD5F2)).Color,
                 ((SolidColorBrush)Solid(dark ? 0xFF261D3D : 0xFFEDE3F5)).Color, 45),
-            Clip = new RectangleGeometry(new Rect(0, 0, width, SceneHeight), 8, 8)
+            Clip = new RectangleGeometry(new Rect(0, 0, width, height), 8, 8)
         };
         var bloom = new RadialGradientBrush(((SolidColorBrush)Solid(dark ? 0x664A6FD0 : 0xAAFFFFFF)).Color,
             ((SolidColorBrush)Solid(dark ? 0x004A6FD0 : 0x00FFFFFF)).Color)
         { Center = new Point(0.25, 0.3), GradientOrigin = new Point(0.25, 0.3), RadiusX = 0.8, RadiusY = 0.6 };
-        scene.Children.Add(new Rectangle { Width = width, Height = SceneHeight, Fill = bloom });
+        scene.Children.Add(new Rectangle { Width = width, Height = height, Fill = bloom });
 
         TextBlock Glyph(string glyph, double size) => new TextBlock
         {
@@ -133,7 +144,7 @@ internal sealed partial class Radio
             Background = Solid(dark ? 0xF01C1C1C : 0xF0F3F3F3),
             BorderBrush = Solid(dark ? 0x26FFFFFF : 0x1A000000), BorderThickness = new Thickness(0, 1, 0, 0)
         };
-        Canvas.SetTop(taskbar, SceneHeight - TaskbarHeight);
+        Canvas.SetTop(taskbar, height - TaskbarHeight);
         scene.Children.Add(taskbar);
 
         var picture = new Image { Source = opened, Width = openedWidth, Height = openedHeight, Stretch = Stretch.Fill };
@@ -150,11 +161,11 @@ internal sealed partial class Radio
             Effect = new DropShadowEffect { BlurRadius = 4, ShadowDepth = 1, Opacity = 0.35, Direction = 300 }
         };
         Canvas.SetLeft(pointer, Snap(width - TrayIconFromRight + 5));
-        Canvas.SetTop(pointer, Snap(SceneHeight - TaskbarHeight / 2 + 5));
+        Canvas.SetTop(pointer, Snap(height - TaskbarHeight / 2 + 5));
         scene.Children.Add(pointer);
 
-        scene.Measure(new Size(width, SceneHeight));
-        scene.Arrange(new Rect(0, 0, width, SceneHeight));
+        scene.Measure(new Size(width, height));
+        scene.Arrange(new Rect(0, 0, width, height));
         scene.UpdateLayout();
         return scene;
     }
