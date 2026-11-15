@@ -96,6 +96,7 @@ def test_country_for(language, system, expected):
 def test_country_from_locale():
     assert country_from_locale({"LANG": "pl_PL.UTF-8"}) == "PL"
     assert country_from_locale({"LC_ALL": "en_US", "LANG": "pl_PL.UTF-8"}) == "US"
+    assert country_from_locale({"LANG": "en_US.UTF-8", "LC_TIME": "pl_PL.UTF-8"}) == "PL"   # the "Formats" region
     assert country_from_locale({"LANG": "C"}) is None and country_from_locale({"LANG": "POSIX"}) is None
     assert country_from_locale({}) is None
 

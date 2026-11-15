@@ -162,9 +162,14 @@ def clean_popular(items: list[DirectoryStation], recommended: list[DirectoryStat
 _LOCALE_COUNTRY = re.compile(r"^[A-Za-z]{2,3}_([A-Za-z]{2})(?:[.@]|$)")
 
 
+# Where the country is read from, the first one set decides: GNOME and KDE put the "Formats" region in the
+# formats categories, which may differ from the language of the messages.
+_COUNTRY_VARS = ("LC_ALL", "LC_TIME", "LC_MONETARY", "LC_PAPER", "LC_ADDRESS", "LC_MESSAGES", "LANG")
+
+
 def country_from_locale(env: Mapping[str, str]) -> str | None:
     """The territory of the locale (pl_PL.UTF-8 gives PL); None for C, POSIX or nothing."""
-    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
+    for var in _COUNTRY_VARS:
         value = env.get(var)
         if value:
             match = _LOCALE_COUNTRY.match(value)

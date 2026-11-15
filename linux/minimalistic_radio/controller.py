@@ -34,6 +34,7 @@ NETWORK_RETURN_WINDOW = timedelta(minutes=10)
 FADE_SECONDS = 30                            # the sleep timer fades out over its last 30 seconds
 RADIO357_POLL_SECONDS = 10
 COVERS_KEPT = 200                            # pictures kept in the cover cache
+VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
 LANGUAGES = ("auto", "pl", "en")
 
 
@@ -52,7 +53,7 @@ class Status(Enum):
 
 
 class Change(Flag):
-    STATE = auto()         # status, message or the chosen station
+    STATE = auto()         # status, its message or the chosen station
     STATIONS = auto()
     TRACK = auto()
     COVER = auto()
@@ -61,7 +62,7 @@ class Change(Flag):
     SLEEP = auto()
     PREFERENCES = auto()
     SWITCHED = auto()      # the station was changed by a media key or the tray menu
-    MESSAGE = auto()       # something to tell the user (a file couldn't be saved)
+    MESSAGE = auto()       # a notice for the user (the station list couldn't be saved)
 
 
 class AddResult(Enum):
@@ -116,7 +117,8 @@ class RadioController:
         self.stations: list[Station] = []
         self.current = -1
         self.status = Status.READY
-        self.message: str | None = None
+        self.message: str | None = None   # the status's own text ("Connection lost…"), None for the usual one
+        self.notice: str | None = None    # the last notice, sent with Change.MESSAGE; never a status
         self.track: str | None = None
         self.cover_path: Path | None = None
         self.prefs = Preferences()
@@ -132,6 +134,9 @@ class RadioController:
         self._covers = CoverCache()
         self._fade = 100
         self._sleep_timer: object | None = None
+        # Muting: unmute goes back to the level from before the last burst of changes (see set_volume).
+        self._unmute_volume = self._volume_before = Preferences().volume
+        self._volume_changed_at: datetime | None = None
         # The playback session: one per play(), until stop() or the next play().
         self._session = 0
         self._url = ""
@@ -233,7 +238,7 @@ class RadioController:
         try:
             save_stations(self._stations_file, self.stations)
         except OSError:
-            self.message = self._("Couldn't save the station list.")
+            self.notice = self._("Couldn't save the station list.")
             changes |= Change.MESSAGE
         self._emit(changes)
 
@@ -481,10 +486,25 @@ class RadioController:
         value = max(0, min(100, round(percent)))
         if value == self.volume:
             return
+        # Changes less than a second apart count as one (as on Windows): turned down to 0 that way,
+        # unmuting brings back the level from before them, not the 1 % passed last.
+        now = self.scheduler.now()
+        if self._volume_changed_at is None or now - self._volume_changed_at > VOLUME_BURST:
+            self._volume_before = self.volume
+        self._volume_changed_at = now
+        if value == 0 and self._volume_before > 0:
+            self._unmute_volume = self._volume_before
         self.volume = self.prefs.volume = value
         self.player.set_volume(self.effective_volume)
         self._save_preferences()
         self._emit(Change.VOLUME)
+
+    def toggle_mute(self) -> None:
+        """The speaker button: mutes, or unmutes to the level from before (30 if there was none)."""
+        before = self.volume
+        self.set_volume(self._unmute_volume if before == 0 else 0)
+        if before > 0:
+            self._unmute_volume = before
 
     def set_sleep_timer(self, minutes: int | None) -> None:
         if self._sleep_timer is not None:
@@ -564,7 +584,7 @@ class RadioController:
         self.stations.append(station)
         if self.current < 0:
             self.select(len(self.stations) - 1)
-        self._stations_changed()   # last, so a "couldn't save" message isn't replaced by the new status
+        self._stations_changed()
         return AddResult.ADDED
 
     def update_station(self, index: int, s: Station) -> AddResult:
@@ -639,12 +659,13 @@ class RadioController:
             self._stations_changed()
         return ImportResult(len(fresh), None)
 
-    def export_stations(self, path: Path) -> None:
+    def export_stations(self, path: Path) -> bool:
+        """Writes the list the way Windows does. False if the file couldn't be saved."""
         try:
             save_stations(path, self.stations)
         except OSError:
-            self.message = self._("Couldn't save the file.")
-            self._emit(Change.MESSAGE)
+            return False
+        return True
 
     # ---- Preferences ----
 

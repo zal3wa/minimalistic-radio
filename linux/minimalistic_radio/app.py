@@ -17,7 +17,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID  # noqa: E402
+from . import APP_ID, i18n  # noqa: E402
 from .audio.player import GstPlayer  # noqa: E402
 from .controller import Change, RadioController  # noqa: E402
 from .core import net  # noqa: E402
@@ -79,7 +79,7 @@ def fetch_file(url: str, path: Path, cb: Callable[[bool], None]) -> None:
 
 
 class RadioApplication(Adw.Application):
-    def __init__(self, translate: Callable[[str], str] = lambda s: s, application_id: str = APP_ID) -> None:
+    def __init__(self, translate: Callable[[str], str] = i18n.gettext, application_id: str = APP_ID) -> None:
         super().__init__(application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self._ = translate
         self.controller: RadioController | None = None
@@ -227,16 +227,19 @@ class RadioApplication(Adw.Application):
         self.window.present()
 
     def rebuild_window(self, page: str) -> None:
-        """Every label is made in the chosen language: the window is built again, on `page`."""
-        from . import i18n, main
+        """Every label is made in the chosen language: the window is built again, on `page`, and the tray menu."""
+        from . import main
 
         def rebuild() -> bool:
-            self._ = i18n.install(self.controller.prefs.language, main.LOCALEDIR)
+            # The controller, the player and the tray translate through i18n.gettext: they follow at once.
+            i18n.install(self.controller.prefs.language, main.LOCALEDIR)
             old, self.window = self.window, None
             if old is not None:
                 old.destroy()
             self.show_window()
             self.window.show_page(page)
+            if self.tray is not None:
+                self.tray.refresh()
             return GLib.SOURCE_REMOVE
         GLib.idle_add(rebuild)   # not from inside the signal of a widget that is about to be destroyed
 

@@ -11,7 +11,6 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 from ..controller import Change, RadioController, Status  # noqa: E402
-from ..core.models import Preferences  # noqa: E402
 from ..platform.menu_model import SLEEP_MINUTES  # noqa: E402
 
 if TYPE_CHECKING:
@@ -20,7 +19,6 @@ if TYPE_CHECKING:
 COVER_SIZE = 42
 FALLBACK_ICON = "audio-x-generic-symbolic"
 BUBBLE_MS = 1000          # the volume bubble hides this long after the last change
-DEFAULT_VOLUME = Preferences().volume
 
 
 def volume_icon(volume: int) -> str:
@@ -40,8 +38,6 @@ class Footer(Gtk.Box):
         self.window = window
         self.controller = controller
         self._ = _
-        self._message: str | None = None          # the status message, as last drawn (see refresh)
-        self._unmuted = DEFAULT_VOLUME             # the level that "Unmute" goes back to
         self._syncing = False                      # the slider is being set from the controller
         self._bubble_timer = 0
         self._cover: tuple[Path, Gdk.Texture] | None = None
@@ -113,9 +109,6 @@ class Footer(Gtk.Box):
 
     def refresh(self, change: Change) -> None:
         c, _ = self.controller, self._
-        if change & Change.STATE and not change & Change.MESSAGE:
-            # With MESSAGE, `message` is a notice that a file couldn't be saved (shown as a toast), not a status.
-            self._message = c.message
         if change & (Change.STATE | Change.STATIONS):
             self.play_content.set_label(_("Stop") if c.active else _("Play"))
             self.play_content.set_icon_name("media-playback-stop-symbolic" if c.active
@@ -137,9 +130,9 @@ class Footer(Gtk.Box):
         if c.status is Status.CONNECTING:
             return _("Connecting to the station…")
         if c.status is Status.RETRYING:
-            return self._message or _("Connecting to the station…")
+            return c.message or _("Connecting to the station…")
         if c.status is Status.STOPPED:
-            return self._message or _("Stopped")
+            return c.message or _("Stopped")
         return _("Ready to play")
 
     def _show_now(self) -> None:
@@ -169,8 +162,6 @@ class Footer(Gtk.Box):
 
     def _show_volume(self) -> None:
         volume = self.controller.volume
-        if volume > 0:
-            self._unmuted = volume
         self._syncing = True
         try:
             self.volume_scale.set_value(volume)
@@ -201,10 +192,7 @@ class Footer(Gtk.Box):
         self.window.toast(self._("Copied"))
 
     def _toggle_mute(self, _button: Gtk.Button) -> None:
-        if self.controller.volume > 0:
-            self.controller.set_volume(0)
-        else:
-            self.controller.set_volume(self._unmuted or DEFAULT_VOLUME)
+        self.controller.toggle_mute()
 
     def _volume_moved(self, scale: Gtk.Scale) -> None:
         if self._syncing:

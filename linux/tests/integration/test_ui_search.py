@@ -24,7 +24,7 @@ def no_network(monkeypatch):
 
     monkeypatch.setattr(directory, "search", unreachable)
     monkeypatch.setattr(directory, "suggestions", unreachable)
-    for var in ("LC_ALL", "LC_MESSAGES"):
+    for var in ("LC_ALL", "LC_TIME", "LC_MONETARY", "LC_PAPER", "LC_ADDRESS", "LC_MESSAGES"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("LANG", "C")
 

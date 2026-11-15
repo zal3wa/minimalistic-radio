@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from .window import RadioWindow
 
 WEBSITE = "https://github.com/zal3wa/minimalistic-radio"
-CREDIT = "Icons: Lucide (ISC)"
 
 # The language choices (code, label). A label of None is the translated "Same as system". One line per language.
 LANGUAGE_OPTIONS: list[tuple[str, str | None]] = [
@@ -52,7 +51,7 @@ class SettingsPage(Adw.NavigationPage):
         general.add(self.autostart_row)
 
         self.popup_row = Adw.SwitchRow(title=_("Show station changes"),
-                                       subtitle=_("A card at the bottom after a media key or menu switch"),
+                                       subtitle=_("A notification after a media key or menu switch"),
                                        active=controller.prefs.show_station_popup)
         self.popup_row.connect("notify::active", lambda row, _p: controller.set_show_station_popup(row.get_active()))
         general.add(self.popup_row)
@@ -109,8 +108,10 @@ class SettingsPage(Adw.NavigationPage):
         self.stations_group.set_description(text)
 
     def export_to(self, path: Path) -> None:
-        self.controller.export_stations(path)
-        self._report(self._("Stations saved: {n}.").format(n=len(self.controller.stations)))
+        if self.controller.export_stations(path):
+            self._report(self._("Stations saved: {n}.").format(n=len(self.controller.stations)))
+        else:
+            self._report(self._("Couldn't save the file."))
 
     def import_from(self, path: Path) -> None:
         result = self.controller.import_stations(path)
@@ -158,7 +159,8 @@ class SettingsPage(Adw.NavigationPage):
 
     def show_about(self) -> Adw.AboutDialog:
         about = Adw.AboutDialog(application_name=APP_NAME, application_icon=APP_ID, version=VERSION,
-                                license_type=Gtk.License.MIT_X11, website=WEBSITE, comments=self._(CREDIT))
+                                license_type=Gtk.License.MIT_X11, website=WEBSITE,
+                                comments=self._("Icons: Lucide (ISC)"))
         about.present(self.window)
         self.about = about
         return about

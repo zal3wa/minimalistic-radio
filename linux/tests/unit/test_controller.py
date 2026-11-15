@@ -293,13 +293,11 @@ def test_import_merges_like_windows(ctl, tmp_path):
     assert len(ctl.stations) == 5
 def test_export_writes_windows_list_and_reports_failure(ctl, tmp_path):
     out = tmp_path / "export.json"
-    ctl.export_stations(out)
+    assert ctl.export_stations(out) is True
     assert json.loads(out.read_text("utf-8")) == [{"Name": s.name, "Url": s.url, "Logo": s.logo} for s in (A, B, C)]
-    assert ctl.message is None
     folder = tmp_path / "folder.json"; folder.mkdir()
-    seen = []; ctl.subscribe(seen.append)
-    ctl.export_stations(folder)
-    assert ctl.message == "Couldn't save the file." and Change.MESSAGE in seen[-1]
+    assert ctl.export_stations(folder) is False
+    assert ctl.message is None and ctl.notice is None
 def test_save_failures_keep_the_controller_working(ctl, monkeypatch):
     def fail(*args):
         raise OSError("disk full")
@@ -308,13 +306,14 @@ def test_save_failures_keep_the_controller_working(ctl, monkeypatch):
         monkeypatch.setattr(f"minimalistic_radio.controller.{name}", fail)
     seen = []; ctl.subscribe(seen.append)
     assert ctl.add_station(Station("Delta", "http://d.example/live")) is AddResult.ADDED
-    assert ctl.stations[-1].name == "Delta" and ctl.message == "Couldn't save the station list."
+    assert ctl.stations[-1].name == "Delta" and ctl.notice == "Couldn't save the station list."
     assert any(Change.MESSAGE in c for c in seen)
     playing(ctl); ctl.set_volume(70); ctl.on_player_title("Queen - A Kind Of Magic"); ctl.set_language("en")
     assert ctl.volume == 70 and ctl.history[0].title == "Queen - A Kind Of Magic" and ctl.prefs.language == "en"
     assert ctl.status is Status.PLAYING and ctl.message is None
     assert ctl.update_station(0, Station("Alpha 2", "http://a.example/2")) is AddResult.ADDED   # restarts it
-    assert ctl.status is Status.CONNECTING and ctl.message == "Couldn't save the station list."
+    assert ctl.status is Status.CONNECTING and ctl.notice == "Couldn't save the station list."
+    assert ctl.message is None   # a notice is never the status line
 
 
 # ---- Preferences ----
@@ -322,6 +321,12 @@ def test_save_failures_keep_the_controller_working(ctl, monkeypatch):
 def test_volume_clamped_saved_and_sent(ctl):
     ctl.set_volume(130); assert ctl.volume == 100 and ctl.player.calls[-1] == ("set_volume", 100)
     assert load_preferences(ctl.paths.config / "preferences.json").volume == 100
+def test_unmute_goes_back_to_before_a_quick_slide_to_zero(ctl):
+    ctl.set_volume(60); ctl.scheduler.advance(5)
+    for level in (40, 1, 0):   # less than a second apart, like a drag to 0
+        ctl.set_volume(level); ctl.scheduler.advance(0.1)
+    ctl.toggle_mute()
+    assert ctl.volume == 60
 def test_unknown_language_ignored(ctl): ctl.set_language("de"); assert ctl.prefs.language == "auto"
 def test_language_and_station_popup_saved(ctl):
     seen = []; ctl.subscribe(seen.append)

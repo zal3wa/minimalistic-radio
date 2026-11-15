@@ -158,6 +158,7 @@ def test_polish_strings(tmp_path, monkeypatch):
     target.mkdir(parents=True)
     subprocess.run([msgfmt, "-o", str(target / "minimalistic-radio.mo"), str(ROOT / "po" / "pl.po")], check=True)
     monkeypatch.delenv("LANGUAGE", raising=False)
+    monkeypatch.setattr(i18n, "_translation", i18n._translation)   # English again for the later tests
     _ = i18n.install("pl", str(tmp_path / "locale"))
     assert _("Play") == "Odtwórz"
     assert _("The broadcast has ended") == "Transmisja zakończyła się"

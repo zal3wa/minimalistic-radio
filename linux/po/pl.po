@@ -58,7 +58,7 @@ msgstr "Zapisz zrzuty ekranu stron w katalogu DIR i zakończ"
 msgid "Couldn't save the station list."
 msgstr "Nie udało się zapisać listy stacji."
 
-#: minimalistic_radio/controller.py
+#: minimalistic_radio/ui/settings_page.py
 msgid "Couldn't save the file."
 msgstr "Nie udało się zapisać pliku."
 
@@ -340,8 +340,8 @@ msgid "Show station changes"
 msgstr "Pokazuj zmianę stacji"
 
 #: minimalistic_radio/ui/settings_page.py
-msgid "A card at the bottom after a media key or menu switch"
-msgstr "Karta na dole ekranu po zmianie klawiszem lub z menu"
+msgid "A notification after a media key or menu switch"
+msgstr "Powiadomienie po zmianie klawiszem lub z menu"
 
 #: minimalistic_radio/ui/settings_page.py
 msgid "Stations"
@@ -380,10 +380,12 @@ msgid "Stops the radio and removes it from the tray"
 msgstr "Wyłącza radio i usuwa ikonę z zasobnika"
 
 #: minimalistic_radio/ui/settings_page.py
+#, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Zapisano stacje: {n}."
 
 #: minimalistic_radio/ui/settings_page.py
+#, python-brace-format
 msgid "Stations added: {n}."
 msgstr "Dodano stacje: {n}."
 

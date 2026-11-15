@@ -77,6 +77,11 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     page.export_to(target)
     assert json.loads(target.read_text(encoding="utf-8")) == [{"Name": "Alpha", "Url": "http://s0.example/live",
                                                                 "Logo": None}]
+    assert page.stations_group.get_description() == "Stations saved: 1."
+    folder = tmp_path / "folder.json"
+    folder.mkdir()
+    page.export_to(folder)
+    assert page.stations_group.get_description() == "Couldn't save the file."
     other = tmp_path / "in.json"
     other.write_text(json.dumps([{"Name": "Beta", "Url": "http://b.example/s", "Logo": None}]), encoding="utf-8")
     page.import_from(other)
