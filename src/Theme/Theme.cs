@@ -117,6 +117,12 @@ internal static class Theme
     internal const string RadioIcon = "M3 10 L3 6 A2 2 0 0 1 5 4 H19 A2 2 0 0 1 21 6 V18 A2 2 0 0 1 19 20 H5 A2 2 0 0 1 3 18 Z M3 10 H21 M7 15 H7.01 M11 15 H17";
     internal const string CheckIcon = "M20 6 L9 17 L4 12";
     internal const string VolumeIcon = "M11 5 L6 9 H3 V15 H6 L11 19 Z M15 9 A4 4 0 0 1 15 15 M18 6 A8 8 0 0 1 18 18";
+    // The panel's speaker button, like Windows 11: muted, then one to three waves. One speaker for all four, a little
+    // left of VolumeIcon's so that the third wave fits.
+    internal const string VolumeMutedIcon = "M10 5 L5 9 H2 V15 H5 L10 19 Z M15 9 L21 15 M21 9 L15 15";
+    internal const string Volume1Icon = "M10 5 L5 9 H2 V15 H5 L10 19 Z M13.5 9.5 A3.5 3.5 0 0 1 13.5 14.5";
+    internal const string Volume2Icon = Volume1Icon + " M16.5 7 A7 7 0 0 1 16.5 17";
+    internal const string Volume3Icon = Volume2Icon + " M19.5 4.5 A10.5 10.5 0 0 1 19.5 19.5";
     internal const string PlusIcon = "M12 5 V19 M5 12 H19";
     internal const string MinusIcon = "M5 12 H19";
     internal const string QuitIcon = "M10 17 L15 12 L10 7 M15 12 H3 M15 3 H19 A2 2 0 0 1 21 5 V19 A2 2 0 0 1 19 21 H15";

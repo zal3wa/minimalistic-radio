@@ -18,6 +18,12 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Minimalistic Radio</Product>
     <Copyright></Copyright>
+    <!-- The self-test and the README pictures (docs/BUILDING.md) are only in a build made with -p:SelfTest=true;
+         the exe people download doesn't carry them. -->
+    <SelfTest Condition="'$(SelfTest)' == ''">false</SelfTest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SelfTest)' == 'true'">
+    <DefineConstants>$(DefineConstants);SELFTEST</DefineConstants>
   </PropertyGroup>
   <!-- Windows.winmd from whichever Windows 10/11 SDK is installed (only the metadata is used at build time). -->
   <PropertyGroup>

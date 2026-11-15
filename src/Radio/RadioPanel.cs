@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -259,10 +260,13 @@ internal sealed partial class Radio
         playerPanel = panel;
         // Menus and file dialogs opened from the panel keep it open while they are shown.
         int holdOpen = 0;
+#if SELFTEST
+        if (testMenu) holdOpen = 1;   // the self-test keeps the panel open, as if a menu were shown
+#endif
         panel.Closed += (_, _) => { if (playerPanel == panel) playerPanel = null; };
         panel.Deactivated += (_, _) => Post(() =>
         {
-            if (playerPanel == panel && !panel.IsActive && holdOpen == 0 && !testMenu) panel.Close();
+            if (playerPanel == panel && !panel.IsActive && holdOpen == 0) panel.Close();
         });
         void Hold(ContextMenu menu)
         {
@@ -286,12 +290,45 @@ internal sealed partial class Radio
             Minimum = 0, Maximum = 100, Value = volume, IsSnapToTickEnabled = true, TickFrequency = 1,
             SmallChange = 1, LargeChange = 5, IsMoveToPointEnabled = true, VerticalAlignment = VerticalAlignment.Center
         };
-        var volumeText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, MinWidth = 104 };
         var name = new TextBox { Tag = T("Nazwa stacji", "Station name"), MaxLength = 100 };
         var url = new TextBox { Tag = T("Adres strumienia HTTP lub HTTPS", "Stream address (HTTP or HTTPS)"), MaxLength = 2048 };
         var logo = new TextBox { Tag = T("Adres logotypu (opcjonalnie)", "Logo address (optional)"), MaxLength = 2048 };
         SavedStation editing = null;
         var message = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        // The "Copied" bubble: one layer over the whole panel, so it can sit above any button (the copy button, a
+        // history row's more button), with the same bubble as the volume's. It goes after 1.5 s, and the copy
+        // button's check mark with it.
+        Grid notice = NewBubble(out TextBlock noticeText);
+        var noticeLayer = new Canvas { IsHitTestVisible = false, Tag = "notice" };
+        noticeLayer.Children.Add(notice);
+        var noticeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+        Action noticeEnd = null;
+        void EndNotice()
+        {
+            noticeTimer.Stop();
+            notice.Visibility = Visibility.Collapsed;
+            Action end = noticeEnd;
+            noticeEnd = null;
+            end?.Invoke();
+        }
+        noticeTimer.Tick += (_, _) => EndNotice();
+        panel.Closed += (_, _) => noticeTimer.Stop();
+        void ShowNotice(FrameworkElement anchor, Action end = null)
+        {
+            EndNotice();
+            noticeEnd = end;
+            noticeText.Text = T("Skopiowano", "Copied");
+            notice.Visibility = Visibility.Visible;
+            noticeLayer.UpdateLayout();
+            Point top = anchor.TranslatePoint(new Point(anchor.ActualWidth / 2, 0), noticeLayer);
+            double left = Math.Round(top.X - notice.ActualWidth / 2);
+            // Inside the panel's edges; the bubble would be cut off at its right otherwise.
+            left = Math.Max(ShadowMargin, Math.Min(left, noticeLayer.ActualWidth - ShadowMargin - notice.ActualWidth));
+            Canvas.SetLeft(notice, left);
+            Canvas.SetTop(notice, Math.Round(Math.Max(ShadowMargin, top.Y - notice.ActualHeight - 4)));
+            noticeTimer.Start();
+        }
+
         var add = NewButton(null, IconText(Theme.PlusIcon, T("Stacja", "Station")));
         add.HorizontalAlignment = HorizontalAlignment.Left;
         var save = NewButton("AccentButton", T("Zapisz", "Save"));
@@ -383,41 +420,41 @@ internal sealed partial class Radio
             name.Focus();
         }
 
-        void FillList(bool keepScroll = false)
+        void FillList()
         {
-            ScrollViewer viewer = keepScroll ? Descendants(list).OfType<ScrollViewer>().FirstOrDefault() : null;
-            double offset = viewer?.VerticalOffset ?? 0;
+            drag.Abandon();   // a press or a drag on the old rows ends here
             list.Items.Clear();
             foreach (SavedStation item in Stations) list.Items.Add(StationRow(item));
             list.SelectedIndex = station;
             shownStation = station;
-            // A moved station stays where it was put: the list keeps its place instead of jumping to the playing one.
-            if (viewer != null)
-            {
-                list.UpdateLayout();
-                viewer.ScrollToVerticalOffset(offset);
-                list.UpdateLayout();
-            }
-            else ShowActiveStationAfterLayout(false);
+            ShowActiveStationAfterLayout(false);
         }
 
-        bool ApplyStations(List<SavedStation> updated, bool keepScroll = false)
+        bool SaveStations(List<SavedStation> updated)
         {
-            // The self-test changes stations in memory only: the saved list stays as it was.
-            if (!testMenu)
+#if SELFTEST
+            if (testMenu) return true;   // the self-test changes stations in memory only: the saved list stays as it was
+#endif
+            try
             {
-                try { Storage.Write(Storage.StationFile, updated); }
-                catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
-                {
-                    Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
-                    return false;
-                }
+                Storage.Write(Storage.StationFile, updated);
+                return true;
             }
+            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+            {
+                Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
+                return false;
+            }
+        }
+
+        bool ApplyStations(List<SavedStation> updated)
+        {
+            if (!SaveStations(updated)) return false;
             SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
             Stations.Clear();
             Stations.AddRange(updated);
             if (active != null) station = Stations.IndexOf(active);
-            FillList(keepScroll);
+            FillList();
             return true;
         }
 
@@ -473,7 +510,8 @@ internal sealed partial class Radio
             string loadingText = T("Wczytuję propozycje…", "Loading suggestions…");
             string unavailable = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
                 "The station directory is unavailable right now. Try again.");
-            Storage.SuggestionList shown = suggestions;
+            // A change of language can change the country (Storage.CurrentCountry): then they load again.
+            Storage.SuggestionList shown = suggestions?.Country == Storage.CurrentCountry() ? suggestions : null;
             if (shown == null)
             {
                 results.Items.Clear();
@@ -663,15 +701,32 @@ internal sealed partial class Radio
         }
 
         // Puts a station in another place on the list (dragged there, or Alt+↑/↓) and saves the order like any other
-        // change; the current station follows by identity and keeps playing.
+        // change; the current station follows by identity and keeps playing. Only its row moves: the list isn't built
+        // again, so the other rows keep their logos and nothing flickers.
         bool MoveStation(SavedStation item, int target)
         {
             int index = Stations.IndexOf(item);
-            if (index < 0 || target < 0 || target >= Stations.Count || target == index) return false;
+            var row = list.Items.OfType<FrameworkElement>().FirstOrDefault(entry => entry.Tag == item);
+            if (index < 0 || target < 0 || target >= Stations.Count || target == index || row == null) return false;
             var updated = Stations.ToList();
             updated.RemoveAt(index);
             updated.Insert(target, item);
-            return ApplyStations(updated, true);
+            if (!SaveStations(updated)) return false;
+            SavedStation active = station >= 0 && station < Stations.Count ? Stations[station] : null;
+            Stations.RemoveAt(index);
+            Stations.Insert(target, item);
+            if (active != null) station = Stations.IndexOf(active);
+            // The list scrolls by whole stations; it keeps the same offset, so the rows stay where the drop showed them.
+            ScrollViewer viewer = Descendants(list).OfType<ScrollViewer>().FirstOrDefault();
+            double offset = viewer?.VerticalOffset ?? 0;
+            list.Items.Remove(row);
+            list.Items.Insert(target, row);
+            list.SelectedIndex = station;
+            shownStation = station;
+            list.UpdateLayout();
+            viewer?.ScrollToVerticalOffset(offset);
+            list.UpdateLayout();
+            return true;
         }
         drag.Move = MoveStation;
 
@@ -686,7 +741,7 @@ internal sealed partial class Radio
             image.Loaded += async (_, _) =>
             {
                 if (image.Source != null) return;
-                ImageSource source = await LoadImage(item.Logo);
+                ImageSource source = await LoadLogo(item.Logo);
                 if (source == null) return;
                 image.Source = source;
                 placeholder.Visibility = Visibility.Hidden;
@@ -728,7 +783,7 @@ internal sealed partial class Radio
             image.Loaded += async (_, _) =>
             {
                 if (image.Source != null) return;
-                ImageSource source = await LoadImage(item.Logo);
+                ImageSource source = await LoadLogo(item.Logo);
                 if (source == null) return;
                 image.Source = source;
                 placeholder.Visibility = Visibility.Hidden;
@@ -760,6 +815,9 @@ internal sealed partial class Radio
             options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
+#if SELFTEST
+            actions.Tag = options;   // the self-test reads the menu from here
+#endif
             var row = (Grid)Columns((stationButton, Star), (actions, Auto));
             row.MinHeight = 47;
             row.Tag = item;
@@ -793,7 +851,11 @@ internal sealed partial class Radio
                 more.VerticalAlignment = VerticalAlignment.Center;
                 string query = Uri.EscapeDataString(entry.Title.Replace(" – ", " ").Replace(" - ", " "));
                 var menu = new ContextMenu { PlacementTarget = more, Placement = PlacementMode.Bottom };
-                menu.Items.Add(Item(T("Kopiuj", "Copy"), Theme.CopyIcon, () => CopyText(entry.Title)));
+                menu.Items.Add(Item(T("Kopiuj", "Copy"), Theme.CopyIcon, () =>
+                {
+                    if (CopyText(entry.Title)) ShowNotice(more);
+                    else message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                }));
                 menu.Items.Add(Item(T("Szukaj w Spotify", "Search on Spotify"), null,
                     () => OpenWebPage("https://open.spotify.com/search/" + query)));
                 menu.Items.Add(Item(T("Szukaj w YouTube", "Search on YouTube"), null,
@@ -955,13 +1017,70 @@ internal sealed partial class Radio
         settingsPane.Content = BuildSettings();
 
         // Footer: now playing, volume with the sleep timer, play/stop.
-        volumeSlider.ValueChanged += (_, e) => ChangeVolume((int)Math.Round(e.NewValue));
+        // The volume row is like Windows 11's: a speaker button that shows the level and mutes, the slider, and the
+        // number in a bubble above the knob while the volume changes by hand. With no label, the slider is named.
+        AutomationProperties.SetName(volumeSlider, T("Głośność", "Volume"));
+        var muteButton = NewButton("GhostButton", null);
+        muteButton.Padding = new Thickness(8, 6, 8, 6);
+        muteButton.Margin = new Thickness(-4, 0, 6, 0);
+        muteButton.VerticalAlignment = VerticalAlignment.Center;
+        void ShowVolume()
+        {
+            string glyph = VolumeGlyph(volume);
+            if (Equals(muteButton.Tag, glyph)) return;
+            muteButton.Tag = glyph;
+            muteButton.Content = Theme.Glyph(glyph);
+            string tip = volume == 0 ? T("Włącz dźwięk", "Unmute") : T("Wycisz", "Mute");
+            muteButton.ToolTip = tip;
+            AutomationProperties.SetName(muteButton, tip);
+        }
+        muteButton.Click += (_, _) =>
+        {
+            ToggleMute();
+            volumeSlider.Value = volume;
+            ShowVolume();
+        };
+        // The bubble lives in the panel (a layer over the slider that may draw above it), not in a popup window, so it
+        // needs no window of its own, follows the theme like the rest, and shows in the self-test's pictures. It goes
+        // a second after the last wheel turn or key, or when a drag lets go.
+        Grid bubble = NewBubble(out TextBlock bubbleText);
+        var bubbleLayer = new Canvas { IsHitTestVisible = false };
+        bubbleLayer.Children.Add(bubble);
+        var sliderCell = new Grid();
+        sliderCell.Children.Add(volumeSlider);
+        sliderCell.Children.Add(bubbleLayer);
+        var bubbleTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        void HideBubble()
+        {
+            bubbleTimer.Stop();
+            bubble.Visibility = Visibility.Collapsed;
+        }
+        bubbleTimer.Tick += (_, _) => HideBubble();
+        panel.Closed += (_, _) => bubbleTimer.Stop();
+        void ShowBubble(bool untilRelease)
+        {
+            if (!(volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track) || track.Thumb == null) return;
+            bubbleText.Text = ((int)Math.Round(volumeSlider.Value)).ToString(CultureInfo.InvariantCulture);
+            bubble.Visibility = Visibility.Visible;
+            sliderCell.UpdateLayout();   // the knob where the new value puts it, the bubble at its new width
+            Point knob = track.Thumb.TranslatePoint(new Point(track.Thumb.ActualWidth / 2, 0), bubbleLayer);
+            Canvas.SetLeft(bubble, Math.Round(knob.X - bubble.ActualWidth / 2));
+            Canvas.SetTop(bubble, Math.Round(knob.Y - bubble.ActualHeight - 4));
+            bubbleTimer.Stop();
+            if (!untilRelease) bubbleTimer.Start();
+        }
+        volumeSlider.ValueChanged += (_, e) =>
+        {
+            ChangeVolume((int)Math.Round(e.NewValue));
+            ShowVolume();
+        };
         // Like the Windows 11 volume slider: press anywhere on it and drag (WPF on its own only jumps
         // there and drags just the knob), and the mouse wheel changes the volume by 2%.
         void SlideTo(MouseEventArgs e)
         {
             if (volumeSlider.Template?.FindName("PART_Track", volumeSlider) is Track track)
                 volumeSlider.Value = Math.Round(Math.Max(0, Math.Min(100, track.ValueFromPoint(e.GetPosition(track)))));
+            ShowBubble(true);
         }
         // handledEventsToo: with IsMoveToPointEnabled the Slider itself marks a press next to the knob as
         // handled (it only jumps there), and a plain += handler would never see it.
@@ -982,18 +1101,34 @@ internal sealed partial class Radio
             volumeSlider.ReleaseMouseCapture();
             e.Handled = true;
         };
+        volumeSlider.LostMouseCapture += (_, _) => HideBubble();
         volumeSlider.MouseWheel += (_, e) =>
         {
             volumeSlider.Value = Clamp((int)volumeSlider.Value + (e.Delta > 0 ? 2 : -2), 0, 100);
+            ShowBubble(false);
             e.Handled = true;
         };
+        // handledEventsToo: the Slider handles its keys itself; this runs after, with the new value.
+        volumeSlider.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler((_, e) =>
+        {
+            if (e.Key == Key.Left || e.Key == Key.Right || e.Key == Key.Up || e.Key == Key.Down ||
+                e.Key == Key.PageUp || e.Key == Key.PageDown || e.Key == Key.Home || e.Key == Key.End)
+                ShowBubble(false);
+        }), true);
         play.Click += (_, _) => TogglePlayback();
         var copy = NewButton("GhostButton", Theme.Glyph(Theme.CopyIcon), T("Kopiuj tytuł", "Copy title"));
         copy.Padding = new Thickness(8);
         copy.VerticalAlignment = VerticalAlignment.Center;
         copy.Click += (_, _) =>
         {
-            if (track != null && !CopyText(track)) message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+            if (track == null) return;
+            if (!CopyText(track))
+            {
+                message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                return;
+            }
+            copy.Content = Theme.Glyph(Theme.CheckIcon);
+            ShowNotice(copy, () => copy.Content = Theme.Glyph(Theme.CopyIcon));
         };
 
         var sleepButton = NewButton("GhostButton", null, T("Wyłącznik czasowy", "Sleep timer"));
@@ -1037,7 +1172,7 @@ internal sealed partial class Radio
             (updateButton, Auto), (historyButton, Auto), (settingsButton, Auto), (closeButton, Auto));
         var header = Spaced(Orientation.Vertical, 12, titleRow, add, fields, sectionRow);
         header.Margin = new Thickness(0, 0, 0, 8);
-        var volumeRow = Columns((volumeText, Auto), (volumeSlider, Star), (sleepButton, Auto));
+        var volumeRow = Columns((muteButton, Auto), (sliderCell, Star), (sleepButton, Auto));
         play.HorizontalAlignment = HorizontalAlignment.Stretch;
         var footer = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
         footer.Margin = new Thickness(0, 10, 0, 0);
@@ -1070,6 +1205,7 @@ internal sealed partial class Radio
         var root = new Grid { Margin = new Thickness(ShadowMargin) };
         root.Children.Add(shadow);
         root.Children.Add(frame);
+        root.Children.Add(noticeLayer);
         panel.Content = root;
         FillList();
         SetPage(startPage);
@@ -1127,8 +1263,8 @@ internal sealed partial class Radio
             copy.IsEnabled = track != null;
             now.Text = track ?? (session != null && status == StationName ? NoTrack : status);
             now.ToolTip = track;
-            volumeText.Text = T("Głośność ", "Volume ") + volume + "%";
             volumeSlider.Value = volume;
+            ShowVolume();
             bool sleeping = sleepAt != null;
             if (shownSleep != sleeping)
             {
@@ -1154,7 +1290,7 @@ internal sealed partial class Radio
         dismiss.Tick += (_, _) =>
         {
             bool down = GetAsyncKeyState(1) < 0 || GetAsyncKeyState(2) < 0;
-            if (down && !pointerDown && holdOpen == 0 && !testMenu)
+            if (down && !pointerDown && holdOpen == 0)
             {
                 IntPtr handle = new WindowInteropHelper(panel).Handle;
                 System.Drawing.Point point = Forms.Cursor.Position;
@@ -1197,6 +1333,28 @@ internal sealed partial class Radio
         dismiss.Start();
     }
 
+    // Station logos (the list's and the search's), decoded, for the whole run: a list built again (language, add,
+    // edit, remove, suggestions) shows them at once instead of fetching them again. A logo that didn't load stays
+    // the radio icon until the next start. Kept as tasks, so rows asking for one still loading share the download.
+    private const int LogoCacheSize = 200;
+    private static readonly Dictionary<string, Task<ImageSource>> logos = new Dictionary<string, Task<ImageSource>>();
+    private static readonly Queue<string> logoOrder = new Queue<string>();
+
+    private static Task<ImageSource> LoadLogo(string address)
+    {
+        if (!Storage.IsWebUrl(address)) return Task.FromResult<ImageSource>(null);
+        if (!logos.TryGetValue(address, out Task<ImageSource> logo)) CacheLogo(address, logo = LoadImage(address));
+        return logo;
+    }
+
+    // Beyond the limit the oldest logos go first.
+    private static void CacheLogo(string address, Task<ImageSource> logo)
+    {
+        if (!logos.ContainsKey(address)) logoOrder.Enqueue(address);
+        logos[address] = logo;
+        while (logos.Count > LogoCacheSize) logos.Remove(logoOrder.Dequeue());
+    }
+
     private static async Task<ImageSource> LoadImage(string address)
     {
         if (!Storage.IsWebUrl(address)) return null;
@@ -1235,4 +1393,76 @@ internal sealed partial class Radio
             return null;
         }
     }
+
+    // The small bubble with a shadow, used by the volume value and by "Copied". It starts hidden; the caller places it.
+    // The shadow is on a layer of its own, so the text keeps sharp ClearType rendering (like the panel's shadow).
+    private static Grid NewBubble(out TextBlock text)
+    {
+        text = new TextBlock { FontSize = 12 };
+        var face = new Border
+        {
+            CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(8, 3, 8, 4), Child = text
+        };
+        face.SetResourceReference(Border.BackgroundProperty, "Bg");
+        face.SetResourceReference(Border.BorderBrushProperty, "Line");
+        var bubble = new Grid { Visibility = Visibility.Collapsed };
+        bubble.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(4), Background = Brushes.Black,
+            Effect = new DropShadowEffect { BlurRadius = 8, ShadowDepth = 1, Opacity = 0.25, Direction = 270 }
+        });
+        bubble.Children.Add(face);
+        return bubble;
+    }
+
+#if SELFTEST
+    // Self-test of the copy feedback: the panel's bubble says "Copied" after the copy button, and the tray's card
+    // reads "Copied to clipboard" on its second line. A busy clipboard is not a failure of the app, so it is skipped.
+    private async Task VerifyCopyFeedback(bool preview)
+    {
+        track = "Test Artist - Test Song";
+        playerPanel?.Close();
+        OpenPlayer();
+        await Task.Delay(500);
+        string copied = T("Skopiowano", "Copied");
+        Button copyButton = Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == T("Kopiuj tytuł", "Copy title"));
+        copyButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        var notice = (FrameworkElement)Descendants(playerPanel).OfType<Canvas>().First(layer => layer.Tag as string == "notice").Children[0];
+        if (notice.IsVisible && Descendants(notice).OfType<TextBlock>().First().Text != copied)
+            throw new InvalidOperationException("Dymek kopiowania ma zły tekst.");
+        if (preview) await SavePreview(playerPanel, "copied");
+        playerPanel.Close();
+        CopyTrackFromMenu();
+        if (osd?.IsVisible == true && osdText.Text != T("Skopiowano do schowka", "Copied to clipboard"))
+            throw new InvalidOperationException("Karta kopiowania ma zły drugi wiersz.");
+        osd?.Hide();
+    }
+
+    // Self-test of the volume row (--test-menu, from VerifyMenu): the speaker for 0, 20, 50 and 90%, mute and unmute,
+    // and the number in the bubble on a wheel turn.
+    private async Task VerifyVolumeRow()
+    {
+        playerPanel?.Close();
+        OpenPlayer();
+        await Task.Delay(500);
+        var slider = Descendants(playerPanel).OfType<Slider>().First();
+        string[] speakers = { Theme.VolumeMutedIcon, Theme.Volume1Icon, Theme.Volume2Icon, Theme.Volume3Icon };
+        Button speaker = Descendants(playerPanel).OfType<Button>().First(button => speakers.Contains(button.Tag as string));
+        for (int i = 0; i < 4; i++)
+        {
+            ChangeVolume(new[] { 0, 20, 50, 90 }[i]);
+            await Task.Delay(300);   // the panel refreshes every 250 ms
+            if (speaker.Tag as string != speakers[i]) throw new InvalidOperationException("Błędna ikona głośności przy " + volume + "%.");
+        }
+        speaker.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        int muted = volume;
+        speaker.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        if (muted != 0 || volume != 90) throw new InvalidOperationException($"Wyciszanie: {muted}%, potem {volume}%.");
+        slider.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, 120) { RoutedEvent = Mouse.MouseWheelEvent });
+        var bubble = (FrameworkElement)((Panel)VisualTreeHelper.GetParent(slider)).Children.OfType<Canvas>().First().Children[0];
+        if (volume != 92 || !bubble.IsVisible || Descendants(bubble).OfType<TextBlock>().First().Text != "92")
+            throw new InvalidOperationException("Dymek głośności nie pokazuje wartości.");
+        playerPanel.Close();
+    }
+#endif
 }

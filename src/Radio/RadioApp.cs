@@ -36,8 +36,12 @@ internal sealed partial class Radio
 
     private readonly Application app;
     private readonly EventWaitHandle panelRequest;
-    private readonly bool testMenu, autostart, updated;
+    private readonly bool autostart, updated;
+#if SELFTEST
+    // The self-test and the README pictures are only in a build made with -p:SelfTest=true (docs/BUILDING.md).
+    private readonly bool testMenu;   // --test-menu: VerifyMenu, or TakeScreenshots with --screenshot
     private readonly bool preview = Environment.GetCommandLineArgs().Contains("--preview");
+#endif
     private Window playerPanel;
     private RegisteredWaitHandle panelListener;
     private Windows.Media.Playback.MediaPlayer mediaSession;
@@ -53,6 +57,8 @@ internal sealed partial class Radio
     private string artworkUrl;
     private string shownThumbnail;
     private int volume = 30;
+    private int unmuteVolume = 30, volumeBefore = 30;   // see ChangeVolume and ToggleMute
+    private readonly Stopwatch sinceVolumeChange = new Stopwatch();
     private bool playing;
     private string status = Ready;
     private CancellationTokenSource session;
@@ -91,14 +97,18 @@ internal sealed partial class Radio
     private int updateVersion;
     private readonly DispatcherTimer updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
 
-    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
+    internal Radio(Application app, EventWaitHandle panelRequest, bool autostart, bool updated)
     {
         this.app = app;
         this.panelRequest = panelRequest;
-        this.testMenu = testMenu;
         this.autostart = autostart;
         this.updated = updated;
     }
+
+#if SELFTEST
+    internal Radio(Application app, EventWaitHandle panelRequest, bool testMenu, bool autostart, bool updated)
+        : this(app, panelRequest, autostart, updated) => this.testMenu = testMenu;
+#endif
 
     private void Post(Action action) => app.Dispatcher.BeginInvoke(action);
 
@@ -112,7 +122,9 @@ internal sealed partial class Radio
         tray.MouseUp += (_, e) => { if (e.Button == Forms.MouseButtons.Right) Post(ShowMenu); };
         tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Post(ShowPlayer); };
         tray.BalloonTipClicked += (_, _) => Post(() => OpenPlayer());
+#if SELFTEST
         if (!testMenu)
+#endif
         {
             LoadStations();
             LoadPreferences();
@@ -139,8 +151,11 @@ internal sealed partial class Radio
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
         trackTimer.Tick += (_, _) => ScrollTrack();
         sleepTimer.Tick += (_, _) => SleepTick();
+#if SELFTEST
         if (testMenu) Post(Environment.GetCommandLineArgs().Contains("--screenshot") ? (Action)TakeScreenshots : VerifyMenu);
-        else if (station >= 0 && !autostart) Post(StartPlayback);
+        else
+#endif
+        if (station >= 0 && !autostart) Post(StartPlayback);
     }
 
     // After sleep or hibernation the old connection is dead: start the station again.
@@ -174,6 +189,7 @@ internal sealed partial class Radio
         if (restart) StartPlayback();
     }
 
+#if SELFTEST
     // "--test-menu": builds the menu and the panel without playing anything, exit code 0 = OK.
     // With "--preview" it also saves pictures of them (light and dark) to %TEMP%\MinimalisticRadio-*.png.
     private async void VerifyMenu()
@@ -224,7 +240,12 @@ internal sealed partial class Radio
                 throw new InvalidOperationException("Błędne porównywanie nazw stacji.");
             if (Storage.CleanPopular(new[] { Sample("Radio", "https://r1.example/s"), Sample("Radio", "https://r2.example/s") }, new DirectoryStation[0]).Length != 2)
                 throw new InvalidOperationException("Dwie stacje o nazwie Radio powinny zostać obie.");
-            if (Storage.RecommendedIds.Length != 10 || Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
+            // "Popular in your country" follows the radio's language (design: languages and country, section 1).
+            foreach (var (language, system, expected) in new (string, string, string)[] { ("pl", "US", "PL"), ("pl", null, "PL"), ("es", "MX", "MX"), ("es", "US", "ES"),
+                ("en", "US", "US"), ("en", null, null), ("de", "AT", "AT"), ("pt", "BR", "BR") })
+                if (Storage.CountryFor(language, system) != expected)
+                    throw new InvalidOperationException($"Błędny kraj popularnych stacji: ({language}, {system}) → {Storage.CountryFor(language, system)}.");
+            if (Storage.RecommendedIds.Length != 10 ||Storage.CleanPopular(Enumerable.Range(1, 30).Select(n => Sample("S" + n, "https://x.example/" + n)), picked).Length != 15)
                 throw new InvalidOperationException("Błędna liczba stacji polecanych lub popularnych.");
             // Where a dragged station lands: after a row once its top edge passes that row's middle (49 px apart, as on the panel).
             double[] rows = { 49, 49, 49, 49, 49 }, mixed = { 30, 60, 30 };
@@ -333,6 +354,8 @@ internal sealed partial class Radio
                     throw new InvalidOperationException("Brak systemowego sterowania multimediami.");
                 CloseMenu();
                 await VerifyStationDrag();
+                await VerifyVolumeRow();
+                await VerifyCopyFeedback(preview);
             }
         }
         catch (Exception error)
@@ -403,6 +426,7 @@ internal sealed partial class Radio
             Shutdown();
         }
     }
+#endif
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
     {
@@ -485,12 +509,7 @@ internal sealed partial class Radio
             trackLabel = new TextBlock { TextWrapping = TextWrapping.NoWrap, FontSize = 13 };
             trackViewport = new Canvas { Width = 300, ClipToBounds = true };
             trackViewport.Children.Add(trackLabel);
-            trackItem = Item("", null, () =>
-            {
-                string title = track;
-                if (title != null && !CopyText(title))
-                    tray.ShowBalloonTip(2500, AppName, T("Nie udało się skopiować tytułu.", "Couldn't copy the title."), Forms.ToolTipIcon.Warning);
-            }, false);
+            trackItem = Item("", null, CopyTrackFromMenu, false);
             trackItem.Header = trackViewport;
             menu.Items.Add(trackItem);
         }
@@ -512,6 +531,15 @@ internal sealed partial class Radio
         if (glyph != null) item.Icon = Theme.Glyph(glyph, 16);
         if (action != null) item.Click += (_, _) => action();
         return item;
+    }
+
+    // The menu closes on the click, so success is answered with the station card instead of a mark in the menu.
+    private void CopyTrackFromMenu()
+    {
+        string title = track;
+        if (title == null) return;
+        if (CopyText(title)) ShowCopiedCard(title);
+        else tray.ShowBalloonTip(2500, AppName, T("Nie udało się skopiować tytułu.", "Couldn't copy the title."), Forms.ToolTipIcon.Warning);
     }
 
     private static bool CopyText(string text)
@@ -605,10 +633,28 @@ internal sealed partial class Radio
     {
         value = Clamp(value, 0, 100);
         if (value == volume) return;
+        // Changes less than a second apart (a drag, the wheel, the arrow keys) count as one: turned down to 0 that way,
+        // unmuting brings back the level from before them, not the 1% passed last.
+        if (!sinceVolumeChange.IsRunning || sinceVolumeChange.ElapsedMilliseconds > 1000) volumeBefore = volume;
+        sinceVolumeChange.Restart();
+        if (value == 0 && volumeBefore > 0) unmuteVolume = volumeBefore;
         Volatile.Write(ref volume, value);
         SavePreferences();
         UpdateMediaSession();
     }
+
+    // The panel's speaker button: mutes, and unmutes back to the level from before (30 if there was none). Through
+    // ChangeVolume like any change, so the tray menu, the media controls and the saved volume follow.
+    private void ToggleMute()
+    {
+        int before = volume;
+        ChangeVolume(before > 0 ? 0 : unmuteVolume);
+        if (before > 0) unmuteVolume = before;
+    }
+
+    // The speaker for a level, like Windows 11: muted, or one to three waves.
+    internal static string VolumeGlyph(int level) =>
+        level <= 0 ? Theme.VolumeMutedIcon : level <= 33 ? Theme.Volume1Icon : level <= 66 ? Theme.Volume2Icon : Theme.Volume3Icon;
 
     private void TogglePlayback()
     {
@@ -975,7 +1021,9 @@ internal sealed partial class Radio
 
     private void SaveHistory()
     {
+#if SELFTEST
         if (testMenu) return;
+#endif
         try { Storage.Write(Storage.HistoryFile, history); }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
     }
@@ -995,7 +1043,10 @@ internal sealed partial class Radio
 
     private async void CheckForUpdates(bool manual)
     {
-        if (testMenu || installing || checking) return;
+#if SELFTEST
+        if (testMenu) return;
+#endif
+        if (installing || checking) return;
         if (!manual && (!checkUpdates || (lastUpdateCheck != null &&
             DateTime.UtcNow - lastUpdateCheck.Value.ToUniversalTime() < UpdateInterval)))
             return;
@@ -1095,7 +1146,9 @@ internal sealed partial class Radio
 
     private void SavePreferences()
     {
+#if SELFTEST
         if (testMenu) return;
+#endif
         try
         {
             Storage.Write(Storage.PreferencesFile, new Preferences

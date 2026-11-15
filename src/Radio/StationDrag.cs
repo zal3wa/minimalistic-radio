@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -36,16 +35,17 @@ internal sealed partial class Radio
 
     private sealed class StationDrag
     {
+#if SELFTEST
         // The self-test's synthetic mouse events carry no position (WPF asks the real mouse), so the test puts
         // a pretend pointer here, in the panel's coordinates.
         internal static Point? TestPointer;
+#endif
 
         private const double EdgeZone = 32;   // this close to the list's top or bottom edge it scrolls by itself
 
         // Moves a station to a place on the list and saves the order; false if nothing changed.
         internal Func<SavedStation, int, bool> Move;
 
-        private readonly Window panel;
         private readonly ListBox list;
         private readonly DispatcherTimer hold = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         private readonly DispatcherTimer scroll = new DispatcherTimer();
@@ -69,11 +69,15 @@ internal sealed partial class Radio
 
         internal StationDrag(Window panel, ListBox list)
         {
-            this.panel = panel;
             this.list = list;
             card.SetResourceReference(Border.BackgroundProperty, "Card");
             card.SetResourceReference(Border.BorderBrushProperty, "Line");
-            hold.Tick += (_, _) => Lift();
+            // The press may have ended unseen (let go over a popup, or the mouse taken away): no lift without the button down.
+            hold.Tick += (_, _) =>
+            {
+                if (ButtonUp()) CancelPress();
+                else Lift();
+            };
             scroll.Tick += (_, _) => ScrollStep();
             // Escape puts the station back, and only that: the panel's own Escape (back, hide) waits for the next one.
             panel.PreviewKeyDown += (_, e) =>
@@ -147,6 +151,11 @@ internal sealed partial class Radio
                 return;
             }
             if (stationRow != pressed) return;
+            if (ButtonUp())
+            {
+                CancelPress();
+                return;
+            }
             Point at = Pointer(e, viewer), inRow = Pointer(e, stationRow);
             pointerY = at.Y;
             if (Math.Abs(at.Y - pressedAt.Y) >= SystemParameters.MinimumVerticalDragDistance) Lift();
@@ -163,6 +172,16 @@ internal sealed partial class Radio
             }
             // Let go before the hold was up: a click, and the station button plays the station as before.
             else if (stationRow == pressed) CancelPress();
+        }
+
+        // The list is about to be built again and these rows go away: forget a press or a lift at once (no slide back)
+        // and let the mouse go, so no row that is no longer shown keeps it.
+        internal void Abandon()
+        {
+            if (pressed != null) CancelPress();
+            if (row != null) Finish();
+            container = null;
+            lift = null;
         }
 
         private void CancelPress()
@@ -312,11 +331,17 @@ internal sealed partial class Radio
                 SlideBack(lifted, place, offset, others);   // not saved: the list stays as it was
                 return;
             }
-            // The list is built again in the new order: the station slides from where it was let go into its place.
+            // Only the station's row moved: the rows that made room for it now stand there for real, so their slide
+            // ends at once (before anything is drawn), and the station slides from where it was let go into its place.
+            foreach (ListBoxItem other in others)
+                if (other.RenderTransform is TranslateTransform move)
+                {
+                    move.BeginAnimation(TranslateTransform.YProperty, null);
+                    move.Y = 0;
+                }
             list.UpdateLayout();
-            Grid moved = list.Items.OfType<Grid>().FirstOrDefault(other => other.Tag == item);
-            if (moved != null && list.ItemContainerGenerator.ContainerFromItem(moved) is ListBoxItem slot)
-                Settle(slot, moved, landed - SlotTop(slot));
+            if (list.ItemContainerGenerator.ContainerFromItem(lifted) is ListBoxItem slot)
+                Settle(slot, lifted, landed - SlotTop(slot));
         }
 
         // Escape, the mouse lost, the panel hiding, or let go outside the list: everything slides back into place.
@@ -415,8 +440,21 @@ internal sealed partial class Radio
             Descendants(moved).OfType<Button>().ElementAtOrDefault(part)?.Focus();
         }
 
-        private Point Pointer(MouseEventArgs e, UIElement relativeTo) =>
-            TestPointer is Point fake ? panel.TranslatePoint(fake, relativeTo) : e.GetPosition(relativeTo);
+        private static bool ButtonUp()
+        {
+#if SELFTEST
+            if (TestPointer != null) return false;   // the self-test's synthetic presses leave the real button up
+#endif
+            return Mouse.LeftButton != MouseButtonState.Pressed;
+        }
+
+        private static Point Pointer(MouseEventArgs e, UIElement relativeTo)
+        {
+#if SELFTEST
+            if (TestPointer is Point fake) return Window.GetWindow(relativeTo).TranslatePoint(fake, relativeTo);
+#endif
+            return e.GetPosition(relativeTo);
+        }
 
         // A row's place in the list's visible area (the top of its spacing), not counting its slide.
         private double SlotTop(ListBoxItem place) => VisualTreeHelper.GetParent(place) is UIElement host
@@ -436,16 +474,27 @@ internal sealed partial class Radio
         }
     }
 
+#if SELFTEST
     // Self-test (--test-menu, from VerifyMenu), on a list in memory: nothing is saved and nothing plays. The ⋯ menu
-    // without Move up / Move down, a quick press that stays a press, a hold that lifts, the gap and the drop, Escape,
-    // Alt+↓ / Alt+↑ with the focus kept, and a long list scrolling by itself at the bottom edge.
+    // without Move up / Move down, logos from the cache, a quick press that stays a press, a hold that lifts, the gap
+    // and the drop (moving only the station's row: the other rows and their logos stay), Escape, Alt+↓ / Alt+↑ with
+    // the focus kept, and a long list scrolling by itself at its edges.
     private async Task VerifyStationDrag()
     {
         try
         {
+            // Logos come from the cache, put there by the test (nothing is downloaded): A–D have one, E's didn't load.
+            string[] letters = { "A", "B", "C", "D", "E" };
+            var pictures = new Dictionary<string, ImageSource>();
             Stations.Clear();
-            foreach (string letter in new[] { "A", "B", "C", "D", "E" })
-                Stations.Add(new SavedStation { Name = "Stacja " + letter, Url = "https://example.com/" + letter });
+            foreach (string letter in letters)
+            {
+                string logo = "https://example.com/logo/" + letter;
+                pictures[letter] = letter == "E" ? null : Theme.AppImage(32);
+                CacheLogo(logo, Task.FromResult(pictures[letter]));
+                Stations.Add(new SavedStation { Name = "Stacja " + letter, Url = "https://example.com/" + letter, Logo = logo });
+            }
+            Task<ImageSource> failed = LoadLogo("https://example.com/logo/E");
             SavedStation current = Stations[1];
             station = 1;
             session = null;
@@ -459,6 +508,11 @@ internal sealed partial class Radio
             Grid Row(string letter) => list.Items.OfType<Grid>().First(row => ((SavedStation)row.Tag).Name == "Stacja " + letter);
             ListBoxItem Box(Grid row) => (ListBoxItem)list.ItemContainerGenerator.ContainerFromItem(row);
             Button Play(Grid row) => Descendants(row).OfType<Button>().First();
+            Image Picture(Grid row) => Descendants(row).OfType<Image>().First();
+            // Every row still the same row, with the same Image showing the same picture: nothing built or loaded again.
+            Dictionary<string, (Grid row, Image image)> Rows() => letters.ToDictionary(letter => letter, letter => (Row(letter), Picture(Row(letter))));
+            bool Kept(Dictionary<string, (Grid row, Image image)> before) => letters.All(letter =>
+                Row(letter) == before[letter].row && Picture(Row(letter)) == before[letter].image && before[letter].image.Source == pictures[letter]);
             double Shifted(string letter) => (Box(Row(letter)).RenderTransform as TranslateTransform)?.Y ?? 0;
             Point Middle(FrameworkElement element) =>
                 element.TranslatePoint(new Point(element.ActualWidth / 2, element.ActualHeight / 2), playerPanel);
@@ -497,15 +551,15 @@ internal sealed partial class Radio
             }
 
             // The ⋯ menu keeps Edit and Remove; Move up / Move down went away with dragging.
-            Descendants(Row("A")).OfType<Button>().Last().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
-            await Task.Delay(300);
-            ContextMenu options = PresentationSource.CurrentSources.Cast<PresentationSource>().Where(source => source.RootVisual != null)
-                .SelectMany(source => Descendants(source.RootVisual)).OfType<ContextMenu>().FirstOrDefault(menu => menu.IsOpen);
-            List<string> labels = options?.Items.OfType<MenuItem>().Select(item => item.Header as string).ToList() ?? new List<string>();
-            if (options != null) options.IsOpen = false;
+            List<string> labels = ((Descendants(Row("A")).OfType<Button>().Last().Tag as ContextMenu)?.Items.OfType<MenuItem>()
+                .Select(item => item.Header as string) ?? Enumerable.Empty<string>()).ToList();
             if (!labels.Contains(T("Edytuj", "Edit")) || !labels.Contains(T("Usuń", "Remove")) ||
                 labels.Contains(T("Przesuń wyżej", "Move up")) || labels.Contains(T("Przesuń niżej", "Move down")))
                 throw new InvalidOperationException("Błędne menu stacji: " + string.Join(", ", labels));
+
+            // The logos show from the cache; the one that didn't load stays the radio icon and isn't fetched again.
+            if (letters.Any(letter => Picture(Row(letter)).Source != pictures[letter]) || !ReferenceEquals(LoadLogo("https://example.com/logo/E"), failed))
+                throw new InvalidOperationException("Logo stacji nie z pamięci podręcznej.");
 
             // Let go before the hold is up: no lift (the button's own click, which plays the station, isn't sent here).
             Grid rowA = Row("A");
@@ -530,9 +584,11 @@ internal sealed partial class Radio
             if (Math.Abs(Shifted("B") + pitch) > 1 || Math.Abs(Shifted("C") + pitch) > 1 || Math.Abs(Shifted("D")) > 1)
                 throw new InvalidOperationException($"Stacje się nie rozsunęły: B {Shifted("B")}, C {Shifted("C")}, D {Shifted("D")}, wiersz {pitch}.");
             if (preview) await SavePreview(playerPanel, "drag");
+            Dictionary<string, (Grid row, Image image)> beforeDrop = Rows();
             Up(rowA);
-            if (Order() != "BCADE" || Shown() != "BCADE" || !Current() || rowA.IsMouseCaptured)
-                throw new InvalidOperationException("Upuszczenie: " + Order() + " / " + Shown() + ", " + StationName + (session != null ? ", gra" : ""));
+            if (Order() != "BCADE" || Shown() != "BCADE" || !Current() || rowA.IsMouseCaptured || !Kept(beforeDrop))
+                throw new InvalidOperationException("Upuszczenie: " + Order() + " / " + Shown() + ", " + StationName +
+                    (session != null ? ", gra" : "") + (Kept(beforeDrop) ? "" : ", wiersze lub logo zbudowane od nowa"));
 
             // Moved past the drag threshold it lifts at once; Escape puts it back, and the panel stays open.
             rowA = Row("A");
@@ -549,38 +605,97 @@ internal sealed partial class Radio
                 throw new InvalidOperationException($"Escape nie odłożył stacji (podniesiona {lifted}, przerwa {gap}, kolejność {Order()}).");
 
             // Alt+↓ on a focused station moves it one place down, Alt+↑ back up; the focus stays on it.
+            Dictionary<string, (Grid row, Image image)> beforeKeys = Rows();
             Play(Row("A")).Focus();
             Press(Play(Row("A")), Key.Down, true);
             string afterDown = Order();
             bool focusKept = !playerPanel.IsActive || Row("A").IsKeyboardFocusWithin;
             Press(Play(Row("A")), Key.Up, true);
-            if (afterDown != "BCDAE" || Order() != "BCADE" || Shown() != "BCADE" || !focusKept || !Current())
-                throw new InvalidOperationException("Alt+strzałki: " + afterDown + ", potem " + Order() + (focusKept ? "" : ", bez fokusu"));
+            if (afterDown != "BCDAE" || Order() != "BCADE" || Shown() != "BCADE" || !focusKept || !Current() || !Kept(beforeKeys))
+                throw new InvalidOperationException("Alt+strzałki: " + afterDown + ", potem " + Order() + (focusKept ? "" : ", bez fokusu") +
+                    (Kept(beforeKeys) ? "" : ", wiersze lub logo zbudowane od nowa"));
 
-            // A long list: held at the bottom edge it scrolls by itself, the lifted station stays lifted though its
-            // place scrolls far out of view, and let go there it lands far down; the list keeps its scroll position.
+            // A long list, both ways: held at an edge it scrolls by itself while the lifted station's own place
+            // scrolls far out of view; then, held in the middle, the visible rows must still lie one after another
+            // from the list's top edge, the gap must be where the lifted row is, and let go there the station must
+            // land in that gap, with the list staying where it was.
             for (int n = Stations.Count + 1; Stations.Count < 40; n++)
                 Stations.Add(new SavedStation { Name = "Stacja " + n, Url = "https://example.com/" + n });
             playerPanel.Close();
             OpenPlayer();
             await Task.Delay(800);
             list = Descendants(playerPanel).OfType<ListBox>().First(item => item.IsVisible);
+            // The list was built anew: the logos are the same pictures from the cache, not downloaded again.
+            if (letters.Any(letter => Picture(Row(letter)).Source != pictures[letter]))
+                throw new InvalidOperationException("Po przebudowie listy logo nie z pamięci podręcznej.");
             ScrollViewer viewer = Descendants(list).OfType<ScrollViewer>().First();
-            rowA = Row("A");
-            start = Middle(Play(rowA));
-            Down(Play(rowA), start);
-            MoveTo(Play(rowA), start + new Vector(0, 10));
-            MoveTo(rowA, viewer.TranslatePoint(new Point(viewer.ActualWidth / 2, viewer.ActualHeight - 4), playerPanel));
-            await Task.Delay(1500);
-            double scrolled = viewer.VerticalOffset;
-            bool kept = rowA.IsMouseCaptured;
-            Up(rowA);
-            int landed = Stations.FindIndex(item => item.Name == "Stacja A");
-            if (scrolled < 5 || !kept || landed < 15 || !Current() || Math.Abs(viewer.VerticalOffset - scrolled) > 0.5)
-                throw new InvalidOperationException($"Długa lista: przewinięto {scrolled}, podniesiona {kept}, A na miejscu {landed}, " +
-                    $"potem przewinięcie {viewer.VerticalOffset}, aktualna {StationName}.");
+            ItemContainerGenerator generator = list.ItemContainerGenerator;
+            // Rows snap to whole device pixels at display scaling (125%, 150%…), so places can be off by a pixel or so;
+            // a row in the wrong slot would be off by a whole row.
+            const double Px = 2;
+            double Slid(ListBoxItem box) => (box.RenderTransform as TranslateTransform)?.Y ?? 0;
+            double Place(ListBoxItem box) => box.TranslatePoint(new Point(), viewer).Y - Slid(box) - box.Margin.Top;   // without its slide
+            Point InList(double y) => viewer.TranslatePoint(new Point(viewer.ActualWidth / 2, y), playerPanel);
+            async Task DragFar(string name, bool down)
+            {
+                Grid dragged = Row(name);
+                Point at = Middle(Play(dragged));
+                double before = viewer.VerticalOffset;
+                Down(Play(dragged), at);
+                MoveTo(Play(dragged), at + new Vector(0, down ? 10 : -10));
+                MoveTo(dragged, InList(down ? viewer.ActualHeight - 4 : 4));
+                await Task.Delay(1500);
+                double scrolled = viewer.VerticalOffset;
+                MoveTo(dragged, InList(viewer.ActualHeight / 2));   // out of the edge zone: scrolling stops
+                await Task.Delay(400);
+                ListBoxItem liftedBox = Box(dragged);
+                List<ListBoxItem> seen = ((Panel)VisualTreeHelper.GetParent(liftedBox)).Children.OfType<ListBoxItem>()
+                    .Where(box => Place(box) > Px - pitch && Place(box) < viewer.ActualHeight - Px).OrderBy(Place).ToList();
+                int[] indices = seen.Select(generator.IndexFromContainer).ToArray();
+                string layout = string.Join(" ", seen.Select(box => generator.IndexFromContainer(box) + "@" + Math.Round(Place(box)) +
+                    (Math.Abs(Slid(box)) > Px ? "/" + Math.Round(Slid(box)) : "")));
+                // Laid out one after another from the top edge, in order, and the lifted station's far place not among them.
+                bool contiguous = seen.Count > 2 && Math.Abs(Place(seen[0])) < Px && indices[0] == (int)viewer.VerticalOffset &&
+                    !seen.Contains(liftedBox) && Enumerable.Range(1, seen.Count - 1)
+                        .All(k => indices[k] == indices[k - 1] + 1 && Math.Abs(Place(seen[k]) - Place(seen[k - 1]) - pitch) < Px);
+                // Rows between its place and the gap moved one row toward its place, the others not at all.
+                double toward = down ? -pitch : pitch;
+                bool slides = seen.All(box => Math.Abs(Slid(box)) < Px || Math.Abs(Slid(box) - toward) < Px);
+                int[] moved = seen.Where(box => Math.Abs(Slid(box) - toward) < Px).Select(generator.IndexFromContainer).ToArray();
+                int gapRow = moved.Length == 0 ? -1 : down ? moved.Max() : moved.Min();
+                bool split = gapRow >= 0 && seen.Where(box => Math.Abs(Slid(box)) < Px)
+                    .All(box => down ? generator.IndexFromContainer(box) > gapRow : generator.IndexFromContainer(box) < gapRow);
+                double gapTop = split ? Place(seen.First(box => generator.IndexFromContainer(box) == gapRow)) : double.NaN;
+                double liftedTop = liftedBox.TranslatePoint(new Point(), viewer).Y - liftedBox.Margin.Top, pointer = viewer.ActualHeight / 2;
+                bool over = Math.Abs(liftedTop - gapTop) <= pitch / 2 + Px && pointer >= liftedTop && pointer <= liftedTop + pitch;
+                bool kept = dragged.IsMouseCaptured;
+                if (preview) await SavePreview(playerPanel, "drag-far-" + (down ? "down" : "up"));
+                double dropped = viewer.VerticalOffset;
+                Up(dragged);
+                await Task.Delay(400);
+                int landed = Stations.FindIndex(item => item.Name == "Stacja " + name);
+                bool inGap = landed == gapRow && ((Grid)list.Items[gapRow]).Tag == dragged.Tag &&
+                    Math.Abs(Place(Box((Grid)list.Items[gapRow])) - gapTop) < Px;
+                if (Math.Abs(scrolled - before) < 5 || !contiguous || !slides || !split || !over || !kept || !inGap ||
+                    Math.Abs(viewer.VerticalOffset - dropped) > 0.5 || !Current())
+                    throw new InvalidOperationException($"Długa lista ({(down ? "w dół" : "w górę")}) [{contiguous} {slides} {split} {over} {inGap}]: przewinięto {before}→{scrolled}, " +
+                        $"wiersze {layout}; przerwa {gapRow}@{gapTop}, podniesiona @{liftedTop}, trzymana {kept}, " +
+                        $"wylądowała {landed}, przewinięcie {dropped}→{viewer.VerticalOffset}, aktualna {StationName}.");
+            }
+            await DragFar("A", true);
+            viewer.ScrollToEnd();
+            list.UpdateLayout();
+            await Task.Delay(300);
+            await DragFar("40", false);
             playerPanel.Close();
+
+            // The logo cache stays small: past its limit the oldest logos go first.
+            for (int n = 0; n < LogoCacheSize + 50; n++) CacheLogo("https://example.com/many/" + n, Task.FromResult<ImageSource>(null));
+            if (logos.Count != LogoCacheSize || logos.ContainsKey("https://example.com/logo/A") ||
+                !logos.ContainsKey("https://example.com/many/" + (LogoCacheSize + 49)))
+                throw new InvalidOperationException("Pamięć logo bez limitu: " + logos.Count);
         }
         finally { StationDrag.TestPointer = null; }
     }
+#endif
 }

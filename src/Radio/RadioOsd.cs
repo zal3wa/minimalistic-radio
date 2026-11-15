@@ -18,7 +18,7 @@ internal sealed partial class Radio
     private Image osdCover;
     private FrameworkElement osdFallback;
     private TextBlock osdTitle, osdText;
-    private string osdPicture;
+    private string osdPicture, osdCopied;
     private DateTime osdUntil, osdShownAt;
     private bool osdSawPlaying;
     private bool showStationPopup = true;
@@ -33,11 +33,25 @@ internal sealed partial class Radio
     private void ShowStationPopup()
     {
         if (!showStationPopup || playerPanel != null || station < 0) return;
+        ShowOsd(null);
+    }
+
+    // The same card for "the song title was copied": the title on the first line, the confirmation on the second.
+    // It ignores the "Show station changes" setting, because it answers the user's own click.
+    private void ShowCopiedCard(string copied)
+    {
+        if (station < 0) return;
+        ShowOsd(copied);
+    }
+
+    private void ShowOsd(string copied)
+    {
+        osdCopied = copied;
         Theme.Apply(app);
         if (osd == null) BuildOsd();
         osdShownAt = DateTime.Now;
         osdUntil = osdShownAt.AddSeconds(3);
-        osdSawPlaying = false;
+        osdSawPlaying = copied != null;   // nothing to wait for: it stays its usual 3 s
         RefreshOsd();
         if (!osd.IsVisible)
         {
@@ -102,8 +116,8 @@ internal sealed partial class Radio
 
     private void RefreshOsd()
     {
-        osdTitle.Text = StationName;
-        osdText.Text = track ?? (session == null ? status : playing ? T("Teraz gra", "Now playing") : status);
+        osdTitle.Text = osdCopied ?? StationName;
+        osdText.Text = osdCopied != null ? T("Skopiowano do schowka", "Copied to clipboard") : track ?? (session == null ? status : playing ? T("Teraz gra", "Now playing") : status);
         string picture = CoverUrl;
         if (picture == osdPicture) return;
         osdPicture = picture;
