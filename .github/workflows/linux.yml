@@ -486,8 +486,9 @@ jobs:
           cp linux/flatpak/site/index.html site/index.html
           cp docs/icon.png site/icon.png
           find site/repo/tmp -mindepth 1 -delete
-          cat site/minimalistic-radio.flatpakref site/minimalistic-radio.flatpakrepo
-          du -sh site site/repo
+          # Without the key lines: GitHub masks parts of them (the private key's text contains the public key).
+          grep -hv '^GPGKey=' site/minimalistic-radio.flatpakref site/minimalistic-radio.flatpakrepo
+          du -sh site
 
       - name: Upload the bundle
         uses: actions/upload-artifact@v7
