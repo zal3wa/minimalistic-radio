@@ -49,15 +49,18 @@ msgstr "Toto není seznam stanic Minimalistic Radio."
 msgid "The broadcast has ended"
 msgstr "Vysílání skončilo"
 
+#, python-brace-format
 msgid "Connection lost. Retrying in {n} s…"
 msgstr "Spojení se přerušilo. Další pokus za {n} s…"
 
 msgid "Stopped by the sleep timer"
 msgstr "Zastaveno časovačem vypnutí"
 
+#, python-brace-format
 msgid "The station's server refused access ({code})."
 msgstr "Server stanice odepřel přístup ({code})."
 
+#, python-brace-format
 msgid "The station's server returned error {code}."
 msgstr "Server stanice vrátil chybu {code}."
 
@@ -94,6 +97,7 @@ msgstr "Ztlumit"
 msgid "Sleep timer"
 msgstr "Časovač vypnutí"
 
+#, python-brace-format
 msgid "Stops at {time}"
 msgstr "Zastaví se v {time}"
 
@@ -154,6 +158,7 @@ msgstr "Zastaveno"
 msgid "Unmute"
 msgstr "Zrušit ztlumení"
 
+#, python-brace-format
 msgid "{n} min"
 msgstr "{n} min"
 
@@ -280,9 +285,11 @@ msgstr "Ukončit Minimalistic Radio"
 msgid "Stops the radio and removes it from the tray"
 msgstr "Zastaví rádio a odebere ho z oznamovací oblasti"
 
+#, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Uloženo stanic: {n}."
 
+#, python-brace-format
 msgid "Stations added: {n}."
 msgstr "Přidáno stanic: {n}."
 
@@ -301,6 +308,9 @@ msgstr "Připojování…"
 msgid "Playing internet radio"
 msgstr "Hraje internetové rádio"
 
+msgid "Start the radio with the system"
+msgstr "Spouštět rádio se systémem"
+
 msgid "The radio keeps playing"
 msgstr "Rádio hraje dál"
 
@@ -313,6 +323,7 @@ msgstr "Aktualizovat"
 msgid "Restart to update"
 msgstr "Aktualizujte restartem"
 
+#, python-brace-format
 msgid "Updated to version {VERSION}."
 msgstr "Aktualizováno na verzi {VERSION}."
 

@@ -49,15 +49,18 @@ msgstr "Це не список станцій Minimalistic Radio."
 msgid "The broadcast has ended"
 msgstr "Трансляцію завершено"
 
+#, python-brace-format
 msgid "Connection lost. Retrying in {n} s…"
 msgstr "Зв’язок втрачено. Повтор через {n} с…"
 
 msgid "Stopped by the sleep timer"
 msgstr "Зупинено таймером сну"
 
+#, python-brace-format
 msgid "The station's server refused access ({code})."
 msgstr "Сервер станції відмовив у доступі ({code})."
 
+#, python-brace-format
 msgid "The station's server returned error {code}."
 msgstr "Сервер станції повернув помилку {code}."
 
@@ -94,6 +97,7 @@ msgstr "Вимкнути звук"
 msgid "Sleep timer"
 msgstr "Таймер сну"
 
+#, python-brace-format
 msgid "Stops at {time}"
 msgstr "Вимкнеться о {time}"
 
@@ -154,6 +158,7 @@ msgstr "Зупинено"
 msgid "Unmute"
 msgstr "Увімкнути звук"
 
+#, python-brace-format
 msgid "{n} min"
 msgstr "{n} хв"
 
@@ -280,9 +285,11 @@ msgstr "Вийти з Minimalistic Radio"
 msgid "Stops the radio and removes it from the tray"
 msgstr "Зупиняє радіо та прибирає його з лотка"
 
+#, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Збережено станцій: {n}."
 
+#, python-brace-format
 msgid "Stations added: {n}."
 msgstr "Додано станцій: {n}."
 
@@ -301,6 +308,9 @@ msgstr "Підключення…"
 msgid "Playing internet radio"
 msgstr "Грає інтернет-радіо"
 
+msgid "Start the radio with the system"
+msgstr "Запускати радіо із системою"
+
 msgid "The radio keeps playing"
 msgstr "Радіо грає далі"
 
@@ -313,6 +323,7 @@ msgstr "Оновити"
 msgid "Restart to update"
 msgstr "Перезапустіть, щоб оновити"
 
+#, python-brace-format
 msgid "Updated to version {VERSION}."
 msgstr "Оновлено до версії {VERSION}."
 

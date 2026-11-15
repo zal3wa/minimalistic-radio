@@ -49,15 +49,18 @@ msgstr "No es una lista de emisoras de Minimalistic Radio."
 msgid "The broadcast has ended"
 msgstr "La emisión ha terminado"
 
+#, python-brace-format
 msgid "Connection lost. Retrying in {n} s…"
 msgstr "Conexión perdida. Reintentando en {n} s…"
 
 msgid "Stopped by the sleep timer"
 msgstr "Detenido por el temporizador"
 
+#, python-brace-format
 msgid "The station's server refused access ({code})."
 msgstr "El servidor de la emisora denegó el acceso ({code})."
 
+#, python-brace-format
 msgid "The station's server returned error {code}."
 msgstr "El servidor de la emisora devolvió el error {code}."
 
@@ -94,6 +97,7 @@ msgstr "Silenciar"
 msgid "Sleep timer"
 msgstr "Temporizador de apagado"
 
+#, python-brace-format
 msgid "Stops at {time}"
 msgstr "Se detiene a las {time}"
 
@@ -154,6 +158,7 @@ msgstr "Detenido"
 msgid "Unmute"
 msgstr "Activar sonido"
 
+#, python-brace-format
 msgid "{n} min"
 msgstr "{n} min"
 
@@ -280,9 +285,11 @@ msgstr "Salir de Minimalistic Radio"
 msgid "Stops the radio and removes it from the tray"
 msgstr "Detiene la radio y la quita de la bandeja"
 
+#, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Emisoras guardadas: {n}."
 
+#, python-brace-format
 msgid "Stations added: {n}."
 msgstr "Emisoras añadidas: {n}."
 
@@ -301,6 +308,9 @@ msgstr "Conectando…"
 msgid "Playing internet radio"
 msgstr "Reproduciendo radio por internet"
 
+msgid "Start the radio with the system"
+msgstr "Iniciar la radio con el sistema"
+
 msgid "The radio keeps playing"
 msgstr "La radio sigue sonando"
 
@@ -313,6 +323,7 @@ msgstr "Actualizar"
 msgid "Restart to update"
 msgstr "Reinicia para actualizar"
 
+#, python-brace-format
 msgid "Updated to version {VERSION}."
 msgstr "Actualizada a la versión {VERSION}."
 

@@ -409,9 +409,13 @@ msgstr "Ikony: Lucide (ISC)"
 msgid "Connecting…"
 msgstr "Łączenie…"
 
-#: minimalistic_radio/app.py
+#: minimalistic_radio/platform/inhibit.py
 msgid "Playing internet radio"
 msgstr "Gra internetowe radio"
+
+#: minimalistic_radio/platform/background.py
+msgid "Start the radio with the system"
+msgstr "Uruchamiaj radio z systemem"
 
 #: minimalistic_radio/app.py
 msgid "The radio keeps playing"
@@ -430,6 +434,7 @@ msgid "Restart to update"
 msgstr "Uruchom ponownie, by zaktualizować"
 
 #: minimalistic_radio/app.py
+#, python-brace-format
 msgid "Updated to version {VERSION}."
 msgstr "Zaktualizowano do wersji {VERSION}."
 

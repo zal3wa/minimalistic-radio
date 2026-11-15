@@ -49,15 +49,18 @@ msgstr "Das ist keine Senderliste von Minimalistic Radio."
 msgid "The broadcast has ended"
 msgstr "Die Übertragung ist beendet"
 
+#, python-brace-format
 msgid "Connection lost. Retrying in {n} s…"
 msgstr "Verbindung verloren. Neuer Versuch in {n} s…"
 
 msgid "Stopped by the sleep timer"
 msgstr "Vom Sleep-Timer gestoppt"
 
+#, python-brace-format
 msgid "The station's server refused access ({code})."
 msgstr "Der Server des Senders hat den Zugriff verweigert ({code})."
 
+#, python-brace-format
 msgid "The station's server returned error {code}."
 msgstr "Der Server des Senders meldet den Fehler {code}."
 
@@ -94,6 +97,7 @@ msgstr "Stummschalten"
 msgid "Sleep timer"
 msgstr "Sleep-Timer"
 
+#, python-brace-format
 msgid "Stops at {time}"
 msgstr "Stoppt um {time}"
 
@@ -137,7 +141,7 @@ msgid "Copied"
 msgstr "Kopiert"
 
 msgid "Press Copy to copy the song"
-msgstr "Auf „Kopieren“ tippen, um den Titel zu kopieren"
+msgstr "Auf „Kopieren“ klicken, um den Titel zu kopieren"
 
 msgid "The station doesn't send song titles"
 msgstr "Der Sender überträgt keine Titel"
@@ -154,6 +158,7 @@ msgstr "Gestoppt"
 msgid "Unmute"
 msgstr "Stummschaltung aufheben"
 
+#, python-brace-format
 msgid "{n} min"
 msgstr "{n} Min."
 
@@ -280,9 +285,11 @@ msgstr "Minimalistic Radio beenden"
 msgid "Stops the radio and removes it from the tray"
 msgstr "Beendet das Radio und entfernt es aus dem Infobereich"
 
+#, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Gespeicherte Sender: {n}."
 
+#, python-brace-format
 msgid "Stations added: {n}."
 msgstr "Hinzugefügte Sender: {n}."
 
@@ -301,6 +308,9 @@ msgstr "Verbinden…"
 msgid "Playing internet radio"
 msgstr "Internetradio läuft"
 
+msgid "Start the radio with the system"
+msgstr "Das Radio mit dem System starten"
+
 msgid "The radio keeps playing"
 msgstr "Das Radio spielt weiter"
 
@@ -313,6 +323,7 @@ msgstr "Aktualisieren"
 msgid "Restart to update"
 msgstr "Zum Aktualisieren neu starten"
 
+#, python-brace-format
 msgid "Updated to version {VERSION}."
 msgstr "Auf Version {VERSION} aktualisiert."
 
