@@ -1,7 +1,8 @@
 import CryptoKit
 import Foundation
 
-// The radio itself: what plays, reconnecting, the sleep timer, song history and the station list.
+// The radio itself: what plays, reconnecting, the sleep timer, song history, the listening statistics and the
+// station list.
 // A port of linux/minimalistic_radio/controller.py (itself a port of src/Radio/RadioApp.cs). Everything runs on the
 // main thread. Nothing here imports AppKit: the player, the timers and the network are handed in, so the tests drive
 // it with fakes.
@@ -16,6 +17,8 @@ let radio357PollSeconds: Double = 10
 let coversKept = 200                                    // pictures kept in the cover cache
 let volumeBurst: TimeInterval = 1                       // volume changes closer than this are one (a drag, keys)
 let switchSettle: Double = 0.3                          // a media key or menu switch connects once switching pauses
+let sessionRejoin: TimeInterval = 2 * 60                // a reconnect this soon continues the listening session
+let statisticsSaveSeconds: Double = 5 * 60              // a running session is saved this often
 
 public enum Status: Sendable {
     case ready, connecting, playing, retrying, stopped
@@ -38,6 +41,8 @@ public struct Change: OptionSet, Sendable {
     public static let switched = Change(rawValue: 1 << 8)
     /// A notice for the user (the station list couldn't be saved).
     public static let message = Change(rawValue: 1 << 9)
+    /// The statistics were cleared.
+    public static let statistics = Change(rawValue: 1 << 10)
 }
 
 public enum AddResult: Sendable {
@@ -98,6 +103,9 @@ public final class RadioController {
     public private(set) var sleepAt: Date?
     public private(set) var sleepMinutes: Int?
     public private(set) var history: [HistoryEntry] = []
+    /// Listening sessions and songs (statistics.json). A running session's end is updated every 5 minutes;
+    /// `statisticsNow` has it up to now.
+    public private(set) var statistics = StatisticsLog()
     public private(set) var corruptStations = false
     /// Set when the retries ran out on network errors: networkAvailable() starts again within 10 minutes.
     public private(set) var gaveUpOnNetworkAt: Date?
@@ -106,6 +114,7 @@ public final class RadioController {
     var writeStations: (URL, [Station]) throws -> Void = saveStations
     var writePreferences: (URL, Preferences) throws -> Void = savePreferences
     var writeHistory: (URL, [HistoryEntry]) throws -> Void = saveHistory
+    var writeStatistics: (URL, StatisticsLog) throws -> Void = saveStatistics
 
     private var listeners: [Int: (Change) -> Void] = [:]
     private var nextListener = 0
@@ -127,6 +136,9 @@ public final class RadioController {
     private var pollTimer: AnyObject?
     private var switchTimer: AnyObject?   // set while a switched station waits to connect
     private var polling = false
+    // Statistics: the last of statistics.sessions is running while audio plays.
+    private var listening = false
+    private var statisticsTimer: AnyObject?
 
     public init(player: AudioPlayer, scheduler: Scheduler, paths: Paths, fetch: @escaping FetchJSON,
                 fetchFile: @escaping FetchFile, localize: @escaping (String) -> String = { $0 }) {
@@ -178,6 +190,7 @@ public final class RadioController {
         corruptStations = loaded.wasCorrupt
         prefs = loadPreferences(paths.preferencesFile)
         history = loadHistory(paths.historyFile)
+        statistics = loadStatistics(paths.statisticsFile)
         volume = prefs.volume
         pruneCovers()
         current = stations.firstIndex { $0.url == prefs.lastPlayed } ?? -1
@@ -220,6 +233,10 @@ public final class RadioController {
         try? writeHistory(paths.historyFile, history)
     }
 
+    private func saveStatisticsFile() {
+        try? writeStatistics(paths.statisticsFile, statistics)
+    }
+
     // MARK: - Playback
 
     /// Starts the chosen station (the first one if none is chosen). A station already on keeps going.
@@ -259,6 +276,7 @@ public final class RadioController {
 
     /// Forgets the current session: callbacks still on their way are ignored from now on.
     private func endSession() {
+        listeningStopped()
         session += 1
         for timer in [retryTimer, pollTimer, switchTimer].compactMap({ $0 }) { scheduler.cancel(timer) }
         retryTimer = nil
@@ -298,6 +316,7 @@ public final class RadioController {
         }
         let delay = backoff[min(attempt, backoff.count - 1)]
         attempt += 1
+        listeningStopped()
         player.stop()
         track = nil
         coverPath = nil
@@ -340,6 +359,7 @@ public final class RadioController {
         message = nil
         prefs.lastPlayed = url
         savePrefs()
+        listeningStarted()
         emit(.state)
         if kind == "radio357" && !polling {
             polling = true
@@ -369,6 +389,7 @@ public final class RadioController {
         if title == track { return }
         track = title
         coverPath = nil
+        if title != nil && listening { statistics.sessions[statistics.sessions.count - 1].titles = true }
         var changes: Change = [.track, .cover]
         if let title, addToHistory(title) { changes.insert(.history) }
         emit(changes)
@@ -434,6 +455,7 @@ public final class RadioController {
         history.insert(HistoryEntry(title: title, station: station, time: scheduler.now()), at: 0)
         if history.count > historyLimit { history.removeLast(history.count - historyLimit) }
         saveHistoryFile()
+        statistics.songs.append(PlayedSong(station: station, title: title, time: scheduler.now()))   // saved with the session
         return true
     }
 
@@ -441,6 +463,77 @@ public final class RadioController {
         history.removeAll()
         saveHistoryFile()
         emit(.history)
+    }
+
+    // MARK: - Statistics
+
+    /// Audio started: continues the last session if this station was playing less than 2 minutes ago (a reconnect),
+    /// otherwise starts a new one.
+    private func listeningStarted() {
+        guard !listening, stations.indices.contains(current) else { return }
+        let now = scheduler.now()
+        if let last = statistics.sessions.last, sameStream(last.url, url), now.timeIntervalSince(last.end) <= sessionRejoin {
+            statistics.sessions[statistics.sessions.count - 1].end = max(last.end, now)
+        } else {
+            statistics.sessions.append(ListeningSession(station: stations[current].name, url: url, start: now, end: now,
+                                                        titles: false))
+        }
+        if track != nil { statistics.sessions[statistics.sessions.count - 1].titles = true }
+        listening = true
+        scheduleStatisticsSave()
+    }
+
+    /// While audio plays, the session is saved every 5 minutes: a crash loses at most that much.
+    private func scheduleStatisticsSave() {
+        statisticsTimer = scheduler.callLater(statisticsSaveSeconds) { [weak self] in
+            guard let self, self.listening else { return }
+            self.statistics.sessions[self.statistics.sessions.count - 1].end = self.scheduler.now()
+            self.saveStatisticsFile()
+            self.scheduleStatisticsSave()
+        }
+    }
+
+    /// Audio stopped: the running session ends now (and is dropped if no time passed).
+    private func listeningStopped() {
+        guard listening else { return }
+        listening = false
+        if let timer = statisticsTimer { scheduler.cancel(timer) }
+        statisticsTimer = nil
+        let index = statistics.sessions.count - 1
+        statistics.sessions[index].end = max(statistics.sessions[index].end, scheduler.now())
+        if statistics.sessions[index].end <= statistics.sessions[index].start { statistics.sessions.remove(at: index) }
+        saveStatisticsFile()
+    }
+
+    /// The statistics with the running session counted up to now, for the Statistics page.
+    public var statisticsNow: StatisticsLog {
+        var log = statistics
+        if listening, let index = log.sessions.indices.last {
+            log.sessions[index].end = max(log.sessions[index].end, scheduler.now())
+        }
+        return log
+    }
+
+    /// Deletes the statistics (not the song history). A station playing now counts on from here.
+    public func clearStatistics() {
+        let wasListening = listening
+        if let timer = statisticsTimer { scheduler.cancel(timer) }
+        statisticsTimer = nil
+        listening = false
+        statistics = StatisticsLog()
+        saveStatisticsFile()
+        if wasListening && status == .playing { listeningStarted() }
+        emit(.statistics)
+    }
+
+    /// The Mac goes to sleep: the session ends here, so the night doesn't count. Waking up connects again.
+    public func willSleep() {
+        listeningStopped()
+    }
+
+    /// The app quits: the running session and the songs are saved.
+    public func willQuit() {
+        if listening { listeningStopped() } else { saveStatisticsFile() }
     }
 
     // MARK: - Volume and sleep timer

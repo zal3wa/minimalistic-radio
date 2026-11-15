@@ -26,6 +26,7 @@ public struct Paths: Equatable, Sendable {
     public var stationsFile: URL { support.appendingPathComponent("stations.json") }
     public var preferencesFile: URL { support.appendingPathComponent("preferences.json") }
     public var historyFile: URL { support.appendingPathComponent("history.json") }
+    public var statisticsFile: URL { support.appendingPathComponent("statistics.json") }
     public var logosFolder: URL { cache.appendingPathComponent("logos") }
     public var coversFolder: URL { cache.appendingPathComponent("covers") }
 }
@@ -72,7 +73,7 @@ public func loadStations(_ url: URL) -> (stations: [Station], wasCorrupt: Bool) 
     return (stations, false)
 }
 
-private func moveAside(_ url: URL) {
+func moveAside(_ url: URL) {
     let bad = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".bad")
     try? FileManager.default.removeItem(at: bad)
     try? FileManager.default.moveItem(at: url, to: bad)
@@ -134,7 +135,7 @@ public func saveHistory(_ url: URL, _ entries: [HistoryEntry]) throws {
 }
 
 /// JSON booleans come back as NSNumber too; this tells them apart from numbers.
-private func isBool(_ number: NSNumber) -> Bool {
+func isBool(_ number: NSNumber) -> Bool {
     CFGetTypeID(number) == CFBooleanGetTypeID()
 }
 
