@@ -73,6 +73,7 @@ class SearchPage(Adw.NavigationPage):
         self.entry = Gtk.SearchEntry(hexpand=True, placeholder_text=_("Search"))
         self.entry.connect("activate", lambda _entry: self.search())
         self.entry.connect("search-changed", self._text_changed)
+        self.entry.connect("stop-search", lambda _entry: window.navigation.pop())   # Escape in the box goes back
         self.search_button = Gtk.Button(label=_("Search"))
         self.search_button.connect("clicked", lambda _button: self.search())
         bar = Gtk.Box(spacing=6, margin_start=12, margin_end=12, margin_top=6)
@@ -222,7 +223,9 @@ class SearchPage(Adw.NavigationPage):
         if found is not None and found[1]:   # only a complete success is kept; otherwise the next open retries
             self._suggested = (found[0], found[1], country)
         if self.entry.get_text().strip():
-            return GLib.SOURCE_REMOVE   # the user is searching meanwhile
+            if self.status.get_label() == self._("Loading suggestions…"):
+                self._say("")   # the user is typing meanwhile (a search on its way keeps its "Searching…")
+            return GLib.SOURCE_REMOVE
         self._clear()
         if found is None or not (found[0] or found[1]):
             self._say(self._("Couldn't reach the station directory. Try again."))

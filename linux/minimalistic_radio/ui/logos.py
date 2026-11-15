@@ -83,7 +83,12 @@ class LogoCache:
         return False, None
 
     def load(self, url: str, callback: Callable[[Texture | None], None]) -> None:
-        """Fetches a logo that lookup() doesn't know yet; calls back on the main loop."""
+        """Fetches a logo that lookup() doesn't know yet; calls back on the main loop.
+
+        Only http and https addresses are fetched: anything else calls back with None at once."""
+        if not is_web_url(url):
+            callback(None)
+            return
         waiting = self._waiting.get(url)
         if waiting is not None:
             waiting.append(callback)
@@ -109,7 +114,7 @@ class LogoCache:
         except OSError:
             pass
         try:
-            data = net.fetch_bytes(url, 10, LOGO_LIMIT)   # url passed is_web_url: only http and https
+            data = net.fetch_bytes(url, 10, LOGO_LIMIT)   # load() let only http and https through
         except net.NetworkError:
             return None, False
         texture = _decode(data)

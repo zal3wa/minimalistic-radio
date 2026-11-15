@@ -29,6 +29,7 @@ from .platform.mpris import MprisService  # noqa: E402
 from .platform.notifications import StationNotifier  # noqa: E402
 from .platform.session import SessionWatcher  # noqa: E402
 from .platform.tray import TrayIcon  # noqa: E402
+from .ui.logos import LogoCache  # noqa: E402
 from .ui.window import RadioWindow  # noqa: E402
 
 COVER_LIMIT = 5_000_000
@@ -84,6 +85,7 @@ class RadioApplication(Adw.Application):
         self._ = translate
         self.controller: RadioController | None = None
         self.window: RadioWindow | None = None
+        self.logos: LogoCache | None = None   # one for the whole run: a window built again keeps the pictures
         self.tray: TrayIcon | None = None
         self.mpris: MprisService | None = None
         self.session: SessionWatcher | None = None
@@ -216,7 +218,9 @@ class RadioApplication(Adw.Application):
     # ---- The window ----
 
     def _create_window(self) -> RadioWindow:
-        return RadioWindow(self.controller, self._, application=self)
+        if self.logos is None:
+            self.logos = LogoCache(self.controller.paths.cache / "logos")
+        return RadioWindow(self.controller, self._, application=self, logos=self.logos)
 
     def show_window(self) -> None:
         if self.window is None:

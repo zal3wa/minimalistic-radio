@@ -42,7 +42,8 @@ def _load_style() -> None:
 
 class RadioWindow(Adw.ApplicationWindow):
     def __init__(self, controller: RadioController, _: Callable[[str], str] = lambda s: s,
-                 application: Gtk.Application | None = None) -> None:
+                 application: Gtk.Application | None = None, logos: LogoCache | None = None) -> None:
+        """`logos`: the application's cache, kept across windows so a rebuilt window has its logos at once."""
         super().__init__(application=application, title=APP_NAME, default_width=380, default_height=640,
                          resizable=True)
         self.set_hide_on_close(True)
@@ -50,7 +51,7 @@ class RadioWindow(Adw.ApplicationWindow):
         self.controller = controller
         self._ = _
         self._toast: Adw.Toast | None = None
-        self.logos = LogoCache(controller.paths.cache / "logos")
+        self.logos = logos if logos is not None else LogoCache(controller.paths.cache / "logos")
 
         self.footer = Footer(self, controller, _)
         self.stations_page = StationsPage(self, controller, self.logos, _)
