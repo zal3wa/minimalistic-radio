@@ -109,6 +109,7 @@ def make(tmp_path):
         service = MprisService(app, name)
         service.publish()
         services.append(service)
+        assert pump(lambda: service.acquired), "the bus name was not acquired"
         events = []
         controller.subscribe(events.append)
         return app, controller, name, events

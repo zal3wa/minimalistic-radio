@@ -90,6 +90,7 @@ class MprisService:
         self._connection: Gio.DBusConnection | None = None
         self._registrations: list[int] = []
         self._owner = 0
+        self.acquired = False   # the bus name is ours
         self._last: dict[str, Any] = {}
         self._subscribed = False
         nodes = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION)
@@ -118,7 +119,8 @@ class MprisService:
             self.controller.subscribe(self._on_change)
         self._last = self._player_properties()
         self._owner = Gio.bus_own_name_on_connection(
-            self._connection, self._name or bus_name(), Gio.BusNameOwnerFlags.NONE, None, None)
+            self._connection, self._name or bus_name(), Gio.BusNameOwnerFlags.NONE,
+            lambda connection, name: setattr(self, "acquired", True), None)
 
     def unpublish(self) -> None:
         if self._connection is None:
@@ -126,6 +128,7 @@ class MprisService:
         if self._owner:
             Gio.bus_unown_name(self._owner)
             self._owner = 0
+            self.acquired = False
         for registration in self._registrations:
             self._connection.unregister_object(registration)
         self._registrations = []
