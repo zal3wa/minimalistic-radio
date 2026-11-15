@@ -290,3 +290,111 @@ msgstr "Ten adres jest już na liście."
 #: minimalistic_radio/ui/station_dialog.py
 msgid "Check the name and the addresses."
 msgstr "Sprawdź nazwę i adresy."
+
+#: minimalistic_radio/ui/history_page.py
+msgid "Songs the radio plays will show up here."
+msgstr "Tu pojawią się utwory, które zagra radio."
+
+#: minimalistic_radio/ui/history_page.py
+msgid "Clear history"
+msgstr "Wyczyść historię"
+
+#: minimalistic_radio/ui/history_page.py
+msgid "More"
+msgstr "Więcej"
+
+#: minimalistic_radio/ui/history_page.py
+msgid "Copy"
+msgstr "Kopiuj"
+
+#: minimalistic_radio/ui/history_page.py
+msgid "Search on Spotify"
+msgstr "Szukaj w Spotify"
+
+#: minimalistic_radio/ui/history_page.py
+msgid "Search on YouTube"
+msgstr "Szukaj w YouTube"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "General"
+msgstr "Ogólne"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Same as system"
+msgstr "Jak w systemie"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Language"
+msgstr "Język"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Start with the system"
+msgstr "Uruchamiaj z systemem"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Waits in the tray, doesn't play by itself"
+msgstr "Czeka w zasobniku, nie gra samo"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Show station changes"
+msgstr "Pokazuj zmianę stacji"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "A card at the bottom after a media key or menu switch"
+msgstr "Karta na dole ekranu po zmianie klawiszem lub z menu"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Stations"
+msgstr "Stacje"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Station list"
+msgstr "Lista stacji"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopia w pliku, np. dla znajomych"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Export…"
+msgstr "Eksportuj…"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Import…"
+msgstr "Importuj…"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "About"
+msgstr "O aplikacji"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Version"
+msgstr "Wersja"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Quit Minimalistic Radio"
+msgstr "Zakończ Minimalistic Radio"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Stops the radio and removes it from the tray"
+msgstr "Wyłącza radio i usuwa ikonę z zasobnika"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Stations saved: {n}."
+msgstr "Zapisano stacje: {n}."
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Stations added: {n}."
+msgstr "Dodano stacje: {n}."
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "All stations from this file are already on the list."
+msgstr "Wszystkie stacje z tego pliku już są na liście."
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "stations"
+msgstr "stacje"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Icons: Lucide (ISC)"
+msgstr "Ikony: Lucide (ISC)"

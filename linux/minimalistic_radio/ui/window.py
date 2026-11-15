@@ -1,7 +1,6 @@
 """The panel window: a navigation view whose first page is the station list with the footer.
 
-Closing the window only hides it; the radio keeps playing. The history and settings pages are
-placeholders filled by a later task (13).
+Closing the window only hides it; the radio keeps playing.
 """
 from __future__ import annotations
 
@@ -17,8 +16,10 @@ from gi.repository import Adw, Gdk, Gtk  # noqa: E402
 from .. import APP_NAME  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
 from .footer import Footer  # noqa: E402
+from .history_page import HistoryPage  # noqa: E402
 from .logos import LogoCache  # noqa: E402
 from .search_page import SearchPage  # noqa: E402
+from .settings_page import SettingsPage  # noqa: E402
 from .station_dialog import StationDialog  # noqa: E402
 from .stations_page import StationsPage  # noqa: E402
 
@@ -37,12 +38,6 @@ def _load_style() -> None:
     provider = Gtk.CssProvider()
     provider.load_from_path(str(Path(__file__).with_name("style.css")))
     Gtk.StyleContext.add_provider_for_display(display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-
-def _placeholder(tag: str, title: str) -> Adw.NavigationPage:
-    toolbar = Adw.ToolbarView()
-    toolbar.add_top_bar(Adw.HeaderBar())
-    return Adw.NavigationPage(tag=tag, title=title, child=toolbar)
 
 
 class RadioWindow(Adw.ApplicationWindow):
@@ -78,8 +73,10 @@ class RadioWindow(Adw.ApplicationWindow):
         self.navigation.add(self.stations_page)
         self.search_page = SearchPage(self, controller, self.logos, _)
         self.navigation.add(self.search_page)
-        for tag, title in (("history", _("Song history")), ("settings", _("Settings"))):
-            self.navigation.add(_placeholder(tag, title))
+        self.history_page = HistoryPage(self, controller, _)
+        self.navigation.add(self.history_page)
+        self.settings_page = SettingsPage(self, controller, _)
+        self.navigation.add(self.settings_page)
         self.toasts = Adw.ToastOverlay(child=self.navigation)
         self.set_content(self.toasts)
 
@@ -97,10 +94,12 @@ class RadioWindow(Adw.ApplicationWindow):
         self.footer.release()
         self.stations_page.release()
         self.search_page.release()
+        self.controller.unsubscribe(self._changed)
 
     def _changed(self, change: Change) -> None:
         self.stations_page.refresh(change)
         self.search_page.refresh(change)
+        self.history_page.refresh(change)
         self.footer.refresh(change)
         if change & Change.MESSAGE and self.controller.message:
             self.toast(self.controller.message)   # a file couldn't be saved
@@ -120,6 +119,28 @@ class RadioWindow(Adw.ApplicationWindow):
             self.navigation.push_by_tag(tag)
         else:
             self.navigation.replace_with_tags(["stations", tag])
+
+    def autostart_enabled(self) -> bool:
+        app = self.get_application()
+        return app.autostart_enabled() if app is not None else self.controller.prefs.autostart
+
+    def set_autostart(self, on: bool) -> None:
+        app = self.get_application()
+        if app is not None:
+            app.set_autostart(on)
+        else:
+            self.controller.set_autostart_preference(on)
+
+    def language_changed(self) -> None:
+        """The language was chosen: the application builds this window again, on the settings page."""
+        app = self.get_application()
+        if app is not None:
+            app.rebuild_window("settings")
+
+    def quit_app(self) -> None:
+        app = self.get_application()
+        if app is not None:
+            app.quit()
 
     def copy_track(self) -> None:
         """Copies the song title and shows "Copied" (the tray menu's song item calls it)."""

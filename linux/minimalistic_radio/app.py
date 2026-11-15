@@ -185,6 +185,28 @@ class RadioApplication(Adw.Application):
             self.window.set_hide_on_close(True)
         self.window.present()
 
+    def rebuild_window(self, page: str) -> None:
+        """Every label is made in the chosen language: the window is built again, on `page`."""
+        from . import i18n, main
+
+        def rebuild() -> bool:
+            self._ = i18n.install(self.controller.prefs.language, main.LOCALEDIR)
+            old, self.window = self.window, None
+            if old is not None:
+                old.destroy()
+            self.show_window()
+            self.window.show_page(page)
+            return GLib.SOURCE_REMOVE
+        GLib.idle_add(rebuild)   # not from inside the signal of a widget that is about to be destroyed
+
+    # ---- Start with the system (Task 14 replaces these bodies) ----
+
+    def autostart_enabled(self) -> bool:
+        return self.controller.prefs.autostart
+
+    def set_autostart(self, on: bool) -> None:
+        self.controller.set_autostart_preference(on)
+
     def _open_page(self, page: str) -> None:
         self.show_window()
         self.window.show_page(page)

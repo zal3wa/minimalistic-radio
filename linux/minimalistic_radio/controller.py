@@ -162,6 +162,10 @@ class RadioController:
     def subscribe(self, listener: Callable[[Change], None]) -> None:
         self._listeners.append(listener)
 
+    def unsubscribe(self, listener: Callable[[Change], None]) -> None:
+        if listener in self._listeners:
+            self._listeners.remove(listener)
+
     def _emit(self, change: Change) -> None:
         if change:
             for listener in list(self._listeners):
@@ -657,3 +661,9 @@ class RadioController:
         self.prefs.show_station_popup = on
         self._save_preferences()
         self._emit(Change.PREFERENCES)
+
+    def set_autostart_preference(self, on: bool) -> None:
+        """Remembers the "Start with the system" choice (the application makes it happen)."""
+        if on != self.prefs.autostart:
+            self.prefs.autostart = on
+            self._save_preferences()

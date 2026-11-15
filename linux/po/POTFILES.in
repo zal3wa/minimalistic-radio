@@ -3,6 +3,8 @@ minimalistic_radio/controller.py
 minimalistic_radio/platform/menu_model.py
 minimalistic_radio/audio/player.py
 minimalistic_radio/ui/window.py
+minimalistic_radio/ui/history_page.py
+minimalistic_radio/ui/settings_page.py
 minimalistic_radio/ui/stations_page.py
 minimalistic_radio/ui/search_page.py
 minimalistic_radio/ui/station_dialog.py
