@@ -69,3 +69,12 @@ The Linux version is in `linux/` (Python, GTK 4, libadwaita and GStreamer). It n
 - **Snap:** `cd linux && snapcraft` (see `linux/snap/snapcraft.yaml`).
 - **Translations:** `linux/po/*.po`, one catalogue per language, gettext domain `minimalistic-radio`. They are separate from the Windows catalogues in `src/Lang`.
 - **Release:** bump `VERSION` in `linux/minimalistic_radio/__init__.py` and add a `<release>` to `linux/data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in` first, then push an annotated tag `linux-vX.Y.Z` (pre-releases: `linux-vX.Y.Z-beta.N`). GitHub Actions builds the Flatpak and the Snap, publishes the Flatpak to the radio's own Flatpak repository on GitHub Pages (where installed copies get their updates), creates the release (never marked "latest") and publishes the Snap. Step by step, with the store accounts: [LINUX-PUBLISHING.md](LINUX-PUBLISHING.md). Beta testers: [LINUX-TEST-CHECKLIST.md](LINUX-TEST-CHECKLIST.md).
+
+## macOS
+
+The Mac version is in `macos/` (Swift: SwiftUI with AppKit for the menu bar item and its panels, AVFoundation, App Intents). It never touches `src/` or `linux/`.
+
+- **Where it is built:** on GitHub's Mac runners (`.github/workflows/macos.yml`), on every push that touches `macos/`: core tests, a universal build, `--self-test`, the README pictures (`--screenshot DIR`, artifact `macos-screenshots`) and a DMG (artifact `Minimalistic-Radio-dmg`). The Xcode project is generated: `cd macos && xcodegen generate` (needs `brew install xcodegen librsvg`).
+- **Core tests** (the radio's logic, a port of the Linux core with its tests): `swift test --package-path macos/Core`.
+- **Texts:** English in the code as `L("…")`. After changing texts, run `python macos/tools/sync_po.py`: it fills `macos/Lang/<code>.po` from the Windows and Linux catalogues and lists what is still to translate. Shortcuts and Siri texts are generated from the same catalogues at build time (`macos/tools/intents_strings.py`).
+- **Releases:** a tag `macos-vX.Y.Z` (betas `macos-vX.Y.Z-beta.N`), signed with the project's own certificate: [MACOS-PUBLISHING.md](MACOS-PUBLISHING.md). Testers: [MACOS-TEST-CHECKLIST.md](MACOS-TEST-CHECKLIST.md).

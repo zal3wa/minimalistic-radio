@@ -1,0 +1,6 @@
+*.xcodeproj/
+build/
+.build/
+App/Resources/Assets.xcassets/AppIcon.appiconset/*.png
+App/Resources/IntentsStrings/
+__pycache__/

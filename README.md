@@ -2,14 +2,15 @@
 
 <h1 align="center">Minimalistic Radio - only 219 KB</h1>
 
-<p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install. <a href="#linux">Also for Linux.</a></p>
+<p align="center">A tiny open-source internet radio for Windows 10 and 11 that lives next to the clock.<br>One <code>.exe</code>, no installer, nothing else to install. Also for <a href="#linux">Linux</a> and <a href="#macos">macOS</a>.</p>
 
 <p align="center">
   <a href="https://github.com/zal3wa/minimalistic-radio/releases/latest/download/Minimalistic-Radio.exe"><img src="docs/download-windows.svg" height="56" alt="Download for Windows"></a>
   <a href="https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a>
+  <a href="https://github.com/zal3wa/minimalistic-radio/releases/download/macos-download/Minimalistic-Radio.dmg"><img src="docs/download-macos.svg" height="56" alt="Download for macOS"></a>
 </p>
 
-<p align="center"><sub>Windows: not signed yet, so if SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.<br>Linux: the file opens in GNOME Software or Discover, and the radio then updates itself. On Ubuntu, <a href="#linux">enable Flatpak first</a>.</sub></p>
+<p align="center"><sub>Windows: not signed yet, so if SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.<br>Linux: the file opens in GNOME Software or Discover, and the radio then updates itself. On Ubuntu, <a href="#linux">enable Flatpak first</a>.<br>macOS: not from Apple's store, so the first time choose <a href="#macos"><i>Open Anyway</i></a> in System Settings → Privacy &amp; Security.</sub></p>
 
 <table align="center">
   <tr>
@@ -130,9 +131,54 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
   </tr>
 </table>
 
+## macOS
+
+The same radio for the Mac, in the menu bar next to the clock: a click opens the player, a right click the menu. Control Center's Now Playing, the media keys and AirPods, the sleep timer, station search, song history, AirPlay to HomePods and other speakers, and actions for the Shortcuts app and Siri ("Play Minimalistic Radio"). The Windows and Linux station list moves over with Export and Import. For macOS 13 Ventura or newer, on Apple Silicon and Intel.
+
+<p align="center"><a href="https://github.com/zal3wa/minimalistic-radio/releases/download/macos-download/Minimalistic-Radio.dmg"><img src="docs/download-macos.svg" height="56" alt="Download for macOS"></a></p>
+
+**Install:** open `Minimalistic-Radio.dmg` and drag Minimalistic Radio to Applications. The radio isn't from Apple's store, so the first time you open it macOS blocks it: click Done, open **System Settings → Privacy & Security**, scroll to "Minimalistic Radio was blocked", click **Open Anyway** and confirm with your password. That's needed once: updates come by themselves, with the green arrow, as on Windows.
+
+The app is under 1 MB. Mac beta testers are welcome: see the [test checklist](docs/MACOS-TEST-CHECKLIST.md).
+
+<table align="center">
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/screenshots/README.md#macos-click-on-the-icon-the-player"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos-stations-dark.png">
+        <img src="docs/screenshots/macos-stations-light.png" width="400" alt="The player on macOS">
+      </picture></a>
+      <br>Click on the icon: the player
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/screenshots/README.md#macos-station-search"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos-search-dark.png">
+        <img src="docs/screenshots/macos-search-light.png" width="400" alt="Station search on macOS">
+      </picture></a>
+      <br>Station search
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/screenshots/README.md#macos-song-history"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos-history-dark.png">
+        <img src="docs/screenshots/macos-history-light.png" width="400" alt="Song history on macOS">
+      </picture></a>
+      <br>Song history
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/screenshots/README.md#macos-settings"><picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos-settings-dark.png">
+        <img src="docs/screenshots/macos-settings-light.png" width="400" alt="Settings on macOS">
+      </picture></a>
+      <br>Settings
+    </td>
+  </tr>
+</table>
+
 ## Languages
 
-English, Polish, German, Ukrainian, Czech, Spanish, French, Italian and Portuguese (Settings → Language). Native speakers: if a translation sounds wrong, please fix it in [`src/Lang/*.po`](src/Lang) (Windows) or [`linux/po/*.po`](linux/po) (Linux) and send a pull request.
+English, Polish, German, Ukrainian, Czech, Spanish, French, Italian and Portuguese (Settings → Language). Native speakers: if a translation sounds wrong, please fix it in [`src/Lang/*.po`](src/Lang) (Windows), [`linux/po/*.po`](linux/po) (Linux) or [`macos/Lang/*.po`](macos/Lang) (macOS) and send a pull request.
 
 Some stations are never shown in search or suggestions; the list is in [`data/banned-stations.json`](data/banned-stations.json).
 
@@ -151,7 +197,9 @@ Nothing else is sent. Like any internet connection, these servers see your IP ad
 
 The Linux version contacts the same servers, except GitHub: the radio itself never checks for updates. Flatpak and your software center get them from the radio's Flatpak repository at `zal3wa.github.io` (hosted by GitHub Pages), or from the Snap Store (the Flatpak also shows an update arrow, asked of Flatpak itself).
 
-Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio` on Windows, and in your user folders on Linux (inside the app's own folder for a Flatpak or a Snap).
+The macOS version contacts the same servers as the Windows one, the update check included (Settings → Updates). When you use Siri, Apple processes what you say, as for any app.
+
+Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio` on Windows, in your user folders on Linux (inside the app's own folder for a Flatpak or a Snap), and in `~/Library/Application Support/Minimalistic Radio` on macOS.
 
 ## Uninstall
 
@@ -162,6 +210,8 @@ There's no installer. The radio adds a Start menu shortcut, so Windows shows its
 2. Delete `Minimalistic-Radio.exe`, the folder `%LOCALAPPDATA%\Minimalistic Radio` and the shortcut `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Minimalistic Radio.lnk`.
 
 **Linux.** Remove it in GNOME Software, Discover or App Center. The Flatpak asks whether to delete its data too (settings, station list, history); tick it to remove everything. To remove the radio's Flatpak repository as well, run `flatpak remote-delete minimalistic-radio`.
+
+**macOS.** Settings → turn off *Open at login*, then *Quit Minimalistic Radio*. Drag Minimalistic Radio from Applications to the Bin, and delete the folders `~/Library/Application Support/Minimalistic Radio` and `~/Library/Caches/io.github.zal3wa.minimalistic-radio`.
 
 ## License
 

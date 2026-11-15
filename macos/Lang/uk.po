@@ -1,0 +1,375 @@
+# Ukrainian translation of Minimalistic Radio for macOS.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Language: uk\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Copied to clipboard"
+msgstr "Скопійовано в буфер обміну"
+
+msgid "Quit"
+msgstr "Вийти"
+
+msgid "Add a station first."
+msgstr "Спершу додайте станцію."
+
+msgid "Now playing"
+msgstr "Зараз грає"
+
+msgid "Copied"
+msgstr "Скопійовано"
+
+msgid "Copy title"
+msgstr "Скопіювати назву"
+
+msgid "Add a station"
+msgstr "Додати станцію"
+
+msgid "Ready to play"
+msgstr "Готово до відтворення"
+
+msgid "Connecting to the station…"
+msgstr "Підключення до станції…"
+
+msgid "The station doesn't send song titles"
+msgstr "Станція не передає назви пісень"
+
+msgid "Stopped"
+msgstr "Зупинено"
+
+msgid "Unmute"
+msgstr "Увімкнути звук"
+
+msgid "Mute"
+msgstr "Вимкнути звук"
+
+msgid "Volume"
+msgstr "Гучність"
+
+msgid "Sleep timer"
+msgstr "Таймер сну"
+
+msgid "Stop"
+msgstr "Зупинити"
+
+msgid "Play"
+msgstr "Відтворити"
+
+msgid "Songs the radio plays will show up here."
+msgstr "Тут з’являтимуться пісні, які зіграє радіо."
+
+msgid "Clear history"
+msgstr "Очистити історію"
+
+msgid "Copy"
+msgstr "Копіювати"
+
+msgid "Search on Spotify"
+msgstr "Шукати в Spotify"
+
+msgid "Search on YouTube"
+msgstr "Шукати на YouTube"
+
+msgid "More"
+msgstr "Більше"
+
+msgid "Move Minimalistic Radio to Applications to get updates."
+msgstr "Перемістіть Minimalistic Radio в «Програми», щоб отримувати оновлення."
+
+msgid "Station"
+msgstr "Станція"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Пошук у каталозі radio-browser.info"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Song history"
+msgstr "Історія пісень"
+
+msgid "Settings"
+msgstr "Налаштування"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Сховати панель (радіо грає далі)"
+
+msgid "Stations"
+msgstr "Станції"
+
+msgid "Add by address"
+msgstr "Додати за адресою"
+
+msgid "Edit"
+msgstr "Редагувати"
+
+msgid "Type a station name"
+msgstr "Введіть назву станції"
+
+msgid "Search"
+msgstr "Шукати"
+
+msgid "Recommended"
+msgstr "Рекомендовані"
+
+msgid "Popular worldwide"
+msgstr "Популярні у світі"
+
+msgid "Popular in your country"
+msgstr "Популярні у вашій країні"
+
+msgid "Searching…"
+msgstr "Пошук…"
+
+msgid "No results."
+msgstr "Нічого не знайдено."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Каталог тимчасово недоступний. Спробуйте ще раз."
+
+msgid "Loading suggestions…"
+msgstr "Завантаження пропозицій…"
+
+msgid "Already on your list"
+msgstr "Уже у вашому списку"
+
+msgid "This station is already on the list."
+msgstr "Ця станція вже є у списку."
+
+msgid "Add to your stations"
+msgstr "Додати до своїх станцій"
+
+msgid "General"
+msgstr "Загальні"
+
+msgid "Language"
+msgstr "Мова"
+
+msgid "Same as system"
+msgstr "Як у системі"
+
+msgid "Open at login"
+msgstr "Відкривати під час входу"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Чекає біля годинника, музику не вмикає"
+
+msgid "Show station changes"
+msgstr "Показувати зміну станції"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Картка під значком після мультимедійної клавіші чи перемикання в меню"
+
+msgid "Export…"
+msgstr "Експорт…"
+
+msgid "Import…"
+msgstr "Імпорт…"
+
+msgid "Station list"
+msgstr "Список станцій"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Копія у файлі, наприклад для друзів"
+
+msgid "Updates"
+msgstr "Оновлення"
+
+msgid "Looks for a new version every few hours"
+msgstr "Кожні кілька годин перевіряє, чи є нова версія"
+
+msgid "Check now"
+msgstr "Перевірити"
+
+msgid "About"
+msgstr "Про програму"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Вийти з Minimalistic Radio"
+
+msgid "Not checked yet."
+msgstr "Ще не перевірялося."
+
+msgid "Stations saved: {0}."
+msgstr "Збережено станцій: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Не вдалося зберегти файл."
+
+msgid "All stations from this file are already on the list."
+msgstr "Усі станції з цього файлу вже є у списку."
+
+msgid "Stations added: {0}."
+msgstr "Додано станцій: {0}."
+
+msgid "Checking…"
+msgstr "Перевірка…"
+
+msgid "Station name"
+msgstr "Назва станції"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Адреса потоку (HTTP або HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Адреса логотипа (необов’язково)"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+msgid "Save"
+msgstr "Зберегти"
+
+msgid "This address is already on the list."
+msgstr "Ця адреса вже є у списку."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Введіть назву та правильну адресу потоку. Логотип необов’язковий."
+
+msgid "Remove"
+msgstr "Видалити"
+
+msgid "Station options"
+msgstr "Параметри станції"
+
+msgid "This station uses a format that can't be played."
+msgstr "Ця станція мовить у форматі, який не вдається відтворити."
+
+msgid "The connection to the station was lost."
+msgstr "З’єднання зі станцією перервано."
+
+msgid "The station's server refused access ({code})."
+msgstr "Сервер станції відмовив у доступі ({code})."
+
+msgid "The station's server refused access."
+msgstr "Сервер станції відмовив у доступі."
+
+msgid "The station's server returned error {code}."
+msgstr "Сервер станції повернув помилку {code}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Не вдалося підключитися до станції. Перевірте інтернет."
+
+msgid "Update"
+msgstr "Оновити"
+
+msgid "Download update"
+msgstr "Завантажити оновлення"
+
+msgid "You have the latest version."
+msgstr "У вас найновіша версія."
+
+msgid "Couldn't check for updates."
+msgstr "Не вдалося перевірити оновлення."
+
+msgid "Update to {0}"
+msgstr "Оновити до {0}"
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "macOS може один раз попросити дозвіл на оновлення радіо."
+
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Закрийте радіо, а потім перетягніть Minimalistic Radio в «Програми», щоб завершити оновлення."
+
+msgid "Couldn't save the station list."
+msgstr "Не вдалося зберегти список станцій."
+
+msgid "The broadcast has ended"
+msgstr "Трансляцію завершено"
+
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Зв’язок втрачено. Повтор через {0} с…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Зупинено таймером сну"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Це не список станцій Minimalistic Radio."
+
+msgid "Up 5%"
+msgstr "Гучніше на 5%"
+
+msgid "Down 5%"
+msgstr "Тихіше на 5%"
+
+msgid "Stops at {0}"
+msgstr "Вимкнеться о {0}"
+
+msgid "{0} min"
+msgstr "{0} хв"
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Не вдалося завантажити оновлення. Радіо спробує пізніше."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "macOS не дозволив радіо замінити себе. Оновлення відкриється як образ диска."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Не вдалося розпакувати оновлення. Воно відкриється як образ диска."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "Оновлення підписане не так, як це радіо, тому його не встановлено. Натомість відкриється його сторінка."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "Файл оновлення не відповідає його версії, тому його не встановлено. Натомість відкриється його сторінка."
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "Minimalistic Radio ще не готове. Спробуйте ще раз."
+
+msgid "Plays the last station."
+msgstr "Вмикає останню станцію."
+
+msgid "Play Station"
+msgstr "Увімкнути станцію"
+
+msgid "Plays one of your stations."
+msgstr "Вмикає одну з ваших станцій."
+
+msgid "Stops the radio."
+msgstr "Зупиняє радіо."
+
+msgid "Next Station"
+msgstr "Наступна станція"
+
+msgid "Switches to the next station on your list."
+msgstr "Перемикає на наступну станцію зі списку."
+
+msgid "Previous Station"
+msgstr "Попередня станція"
+
+msgid "Switches to the previous station on your list."
+msgstr "Перемикає на попередню станцію зі списку."
+
+msgid "Set Sleep Timer"
+msgstr "Встановити таймер сну"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Зупиняє радіо через вибрану кількість хвилин. 0 вимикає таймер."
+
+msgid "Minutes"
+msgstr "Хвилини"
+
+msgid "Set Volume"
+msgstr "Встановити гучність"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Встановлює гучність радіо від 0 до 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Увімкни ${station} у ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Увімкни ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Зупини ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Наступна станція в ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Попередня станція в ${applicationName}"

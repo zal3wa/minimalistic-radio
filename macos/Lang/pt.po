@@ -1,0 +1,375 @@
+# Portuguese translation of Minimalistic Radio for macOS.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Language: pt\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Copied to clipboard"
+msgstr "Copiado para a área de transferência"
+
+msgid "Quit"
+msgstr "Sair"
+
+msgid "Add a station first."
+msgstr "Adicione primeiro uma estação."
+
+msgid "Now playing"
+msgstr "A tocar agora"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Copy title"
+msgstr "Copiar título"
+
+msgid "Add a station"
+msgstr "Adicionar estação"
+
+msgid "Ready to play"
+msgstr "Pronto a reproduzir"
+
+msgid "Connecting to the station…"
+msgstr "A ligar à estação…"
+
+msgid "The station doesn't send song titles"
+msgstr "A estação não envia os títulos"
+
+msgid "Stopped"
+msgstr "Parado"
+
+msgid "Unmute"
+msgstr "Ativar som"
+
+msgid "Mute"
+msgstr "Desativar som"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Sleep timer"
+msgstr "Temporizador para desligar"
+
+msgid "Stop"
+msgstr "Parar"
+
+msgid "Play"
+msgstr "Reproduzir"
+
+msgid "Songs the radio plays will show up here."
+msgstr "As músicas que o rádio tocar aparecem aqui."
+
+msgid "Clear history"
+msgstr "Limpar histórico"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Search on Spotify"
+msgstr "Procurar no Spotify"
+
+msgid "Search on YouTube"
+msgstr "Procurar no YouTube"
+
+msgid "More"
+msgstr "Mais"
+
+msgid "Move Minimalistic Radio to Applications to get updates."
+msgstr "Mova o Minimalistic Radio para Aplicações para receber atualizações."
+
+msgid "Station"
+msgstr "Estação"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Procurar no diretório radio-browser.info"
+
+msgid "Back"
+msgstr "Voltar"
+
+msgid "Song history"
+msgstr "Histórico de músicas"
+
+msgid "Settings"
+msgstr "Definições"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Ocultar o painel (o rádio continua a tocar)"
+
+msgid "Stations"
+msgstr "Estações"
+
+msgid "Add by address"
+msgstr "Adicionar por endereço"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Type a station name"
+msgstr "Escreva o nome de uma estação"
+
+msgid "Search"
+msgstr "Procurar"
+
+msgid "Recommended"
+msgstr "Recomendadas"
+
+msgid "Popular worldwide"
+msgstr "Populares no mundo"
+
+msgid "Popular in your country"
+msgstr "Populares no seu país"
+
+msgid "Searching…"
+msgstr "A procurar…"
+
+msgid "No results."
+msgstr "Sem resultados."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Diretório indisponível. Tente novamente."
+
+msgid "Loading suggestions…"
+msgstr "A carregar sugestões…"
+
+msgid "Already on your list"
+msgstr "Já está na sua lista"
+
+msgid "This station is already on the list."
+msgstr "Esta estação já está na lista."
+
+msgid "Add to your stations"
+msgstr "Adicionar às suas estações"
+
+msgid "General"
+msgstr "Geral"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Same as system"
+msgstr "Igual ao sistema"
+
+msgid "Open at login"
+msgstr "Abrir ao iniciar sessão"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Espera junto ao relógio, sem tocar sozinho"
+
+msgid "Show station changes"
+msgstr "Mostrar mudanças de estação"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Um cartão por baixo do ícone após uma tecla multimédia ou uma mudança no menu"
+
+msgid "Export…"
+msgstr "Exportar…"
+
+msgid "Import…"
+msgstr "Importar…"
+
+msgid "Station list"
+msgstr "Lista de estações"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Uma cópia num ficheiro, p. ex. para amigos"
+
+msgid "Updates"
+msgstr "Atualizações"
+
+msgid "Looks for a new version every few hours"
+msgstr "Procura uma nova versão de poucas em poucas horas"
+
+msgid "Check now"
+msgstr "Verificar agora"
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Sair do Minimalistic Radio"
+
+msgid "Not checked yet."
+msgstr "Ainda não verificado."
+
+msgid "Stations saved: {0}."
+msgstr "Estações guardadas: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Não foi possível guardar o ficheiro."
+
+msgid "All stations from this file are already on the list."
+msgstr "Todas as estações deste ficheiro já estão na lista."
+
+msgid "Stations added: {0}."
+msgstr "Estações adicionadas: {0}."
+
+msgid "Checking…"
+msgstr "A verificar…"
+
+msgid "Station name"
+msgstr "Nome da estação"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Endereço da transmissão (HTTP ou HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Endereço do logótipo (opcional)"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "This address is already on the list."
+msgstr "Este endereço já está na lista."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Introduza um nome e um endereço de transmissão válido. O logótipo é opcional."
+
+msgid "Remove"
+msgstr "Remover"
+
+msgid "Station options"
+msgstr "Opções da estação"
+
+msgid "This station uses a format that can't be played."
+msgstr "Esta estação usa um formato que não pode ser reproduzido."
+
+msgid "The connection to the station was lost."
+msgstr "A ligação à estação foi interrompida."
+
+msgid "The station's server refused access ({code})."
+msgstr "O servidor da estação recusou o acesso ({code})."
+
+msgid "The station's server refused access."
+msgstr "O servidor da estação recusou o acesso."
+
+msgid "The station's server returned error {code}."
+msgstr "O servidor da estação devolveu o erro {code}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Não foi possível ligar à estação. Verifique a ligação à Internet."
+
+msgid "Update"
+msgstr "Atualizar"
+
+msgid "Download update"
+msgstr "Transferir atualização"
+
+msgid "You have the latest version."
+msgstr "Tem a versão mais recente."
+
+msgid "Couldn't check for updates."
+msgstr "Não foi possível procurar atualizações."
+
+msgid "Update to {0}"
+msgstr "Atualizar para {0}"
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "O macOS pode pedir uma vez autorização para atualizar o rádio."
+
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Feche o rádio e arraste o Minimalistic Radio para Aplicações para concluir a atualização."
+
+msgid "Couldn't save the station list."
+msgstr "Não foi possível guardar a lista de estações."
+
+msgid "The broadcast has ended"
+msgstr "A transmissão terminou"
+
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Ligação perdida. Nova tentativa em {0} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Parado pelo temporizador"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Isto não é uma lista de estações do Minimalistic Radio."
+
+msgid "Up 5%"
+msgstr "Aumentar 5%"
+
+msgid "Down 5%"
+msgstr "Diminuir 5%"
+
+msgid "Stops at {0}"
+msgstr "Desliga às {0}"
+
+msgid "{0} min"
+msgstr "{0} min"
+
+msgid "Off"
+msgstr "Desativado"
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Não foi possível transferir a atualização. O rádio tentará mais tarde."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "O macOS não deixou o rádio substituir-se. A atualização abre como imagem de disco."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Não foi possível descomprimir a atualização. Abre como imagem de disco."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "A atualização não está assinada como este rádio, por isso não foi instalada. Abre-se a sua página."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "O ficheiro da atualização não corresponde à sua versão, por isso não foi instalado. Abre-se a sua página."
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "O Minimalistic Radio ainda não está pronto. Tente novamente."
+
+msgid "Plays the last station."
+msgstr "Reproduz a última estação."
+
+msgid "Play Station"
+msgstr "Reproduzir estação"
+
+msgid "Plays one of your stations."
+msgstr "Reproduz uma das suas estações."
+
+msgid "Stops the radio."
+msgstr "Para o rádio."
+
+msgid "Next Station"
+msgstr "Estação seguinte"
+
+msgid "Switches to the next station on your list."
+msgstr "Muda para a estação seguinte da sua lista."
+
+msgid "Previous Station"
+msgstr "Estação anterior"
+
+msgid "Switches to the previous station on your list."
+msgstr "Muda para a estação anterior da sua lista."
+
+msgid "Set Sleep Timer"
+msgstr "Definir o temporizador para desligar"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Para o rádio após os minutos que escolher. 0 desliga o temporizador."
+
+msgid "Minutes"
+msgstr "Minutos"
+
+msgid "Set Volume"
+msgstr "Definir o volume"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Define o volume do rádio, de 0 a 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Toca ${station} no ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Toca ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Para ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Próxima estação no ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Estação anterior no ${applicationName}"

@@ -1,0 +1,375 @@
+# Czech translation of Minimalistic Radio for macOS.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Language: cs\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Copied to clipboard"
+msgstr "Zkopírováno do schránky"
+
+msgid "Quit"
+msgstr "Ukončit"
+
+msgid "Add a station first."
+msgstr "Nejdřív přidejte stanici."
+
+msgid "Now playing"
+msgstr "Právě hraje"
+
+msgid "Copied"
+msgstr "Zkopírováno"
+
+msgid "Copy title"
+msgstr "Kopírovat název"
+
+msgid "Add a station"
+msgstr "Přidat stanici"
+
+msgid "Ready to play"
+msgstr "Připraveno k přehrávání"
+
+msgid "Connecting to the station…"
+msgstr "Připojování ke stanici…"
+
+msgid "The station doesn't send song titles"
+msgstr "Stanice neposílá názvy skladeb"
+
+msgid "Stopped"
+msgstr "Zastaveno"
+
+msgid "Unmute"
+msgstr "Zrušit ztlumení"
+
+msgid "Mute"
+msgstr "Ztlumit"
+
+msgid "Volume"
+msgstr "Hlasitost"
+
+msgid "Sleep timer"
+msgstr "Časovač vypnutí"
+
+msgid "Stop"
+msgstr "Zastavit"
+
+msgid "Play"
+msgstr "Přehrát"
+
+msgid "Songs the radio plays will show up here."
+msgstr "Zde se objeví skladby, které rádio zahraje."
+
+msgid "Clear history"
+msgstr "Vymazat historii"
+
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "Search on Spotify"
+msgstr "Hledat na Spotify"
+
+msgid "Search on YouTube"
+msgstr "Hledat na YouTube"
+
+msgid "More"
+msgstr "Další"
+
+msgid "Move Minimalistic Radio to Applications to get updates."
+msgstr "Přesuňte Minimalistic Radio do Aplikací, abyste dostávali aktualizace."
+
+msgid "Station"
+msgstr "Stanice"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Hledat v katalogu radio-browser.info"
+
+msgid "Back"
+msgstr "Zpět"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Skrýt panel (rádio hraje dál)"
+
+msgid "Stations"
+msgstr "Stanice"
+
+msgid "Add by address"
+msgstr "Přidat podle adresy"
+
+msgid "Edit"
+msgstr "Upravit"
+
+msgid "Type a station name"
+msgstr "Zadejte název stanice"
+
+msgid "Search"
+msgstr "Hledat"
+
+msgid "Recommended"
+msgstr "Doporučené"
+
+msgid "Popular worldwide"
+msgstr "Oblíbené ve světě"
+
+msgid "Popular in your country"
+msgstr "Oblíbené ve vaší zemi"
+
+msgid "Searching…"
+msgstr "Hledání…"
+
+msgid "No results."
+msgstr "Žádné výsledky."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Katalog je dočasně nedostupný. Zkuste to znovu."
+
+msgid "Loading suggestions…"
+msgstr "Načítání návrhů…"
+
+msgid "Already on your list"
+msgstr "Už je ve vašem seznamu"
+
+msgid "This station is already on the list."
+msgstr "Tato stanice už je v seznamu."
+
+msgid "Add to your stations"
+msgstr "Přidat do stanic"
+
+msgid "General"
+msgstr "Obecné"
+
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Same as system"
+msgstr "Podle systému"
+
+msgid "Open at login"
+msgstr "Otevírat při přihlášení"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Čeká u hodin, samo nehraje"
+
+msgid "Show station changes"
+msgstr "Zobrazovat změnu stanice"
+
+msgid "A card under the icon after a media key or menu switch"
+msgstr "Karta pod ikonou po multimediální klávese nebo přepnutí v nabídce"
+
+msgid "Export…"
+msgstr "Exportovat…"
+
+msgid "Import…"
+msgstr "Importovat…"
+
+msgid "Station list"
+msgstr "Seznam stanic"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopie v souboru, např. pro přátele"
+
+msgid "Updates"
+msgstr "Aktualizace"
+
+msgid "Looks for a new version every few hours"
+msgstr "Každých pár hodin hledá novou verzi"
+
+msgid "Check now"
+msgstr "Zkontrolovat"
+
+msgid "About"
+msgstr "O aplikaci"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Ukončit Minimalistic Radio"
+
+msgid "Not checked yet."
+msgstr "Zatím nekontrolováno."
+
+msgid "Stations saved: {0}."
+msgstr "Uloženo stanic: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Soubor se nepodařilo uložit."
+
+msgid "All stations from this file are already on the list."
+msgstr "Všechny stanice z tohoto souboru už jsou v seznamu."
+
+msgid "Stations added: {0}."
+msgstr "Přidáno stanic: {0}."
+
+msgid "Checking…"
+msgstr "Kontrola…"
+
+msgid "Station name"
+msgstr "Název stanice"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Adresa streamu (HTTP nebo HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Adresa loga (nepovinné)"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "This address is already on the list."
+msgstr "Tato adresa už je v seznamu."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Zadejte název a platnou adresu streamu. Logo je nepovinné."
+
+msgid "Remove"
+msgstr "Odebrat"
+
+msgid "Station options"
+msgstr "Možnosti stanice"
+
+msgid "This station uses a format that can't be played."
+msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
+
+msgid "The connection to the station was lost."
+msgstr "Spojení se stanicí bylo přerušeno."
+
+msgid "The station's server refused access ({code})."
+msgstr "Server stanice odepřel přístup ({code})."
+
+msgid "The station's server refused access."
+msgstr "Server stanice odepřel přístup."
+
+msgid "The station's server returned error {code}."
+msgstr "Server stanice vrátil chybu {code}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
+
+msgid "Update"
+msgstr "Aktualizovat"
+
+msgid "Download update"
+msgstr "Stáhnout aktualizaci"
+
+msgid "You have the latest version."
+msgstr "Máte nejnovější verzi."
+
+msgid "Couldn't check for updates."
+msgstr "Aktualizace se nepodařilo zkontrolovat."
+
+msgid "Update to {0}"
+msgstr "Aktualizovat na {0}"
+
+msgid "macOS may ask once for permission to update the radio."
+msgstr "macOS se může jednou zeptat na povolení aktualizovat rádio."
+
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Ukončete rádio a pak přetáhněte Minimalistic Radio do Aplikací, abyste dokončili aktualizaci."
+
+msgid "Couldn't save the station list."
+msgstr "Seznam stanic se nepodařilo uložit."
+
+msgid "The broadcast has ended"
+msgstr "Vysílání skončilo"
+
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Spojení ztraceno. Znovu za {0} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Zastaveno časovačem vypnutí"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Toto není seznam stanic Minimalistic Radio."
+
+msgid "Up 5%"
+msgstr "Zvýšit o 5%"
+
+msgid "Down 5%"
+msgstr "Snížit o 5%"
+
+msgid "Stops at {0}"
+msgstr "Vypne se v {0}"
+
+msgid "{0} min"
+msgstr "{0} min"
+
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Aktualizaci se nepodařilo stáhnout. Rádio to zkusí později znovu."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "macOS rádiu nedovolil, aby se samo nahradilo. Aktualizace se místo toho otevře jako obraz disku."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Aktualizaci se nepodařilo rozbalit. Místo toho se otevře jako obraz disku."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "Aktualizace není podepsaná stejně jako toto rádio, proto nebyla nainstalována. Místo toho se otevře její stránka."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "Soubor aktualizace neodpovídá její verzi, proto nebyl nainstalován. Místo toho se otevře její stránka."
+
+msgid "Minimalistic Radio isn't ready yet. Try again."
+msgstr "Minimalistic Radio ještě není připravené. Zkuste to znovu."
+
+msgid "Plays the last station."
+msgstr "Pustí poslední stanici."
+
+msgid "Play Station"
+msgstr "Pustit stanici"
+
+msgid "Plays one of your stations."
+msgstr "Pustí jednu z vašich stanic."
+
+msgid "Stops the radio."
+msgstr "Zastaví rádio."
+
+msgid "Next Station"
+msgstr "Další stanice"
+
+msgid "Switches to the next station on your list."
+msgstr "Přepne na další stanici ve vašem seznamu."
+
+msgid "Previous Station"
+msgstr "Předchozí stanice"
+
+msgid "Switches to the previous station on your list."
+msgstr "Přepne na předchozí stanici ve vašem seznamu."
+
+msgid "Set Sleep Timer"
+msgstr "Nastavit časovač vypnutí"
+
+msgid "Stops the radio after the minutes you choose. 0 turns the timer off."
+msgstr "Zastaví rádio po zvoleném počtu minut. 0 časovač vypne."
+
+msgid "Minutes"
+msgstr "Minuty"
+
+msgid "Set Volume"
+msgstr "Nastavit hlasitost"
+
+msgid "Sets the radio's volume, from 0 to 100."
+msgstr "Nastaví hlasitost rádia od 0 do 100."
+
+msgid "Play ${station} in ${applicationName}"
+msgstr "Pusť ${station} v ${applicationName}"
+
+msgid "Play ${applicationName}"
+msgstr "Pusť ${applicationName}"
+
+msgid "Stop ${applicationName}"
+msgstr "Zastav ${applicationName}"
+
+msgid "Next station in ${applicationName}"
+msgstr "Další stanice v ${applicationName}"
+
+msgid "Previous station in ${applicationName}"
+msgstr "Předchozí stanice v ${applicationName}"

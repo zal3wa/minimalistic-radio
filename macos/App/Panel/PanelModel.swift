@@ -1,0 +1,62 @@
+import AppKit
+import RadioCore
+import SwiftUI
+
+/// What the panel shows. The controller isn't observable, so this republishes its changes to SwiftUI and keeps
+/// the panel's own state: the page, the station being edited.
+@MainActor
+final class PanelModel: ObservableObject {
+    enum Page: Equatable {
+        case stations
+        case search
+        case history
+        case settings
+        /// Add (nil) or edit (the station's index) a station by its address.
+        case station(Int?)
+    }
+
+    let controller: RadioController
+    let logos: LogoCache
+    /// Stations never shown in search or suggestions (data/banned-stations.json, in the app).
+    let bans = BanList.load(Bundle.main.url(forResource: "banned-stations", withExtension: "json")
+                            ?? URL(fileURLWithPath: "/nonexistent"))
+    /// The suggestions, loaded once per opening of the panel.
+    var suggested: (recommended: [DirectoryStation], popular: [DirectoryStation], country: String?)?
+    @Published var page: Page = .stations
+    /// A search to run when the search page opens (the README pictures' "jazz").
+    @Published var pendingSearch: String?
+    /// The last search's results, once they arrived.
+    var lastResults: [DirectoryStation]?
+    @Published private(set) var revision = 0
+    /// Set by the panel controller: hides the panel.
+    var close: () -> Void = {}
+
+    init(controller: RadioController, logos: LogoCache) {
+        self.controller = controller
+        self.logos = logos
+        controller.subscribe { [weak self] _ in self?.revision += 1 }
+    }
+
+    /// Redraws everything (a language change, the update arrow).
+    func refresh() {
+        revision += 1
+    }
+
+    /// + Station: the search page with its suggestions ("Add by address" is a link there), as on Windows.
+    func addStation() {
+        page = .search
+    }
+
+    /// Space plays and stops, except where a text field takes the typing.
+    var spacePlays: Bool {
+        switch page {
+        case .search, .station: return false
+        default: return true
+        }
+    }
+
+    /// Esc: back to the stations, or closes the panel there.
+    func back() {
+        if page == .stations { close() } else { page = .stations }
+    }
+}
