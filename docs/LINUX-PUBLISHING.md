@@ -1,17 +1,21 @@
 # Publishing the Linux version
 
-For the owner. You do not need to know Linux: everything below is done in a browser, in a terminal on Windows (Git Bash or PowerShell), or on GitHub. The order is: Snap Store account, Flathub, then the first beta.
+For the owner. You do not need to know Linux: everything below is done in a browser, in a terminal on Windows (Git Bash or PowerShell, plus Ubuntu in WSL once for the Snap Store login), or on GitHub. The order is: Snap Store account, Flathub, then the first beta.
 
 What is automated: when you push a tag that starts with `linux-v`, GitHub Actions builds the Flatpak and the Snap, runs the tests, creates the GitHub release with both files, and (if the Snap secret is set) publishes the Snap to the Snap Store. Nothing here touches the Windows release: Linux releases are never marked "latest".
 
 ## 1. Snap Store (Ubuntu's App Center)
 
-`snapcraft` runs on Linux only. If you have no Linux computer, use an Ubuntu virtual machine or a GitHub Codespace (a Linux terminal in your browser). It is only needed once, for the login.
+`snapcraft` runs on Linux only. On Windows 11 (Home is fine) use WSL, which runs Ubuntu inside Windows. It is only needed once, for the login:
+
+- Open PowerShell as administrator and run `wsl --install -d Ubuntu-24.04` (or install "Ubuntu 24.04 LTS" from the Microsoft Store). Restart Windows if it asks.
+- Open "Ubuntu 24.04" from the Start menu and choose a user name and password. This window is the Linux terminal for the steps below.
+- Ubuntu 24.04 on WSL starts with systemd, which `snap` needs. If `snap` says the system does not support it, run `printf '[boot]\nsystemd=true\n' | sudo tee /etc/wsl.conf`, then `wsl --shutdown` in PowerShell, and open Ubuntu again.
 
 1. Create a free Ubuntu One account: <https://login.ubuntu.com>.
-2. On the Linux machine install snapcraft: `sudo snap install snapcraft --classic` ([guide](https://snapcraft.io/docs/installing-snapcraft)).
-3. Log in: `snapcraft login` (it asks for the Ubuntu One e-mail and password).
-4. Reserve the name: `snapcraft register minimalistic-radio` ([guide](https://snapcraft.io/docs/registering-your-app-name)). If the name is taken the command says so, and we pick another.
+2. In the Ubuntu terminal install snapcraft: `sudo snap install snapcraft --classic` ([guide](https://snapcraft.io/docs/installing-snapcraft)).
+3. Log in: `snapcraft login` (it asks for the Ubuntu One e-mail and password). The first login may ask you to accept the developer agreement: accept it.
+4. Reserve the name: `snapcraft register minimalistic-radio` ([guide](https://snapcraft.io/docs/registering-your-app-name)), or in the browser at <https://snapcraft.io/register-snap>, signed in with the same account. If the name is taken it says so, and we pick another.
 5. Create the key GitHub will use. It can publish only this snap and only to the beta and stable channels:
 
    ```
@@ -75,5 +79,11 @@ git push origin linux-v1.0.0-beta.1
 The tag message becomes the text of the release, so write it as you want people to read it. Watch the run under Actions. When it finishes, the release appears under Releases, marked "pre-release", with `minimalistic-radio.flatpak` and the `.snap` attached. If the secret is set, the Snap is also in the Snap Store `beta` channel.
 
 Send testers the release link and `docs/LINUX-TEST-CHECKLIST.md`. For the full release use `linux-v1.0.0`; the Snap then goes to `stable`.
+
+### If the run is red
+
+- **A check job is red and the release job did not run** (for example the AAC or HLS check, which play live stations, or a rare GStreamer crash in the player tests): open the run, click "Re-run failed jobs". That is safe. The release job waits for the checks and then runs normally.
+- **The release job is red at "Publish to the Snap Store", and the message says the upload needs a manual review** (possible for the first upload of a new snap): do not re-run. The GitHub release is there already. Wait for the Snap Store's e-mail that the review passed, then open <https://snapcraft.io/minimalistic-radio/releases> and release the uploaded revision to `beta` (or to `stable` for a full release).
+- **The release job is red for another reason** (a wrong or expired `SNAPCRAFT_STORE_CREDENTIALS` secret, a Snap Store outage, a network error): fix the secret if needed (section 1, steps 5 and 6), then click "Re-run failed jobs". The release step sees that the GitHub release exists, only replaces its two files, and the Snap Store step runs again.
 
 If a tag was wrong, delete the release on GitHub (Releases, the release, Delete), then run `git push origin :refs/tags/linux-v1.0.0-beta.1` and `git tag -d linux-v1.0.0-beta.1`, and make a new one.

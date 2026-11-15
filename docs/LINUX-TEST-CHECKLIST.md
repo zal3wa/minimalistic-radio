@@ -26,12 +26,17 @@ Do each on your system. Write "ok", "broken" or "not applicable".
 9. HLS: play Polskie Radio Czworka (the HLS stream, listed as HLS in the search). It starts and keeps playing for a few minutes.
 10. Sleep timer: set one for 1 minute; the music stops and the radio does not start again by itself.
 11. Autostart: turn on "Start with the system", log out and in again: the radio is running.
-12. Suspend: while a station plays, close the laptop lid or wait for the idle time. The laptop must not suspend while playing. After you stop the music it may suspend again.
+12. Idle suspend: set automatic suspend to the shortest delay (on GNOME: Settings, Power, Automatic Suspend). Play a station and do not touch the computer for longer than that delay: it must not suspend while playing. After you stop the music it may suspend again. (Closing the lid always suspends, with any app: that is not a failure.)
 13. Wi-Fi: turn Wi-Fi off for a few seconds and on again. The radio reconnects by itself.
 14. Mixer name: open the sound settings while playing. The stream is named "Minimalistic Radio" (not "python" or an ID).
 15. Language: change the language in Settings (for example to Polish and back). Texts change at once or after a restart, and nothing is cut off.
 16. Windows export and Linux import: on Windows, export your stations (Settings, Export). Copy the file to the Linux computer and import it (Settings, Import). All stations, with their logos, appear.
 17. KDE only: there is one tray entry, not two (a known Plasma 6.7 bug can show a duplicate).
+18. Resume: while a station plays, close the lid (or choose Suspend), wait a minute, and wake the computer. The radio reconnects by itself within a few seconds. This one matters most in the Flatpak.
+19. No tray (GNOME without a tray extension, for example Fedora): close the window while a station plays. The radio keeps playing, and the first time a notification says so. The radio is listed under Background Apps in the menu at the top right, and quitting it there stops it.
+20. Second launch: with the radio running and its window closed, start it again from the application menu. The same window comes back, and no second radio starts (only one tray icon, only one stream in the sound settings).
+21. Copy the song from the tray: while a song title shows, click it in the tray menu. The window opens; paste somewhere: you get the title. On Wayland the window may say "Press Copy to copy the song" instead: press Copy, then paste. Report it if the window says "Copied" but the paste is wrong or empty.
+22. MP3 and Ogg/Opus: in the search, add one station listed as MP3 and one listed as OGG or OPUS. Both play, with song titles if the station sends them.
 
 ## How to report
 

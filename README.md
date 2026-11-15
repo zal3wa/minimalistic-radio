@@ -78,7 +78,7 @@ The same radio for Linux, made with GTK and libadwaita: a tray icon (where the d
 
 Until the stores are live: open the [releases page](https://github.com/zal3wa/minimalistic-radio/releases) and take the `.flatpak` or the `.snap` from the newest `linux-v...` release. Double-click it to open it in GNOME Software, Discover or App Center. For the `.snap` you can also run `sudo snap install --dangerous ./minimalistic-radio_*.snap`.
 
-The Flatpak plays every format. The Snap is smaller (0.7 MB) and plays MP3, AAC and HE-AAC, Ogg/Opus and FLAC, including HLS streams; rare formats such as WMA play only in the Flatpak.
+Both downloads are under 1 MB: the `.flatpak` is about 0.22 MB and the `.snap` about 0.68 MB. The GNOME platform they run on is installed once and shared with other apps. The Flatpak plays more formats (it has FFmpeg). The Snap plays MP3, AAC and HE-AAC, Ogg/Opus and FLAC, including HLS streams; rare formats such as WMA play only in the Flatpak.
 
 Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLIST.md).
 
