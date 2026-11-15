@@ -2,17 +2,30 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import Any
 
 import gi
 
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio  # noqa: E402
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import GdkPixbuf, Gio, GLib  # noqa: E402
 
 from ..controller import Change  # noqa: E402
 
 NOTIFICATION_ID = "station"
 FIRST_TITLE_WINDOW = 15.0   # seconds after the switch in which the first title replaces the notification
+COVER_PIXELS = 256          # plenty for a notification; the cover file itself is 600 px
+
+
+def cover_icon(path: Path) -> Gio.Icon | None:
+    """The cover at most 256 px on a side, as PNG bytes: no file the notification server might not be able to read."""
+    try:
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(str(path), COVER_PIXELS, COVER_PIXELS)
+        ok, data = pixbuf.save_to_bufferv("png", [], [])
+    except GLib.Error:
+        return None
+    return Gio.BytesIcon.new(GLib.Bytes.new(data)) if ok else None
 
 
 class StationNotifier:
@@ -46,7 +59,8 @@ class StationNotifier:
         notification = Gio.Notification.new(name)
         notification.set_body(controller.track or self.app._("Connecting…"))
         cover = controller.cover_path
-        if cover is not None and cover.exists():
-            notification.set_icon(Gio.FileIcon.new(Gio.File.new_for_path(str(cover))))
+        icon = cover_icon(cover) if cover is not None and cover.exists() else None
+        if icon is not None:
+            notification.set_icon(icon)
         notification.set_default_action("app.show-panel")
         self.app.send_notification(NOTIFICATION_ID, notification)

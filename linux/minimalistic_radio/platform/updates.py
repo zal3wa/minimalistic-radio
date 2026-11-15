@@ -19,7 +19,7 @@ PORTAL = "org.freedesktop.portal.Flatpak"
 PORTAL_PATH = "/org/freedesktop/portal/Flatpak"
 MONITOR_IFACE = "org.freedesktop.portal.Flatpak.UpdateMonitor"
 LATEST_VERSION = 2   # Spawn flag: start the newest installed version
-STATUS_DONE, STATUS_ERROR = 2, 3
+STATUS_RUNNING, STATUS_EMPTY, STATUS_DONE, STATUS_ERROR = 0, 1, 2, 3   # Progress: EMPTY = nothing to install
 TIMEOUT_MS = 3000
 
 
@@ -90,12 +90,13 @@ class UpdateMonitor:
         if name == "UpdateAvailable":
             self._set_state(update_state({k: v for k, v in info.items() if isinstance(v, str)}))
         elif name == "Progress" and self._updating:
-            status = info.get("status")
-            if status == STATUS_DONE:
-                self._updating = False
-                self._restart()
-            elif status == STATUS_ERROR:
-                self._updating = False
+            status = info.get("status", STATUS_RUNNING)
+            if status == STATUS_RUNNING:
+                return
+            self._updating = False   # whatever the end, the arrow works again
+            if status in (STATUS_EMPTY, STATUS_DONE):
+                self._restart()      # EMPTY: the new version was installed already, e.g. by GNOME Software
+            else:
                 self._failed()
 
     def apply(self) -> None:
@@ -104,8 +105,12 @@ class UpdateMonitor:
             self._restart()
         elif self.state == "update" and self.monitor and not self._updating:
             self._updating = True
-            self._bus.call(PORTAL, self.monitor, MONITOR_IFACE, "Update", GLib.Variant("(sa{sv})", ("", {})),
-                           None, Gio.DBusCallFlags.NONE, TIMEOUT_MS, None, self._update_called)
+            try:
+                self._bus.call(PORTAL, self.monitor, MONITOR_IFACE, "Update", GLib.Variant("(sa{sv})", ("", {})),
+                               None, Gio.DBusCallFlags.NONE, TIMEOUT_MS, None, self._update_called)
+            except Exception:
+                self._updating = False
+                self._failed()
 
     def _update_called(self, bus, result, _data=None) -> None:
         try:

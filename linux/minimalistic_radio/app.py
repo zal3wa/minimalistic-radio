@@ -82,7 +82,9 @@ def fetch_file(url: str, path: Path, cb: Callable[[bool], None]) -> None:
 
 class RadioApplication(Adw.Application):
     def __init__(self, translate: Callable[[str], str] = i18n.gettext, application_id: str = APP_ID) -> None:
-        super().__init__(application_id=application_id, flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        # ALLOW_REPLACEMENT: the version started after an update (--updated) takes over the name at once.
+        super().__init__(application_id=application_id,
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE | Gio.ApplicationFlags.ALLOW_REPLACEMENT)
         self._ = translate
         self.controller: RadioController | None = None
         self.window: RadioWindow | None = None
@@ -138,6 +140,7 @@ class RadioApplication(Adw.Application):
             on_eos=lambda: self.controller.on_player_eos(),
             _=self._)
         self.controller = RadioController(player, GLibScheduler(), default_paths(), fetch, fetch_file, self._)
+        self.controller.subscribe(self._playback_changed)   # before start(): it may begin playing
         self.controller.start(autostart=autostart)
         self.mpris = MprisService(self)
         self.mpris.publish()
@@ -145,7 +148,6 @@ class RadioApplication(Adw.Application):
         self.tray.start()
         self.notifier = StationNotifier(self)
         self.session = SessionWatcher(self.controller)
-        self.controller.subscribe(self._playback_changed)
         self._start_updates()
 
     def _start_updates(self, flatpak_info: str = "/.flatpak-info") -> None:
@@ -190,6 +192,9 @@ class RadioApplication(Adw.Application):
         # A self-test or screenshot run is its own instance: never handed to (and quitting) a running radio.
         if options.contains("self-test") or options.contains("screenshot"):
             self.set_flags(self.get_flags() | Gio.ApplicationFlags.NON_UNIQUE)
+        # The new version after an update: the old one may not have quit yet, and must not get this launch.
+        elif options.contains("updated"):
+            self.set_flags(self.get_flags() | Gio.ApplicationFlags.REPLACE)
         return -1
 
     def do_command_line(self, command_line: Gio.ApplicationCommandLine) -> int:
@@ -272,6 +277,7 @@ class RadioApplication(Adw.Application):
             self.show_window()
             self.window.show_page(page)
             if self.tray is not None:
+                self.tray.update_label = self.update_label()
                 self.tray.refresh()
             return GLib.SOURCE_REMOVE
         GLib.idle_add(rebuild)   # not from inside the signal of a widget that is about to be destroyed
