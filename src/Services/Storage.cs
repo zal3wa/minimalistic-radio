@@ -27,6 +27,7 @@ public sealed class Preferences
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
+    public bool? CollectStatistics { get; set; }   // Settings › Statistics; on unless switched off
 }
 
 public sealed class HistoryEntry
@@ -50,6 +51,7 @@ internal static class Storage
     internal static readonly string StationFile = Path.Combine(Folder, "stations.json");
     internal static readonly string PreferencesFile = Path.Combine(Folder, "preferences.json");
     internal static readonly string HistoryFile = Path.Combine(Folder, "history.json");
+    internal static readonly string StatisticsFile = Path.Combine(Folder, "statistics.json");   // see Statistics.cs
 
     internal static T Read<T>(string file) where T : class
     {
@@ -63,11 +65,14 @@ internal static class Storage
     }
 
     // Throws IOException/UnauthorizedAccessException; the old file stays intact if writing fails.
-    internal static void Write(string file, object data)
+    internal static void Write(string file, object data) => WriteText(file, new JavaScriptSerializer().Serialize(data));
+
+    // The same for text made elsewhere (UTF-8).
+    internal static void WriteText(string file, string text)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(file));
         string temporary = file + ".tmp";
-        File.WriteAllText(temporary, new JavaScriptSerializer().Serialize(data));
+        File.WriteAllText(temporary, text);
         File.Copy(temporary, file, true);
         File.Delete(temporary);
     }

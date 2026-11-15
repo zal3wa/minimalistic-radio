@@ -7,6 +7,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "The station doesn't send song titles"
 msgstr "La stazione non invia i titoli"
@@ -412,3 +413,86 @@ msgstr "portoghese"
 
 msgid "English"
 msgstr "inglese"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
+
+msgid "{0} play"
+msgid_plural "{0} plays"
+msgstr[0] "{0} ascolto"
+msgstr[1] "{0} ascolti"
+
+msgid "Statistics"
+msgstr "Statistiche"
+
+msgid "Show"
+msgstr "Mostra"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Raccolte solo su questo computer, mai inviate altrove"
+
+msgid "All"
+msgstr "Tutto"
+
+msgid "Year"
+msgstr "Anno"
+
+msgid "Month"
+msgstr "Mese"
+
+msgid "Listening time"
+msgstr "Tempo di ascolto"
+
+msgid "Since {0}"
+msgstr "Dal {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} al giorno"
+
+msgid "Song titles"
+msgstr "Titoli dei brani"
+
+msgid "Longest"
+msgstr "Ascolto più lungo"
+
+msgid "Top stations"
+msgstr "Stazioni più ascoltate"
+
+msgid "Top artists"
+msgstr "Artisti più trasmessi"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Dai titoli inviati dalle stazioni · {0} del tempo di ascolto"
+
+msgid "Not enough song titles yet"
+msgstr "Non ci sono ancora abbastanza titoli"
+
+msgid "When you listen"
+msgstr "Quando ascolti"
+
+msgid "Most often {0}"
+msgstr "Più spesso {0}"
+
+msgid "Clear statistics"
+msgstr "Cancella statistiche"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Cancellare tutte le statistiche? L'operazione non si può annullare."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Non c'è ancora niente. Ascolta per un po' e torna qui."
+
+msgid "Automatic updates"
+msgstr "Aggiornamenti automatici"
+
+msgid "Collected since {0}"
+msgstr "Raccolte dal {0}"
+
+msgid "Nothing collected yet"
+msgstr "Non è stato ancora raccolto nulla"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Le statistiche sono disattivate. Non viene registrato nulla di nuovo."

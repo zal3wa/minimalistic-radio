@@ -47,6 +47,37 @@ internal sealed partial class Radio
     private const double TrayIconFromRight = ShowDesktopWidth + ClockWidth + QuickSettingsWidth + TrayButtonWidth / 2;
     private const double MenuShadow = 6;   // the menu's template leaves room for its shadow on the right and bottom
 
+    // --preview: over a year of listening, in memory only (nothing is saved), so that the Statistics page shows each
+    // period differently. The stations are the last ones of the list (the saved ones, with their logos).
+    private void FillSampleStatistics()
+    {
+        statistics.Clear(DateTime.UtcNow);
+        if (Stations.Count == 0) return;
+        var random = new Random(7);
+        string[] songs =
+        {
+            "Leonard Cohen - Everybody Knows", "Editors - Shadow", "Queen - A Kind Of Magic", "Dawid Podsiadło - Małomiasteczkowy",
+            "Daughtry - What About Now", "Metallica - One", "Queen - Radio Ga Ga", "Leonard Cohen - Hallelujah", "Editors - Papillon", "Dżingiel"
+        };
+        int[] hours = { 7, 8, 12, 16, 17, 18, 19, 19, 20, 20, 20, 21, 21, 22, 23 };   // mostly in the evening
+        DateTime now = DateTime.UtcNow;
+        for (int day = 420; day >= 0; day--)
+            for (int count = random.Next(3); count > 0; count--)
+            {
+                int pick = Stations.Count - 1 - random.Next(Math.Min(6, Stations.Count));
+                SavedStation played = Stations[pick];
+                DateTime start = DateTime.Today.AddDays(-day).AddHours(hours[random.Next(hours.Length)]).AddMinutes(random.Next(60)).ToUniversalTime();
+                if (start >= now) continue;
+                DateTime end = start.AddMinutes(15 + random.Next(150));
+                if (end > now) end = now;
+                bool titles = pick % 3 != 0;   // some stations send no song titles
+                statistics.Sessions.Add(new ListeningSession { Station = played.Name, Url = played.Url, Start = start, End = end, Titles = titles });
+                if (titles)
+                    for (DateTime time = start.AddMinutes(2); time < end; time = time.AddMinutes(4))
+                        statistics.Songs.Add(new PlayedSong { Station = played.Name, Title = songs[random.Next(songs.Length)], Time = time });
+            }
+    }
+
     private async Task SavePreview(Visual visual, string name)
     {
         foreach (bool dark in new[] { false, true })

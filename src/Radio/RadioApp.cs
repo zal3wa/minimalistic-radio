@@ -87,6 +87,10 @@ internal sealed partial class Radio
     private readonly List<HistoryEntry> history = new List<HistoryEntry>();
     private int historyVersion;
 
+    // Listening statistics (Statistics.cs): a session while a station plays, saved every 5 minutes and when it ends.
+    private readonly Statistics statistics = new Statistics();
+    private readonly DispatcherTimer statisticsTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(5) };
+
     // Updates (see Updater.cs).
     private bool checkUpdates = true;
     private DateTime? lastUpdateCheck;
@@ -129,12 +133,14 @@ internal sealed partial class Radio
             LoadStations();
             LoadPreferences();
             LoadHistory();
+            LoadStatistics();
             StartMenu.Register(Exe);
             Autostart.Refresh(Exe);
             Updater.CleanUp();
             Storage.RemoveOldFFmpeg();
             AttachMediaSession();
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            SystemEvents.SessionEnding += OnSessionEnding;
             NetworkChange.NetworkAvailabilityChanged += OnNetworkChanged;
             NetworkChange.NetworkAddressChanged += OnNetworkChanged;
             networkSettle.Tick += (_, _) => NetworkSettled();
@@ -151,6 +157,11 @@ internal sealed partial class Radio
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
         trackTimer.Tick += (_, _) => ScrollTrack();
         sleepTimer.Tick += (_, _) => SleepTick();
+        statisticsTimer.Tick += (_, _) =>
+        {
+            statistics.Tick(DateTime.UtcNow);
+            SaveStatistics();
+        };
 #if SELFTEST
         if (testMenu) Post(Environment.GetCommandLineArgs().Contains("--screenshot") ? (Action)TakeScreenshots : VerifyMenu);
         else
@@ -162,6 +173,18 @@ internal sealed partial class Radio
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
         if (e.Mode == PowerModes.Resume) Post(() => { if (session != null) StartPlayback(); });
+    }
+
+    // Windows is shutting down or signing out: the playing station's time so far goes into the statistics first.
+    private void OnSessionEnding(object sender, SessionEndingEventArgs e)
+    {
+        void Save()
+        {
+            statistics.Tick(DateTime.UtcNow);
+            SaveStatistics();
+        }
+        if (app.Dispatcher.CheckAccess()) Save();
+        else app.Dispatcher.Invoke(Save, DispatcherPriority.Send, CancellationToken.None, TimeSpan.FromSeconds(3));
     }
 
     // When the network comes back, connect at once instead of waiting out the retry delays (up to 30 s),
@@ -197,6 +220,7 @@ internal sealed partial class Radio
         try
         {
             Lang.Verify();   // the catalogs: all there, nothing missing, English for an unknown text
+            Statistics.Verify();   // the listening statistics: periods, sessions, top lists, hours, the file
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -305,6 +329,7 @@ internal sealed partial class Radio
                     readyUpdate = new Release { Version = new Version(9, 9, 9), Tag = "v9.9.9" };
                     foreach (string played in new[] { "Leonard Cohen - Everybody Knows", "Queen - A Kind Of Magic", "Daughtry - What About Now" })
                         AddToHistory(played);
+                    FillSampleStatistics();
                 }
                 ShowPlayer();
                 if (playerPanel?.IsVisible != true || !Storage.IsWebUrl("https://example.com/live") || Storage.IsWebUrl("file:///tmp/test"))
@@ -332,7 +357,18 @@ internal sealed partial class Radio
                     await SavePreview(playerPanel, "panel");
                     session = null;
                 }
-                foreach (string page in new[] { "settings", "history" })
+                StackPanel Page() => (StackPanel)Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel).Content;
+                // The whole page; a picture starts where its content's margin does, so the margin moves to the far side meanwhile.
+                async Task SaveWholePage(string name)
+                {
+                    StackPanel all = Page();
+                    Thickness margin = all.Margin;
+                    all.Margin = new Thickness(0, 0, margin.Left + margin.Right, margin.Top + margin.Bottom);
+                    all.UpdateLayout();
+                    await SavePreview(all, name);
+                    all.Margin = margin;
+                }
+                foreach (string page in new[] { "settings", "history", "statistics" })
                 {
                     playerPanel.Close();
                     OpenPlayer(page);
@@ -342,9 +378,62 @@ internal sealed partial class Radio
                     {
                         await Task.Delay(1000);
                         await SavePreview(playerPanel, page);
-                        var scroller = Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel);
-                        await SavePreview((Visual)scroller.Content, page + "-all");
+                        await SaveWholePage(page + "-all");
                     }
+                }
+                // Statistics: empty in the plain self-test, the sample's month with --preview; then everything since the first day.
+                string expected = preview ? L("Top stations") : L("Nothing here yet. Listen for a while and come back.");
+                if (!Descendants(playerPanel).OfType<TextBlock>().Any(text => text.Text == expected))
+                    throw new InvalidOperationException("Strona statystyk bez: " + expected);
+                bool Titled(string title)
+                {
+                    playerPanel.UpdateLayout();   // a part shown for the first time gets its content only now
+                    return Descendants(playerPanel).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == title);
+                }
+                // Switched off (Settings › Statistics), a new song isn't recorded; the page says so (statistics-off).
+                int songsBefore = statistics.Songs.Count;
+                SetStatisticsCollecting(false);
+                AddToHistory("Statystyki - Wyłączone");
+                bool ignored = !statistics.Collecting && statistics.Songs.Count == songsBefore && history[0].Title == "Statystyki - Wyłączone";
+                playerPanel.Close();
+                OpenPlayer("statistics");
+                if (preview)
+                {
+                    await Task.Delay(1000);
+                    await SavePreview(playerPanel, "statistics-off");
+                }
+                ignored &= Titled(L("Statistics are off. Nothing new is recorded."));
+                SetStatisticsCollecting(true);
+                if (!ignored) throw new InvalidOperationException("Wyłączone statystyki nadal coś zapisują albo strona tego nie mówi.");
+                if (preview)
+                {
+                    playerPanel.Close();
+                    OpenPlayer("statistics");
+                    Descendants(playerPanel).OfType<Button>().First(button => button.Content as string == L("All"))
+                        .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    await Task.Delay(1000);
+                    await SaveWholePage("statistics-everything");
+                }
+                // ← goes from Statistics back to Settings, and from there to the stations.
+                Button Back() => Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back"));
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                bool backToSettings = Titled(L("Settings"));
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                if (!backToSettings || !Titled(L("History")))
+                    throw new InvalidOperationException("Strzałka wstecz nie wraca ze statystyk do ustawień i do stacji.");
+                if (preview)
+                {
+                    // The other pages with a title in the bar: the station form (Edit) and Add a station.
+                    var options = (ContextMenu)Descendants(playerPanel).OfType<ListBox>().First(item => item.IsVisible).Items.OfType<Grid>().Last()
+                        .Children.OfType<Button>().Last().Tag;
+                    ((MenuItem)options.Items[0]).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                    await Task.Delay(500);
+                    await SavePreview(playerPanel, "form");
+                    Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    Descendants(playerPanel).OfType<Button>().First(button => Descendants(button).OfType<TextBlock>().Any(text => text.Text == L("Station")))
+                        .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    await Task.Delay(500);
+                    await SavePreview(playerPanel, "search");
                 }
                 playerPanel.Close();
                 ShowStationPopup();
@@ -668,7 +757,7 @@ internal sealed partial class Radio
     {
         if (Stations.Count == 0) return;
         if (station < 0) station = 0;
-        StopPlayback();
+        StopPlayback(deliberate: false);   // the same station again (after sleep, the network back…) continues its session
         using (var request = new CancellationTokenSource())
         {
             session = request;
@@ -697,6 +786,8 @@ internal sealed partial class Radio
                         lastPlayed = stream;
                         SavePreferences();
                         SetStatus(StationName);
+                        statistics.Begin(StationName, stream, DateTime.UtcNow);
+                        statisticsTimer.Start();
                         if (playingStation == 3 && !polling)
                         {
                             polling = true;
@@ -736,6 +827,7 @@ internal sealed partial class Radio
                     {
                         if (session != request) return;
                         playing = false;
+                        EndListening(true);   // back within 2 minutes, the session goes on
                         track = null;
                         artworkUrl = null;
                         RefreshTrack();
@@ -748,13 +840,13 @@ internal sealed partial class Radio
             try
             {
                 await audio;
-                if (session == request) StopPlayback(L("The broadcast has ended"));
+                if (session == request) StopPlayback(L("The broadcast has ended"), false);
             }
             catch (Exception error)
             {
                 if (session == request)
                 {
-                    StopPlayback(error.Message);
+                    StopPlayback(error.Message, false);
                     // Not refused by the station: the connection was lost and the retries ran out.
                     if (!(error is StationRefusedException)) lostConnectionAt = DateTime.UtcNow;
                 }
@@ -762,12 +854,15 @@ internal sealed partial class Radio
         }
     }
 
-    private void StopPlayback(string message = null)
+    // deliberate: Stop, the sleep timer or quitting. Otherwise (an error, the broadcast ended, a restart) a reconnect to
+    // the same station within 2 minutes continues the statistics' session.
+    private void StopPlayback(string message = null, bool deliberate = true)
     {
         CancellationTokenSource current = session;
         session = null;
         playing = false;
         lostConnectionAt = null;
+        EndListening(!deliberate);
         current?.Cancel();
         track = null;
         artworkUrl = null;
@@ -821,6 +916,7 @@ internal sealed partial class Radio
             RefreshTrack();
             UpdateMediaSession();
             if (title == null) return;
+            statistics.MarkTitles();   // also when the history skips the title as a repeat
             AddToHistory(title);
             if (cover == null) FindCover(request, title);
         });
@@ -1012,6 +1108,7 @@ internal sealed partial class Radio
         if (history.Count > 100) history.RemoveRange(100, history.Count - 100);
         historyVersion++;
         SaveHistory();
+        statistics.AddSong(StationName, title, DateTime.UtcNow);   // saved with the session, every few minutes
     }
 
     private void ClearHistory()
@@ -1034,6 +1131,61 @@ internal sealed partial class Radio
     {
         var saved = Storage.Read<List<HistoryEntry>>(Storage.HistoryFile);
         if (saved != null) history.AddRange(saved.Where(entry => !string.IsNullOrEmpty(entry?.Title)).Take(100));
+    }
+
+    // ---- Statistics (kept apart from the history: clearing one leaves the other) ----
+
+    // The station stopped playing: its session ends and is saved. canResume: not stopped on purpose, so a reconnect
+    // to the same station within 2 minutes continues it.
+    private void EndListening(bool canResume)
+    {
+        statisticsTimer.Stop();
+        if (!statistics.Recording) return;
+        statistics.End(DateTime.UtcNow, canResume);
+        SaveStatistics();
+    }
+
+    // Settings › Statistics' switch. Off ends the running session cleanly and records nothing more; on while a station
+    // plays starts counting it from now.
+    private void SetStatisticsCollecting(bool on)
+    {
+        bool wasRecording = statistics.Recording;
+        statistics.SetCollecting(on, DateTime.UtcNow);
+        if (!on)
+        {
+            statisticsTimer.Stop();
+            if (wasRecording) SaveStatistics();
+        }
+        else if (playing && session != null && station >= 0 && station < Stations.Count)
+        {
+            statistics.Begin(StationName, Stations[station].Url, DateTime.UtcNow);
+            statisticsTimer.Start();
+        }
+        SavePreferences();
+    }
+
+    private void ClearStatistics()
+    {
+        statistics.Clear(DateTime.UtcNow);
+        SaveStatistics();
+    }
+
+    private void SaveStatistics()
+    {
+#if SELFTEST
+        if (testMenu) return;
+#endif
+        try { Storage.WriteText(Storage.StatisticsFile, statistics.ToJson()); }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
+    }
+
+    private void LoadStatistics()
+    {
+        try
+        {
+            if (File.Exists(Storage.StatisticsFile)) statistics.Load(File.ReadAllText(Storage.StatisticsFile));
+        }
+        catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
     }
 
     // ---- Updates ----
@@ -1141,6 +1293,7 @@ internal sealed partial class Radio
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
         showStationPopup = saved.ShowStationPopup ?? true;
+        statistics.SetCollecting(saved.CollectStatistics ?? true, DateTime.UtcNow);
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
     }
@@ -1155,7 +1308,8 @@ internal sealed partial class Radio
             Storage.Write(Storage.PreferencesFile, new Preferences
             {
                 Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting,
-                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup
+                CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup,
+                CollectStatistics = statistics.Collecting
             });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
@@ -1175,6 +1329,7 @@ internal sealed partial class Radio
     private void Shutdown()
     {
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        SystemEvents.SessionEnding -= OnSessionEnding;
         NetworkChange.NetworkAvailabilityChanged -= OnNetworkChanged;
         NetworkChange.NetworkAddressChanged -= OnNetworkChanged;
         networkSettle.Stop();

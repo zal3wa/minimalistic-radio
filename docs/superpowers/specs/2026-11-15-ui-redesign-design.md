@@ -75,6 +75,12 @@ macOS: `chevron.left`) and the page title, left-aligned, semibold (Windows 14 px
 Linux also has the ✕ on the right. Same divider under it. Titles: "Song history", "Settings", "Statistics", and the
 existing titles of the other pages.
 
+**Song history** also has a **[Statistics]** button on the right of its bar *(the owner's request after 2.6.0)*: the
+same labelled style as [+ Station] / [History], with a bar-chart icon (Windows and Linux: Lucide `chart-column`,
+`M3 3v16a2 2 0 0 0 2 2h16 M18 17V9 M13 17V5 M8 17v-3`; macOS: `chart.bar`), label "Statistics". It opens the
+Statistics page; ← (and Esc) from Statistics go back to the page it was opened from (Song history or Settings). On
+Linux it sits left of the ✕.
+
 Windows: the subpage title moves from the big heading row into the bar; Segoe UI sits low in its line box, so nudge
 the title text up by 1 px (or otherwise centre it optically with the icons) — check it in the `--preview` pictures.
 
@@ -87,7 +93,8 @@ without objecting. Easy to revert.)*
 ### Hiding the window
 
 - **Windows and macOS:** the panel hides when it loses focus (a click elsewhere), on Esc, and on a click on the tray /
-  menu bar icon — as today. There is no hide button in the bar anymore.
+  menu bar icon — as today. There is no hide button in the bar anymore, so a click elsewhere must always close it
+  (Windows 2.6.0 had a bug where it didn't).
 - **Linux:** the window is a normal window. Its ✕ hides it (the radio keeps playing), tooltip "Close (the radio keeps
   playing)". The first time it is closed, show the notification "The radio keeps playing" (today it shows only when there
   is no tray icon; show it once in every case, then never again). Esc still hides it.
@@ -131,9 +138,10 @@ the right.
    "Minimalistic Radio", description "Version X · MIT" (Windows keeps " · Lucide icons"), and a "GitHub ↗" link on the
    right to https://github.com/zal3wa/minimalistic-radio. Linux drops the chevron to the About dialog; macOS replaces its
    three About rows with this one.
-6. **Quit** card, **no header**: only a button "Quit Minimalistic Radio" with red text (Windows: a normal button with
-   red text `#C42B1C`/dark `#FF99A4`; Linux: the `destructive-action` style; macOS: as today, a push button with the
-   destructive role), left-aligned, no description.
+6. **Quit** card, **no header** *(the owner's later edit of the mockups, replacing the button-only card)*: one row
+   with the title "Quit", the description "Stops the radio and removes it from the tray" (macOS: "… from the menu
+   bar"), and on the right a button "Quit" with red text (Windows: a normal button with red text `#C42B1C`/dark
+   `#FF99A4`; Linux: the `destructive-action` style; macOS: a push button with the destructive role).
 
 Windows keeps its "On/Off" text next to toggles. Linux keeps libadwaita rows (`Adw.PreferencesGroup`, `Adw.SwitchRow`,
 `Adw.ComboRow`, `Adw.ActionRow`). macOS keeps `Form` with `.formStyle(.grouped)`.

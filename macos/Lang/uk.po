@@ -14,6 +14,15 @@ msgstr "Вийти"
 msgid "Add a station first."
 msgstr "Спершу додайте станцію."
 
+msgid "All"
+msgstr "Усе"
+
+msgid "Year"
+msgstr "Рік"
+
+msgid "Month"
+msgstr "Місяць"
+
 msgid "Now playing"
 msgstr "Зараз грає"
 
@@ -80,11 +89,8 @@ msgstr "Перемістіть Minimalistic Radio в «Програми», що�
 msgid "Station"
 msgstr "Станція"
 
-msgid "Search the radio-browser.info directory"
-msgstr "Пошук у каталозі radio-browser.info"
-
-msgid "Back"
-msgstr "Назад"
+msgid "History"
+msgstr "Історія"
 
 msgid "Song history"
 msgstr "Історія пісень"
@@ -92,11 +98,14 @@ msgstr "Історія пісень"
 msgid "Settings"
 msgstr "Налаштування"
 
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Сховати панель (радіо грає далі)"
+msgid "Back"
+msgstr "Назад"
 
 msgid "Stations"
 msgstr "Станції"
+
+msgid "Statistics"
+msgstr "Статистика"
 
 msgid "Add by address"
 msgstr "Додати за адресою"
@@ -161,20 +170,29 @@ msgstr "Показувати зміну станції"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Картка під значком після мультимедійної клавіші чи перемикання в меню"
 
-msgid "Export…"
-msgstr "Експорт…"
-
-msgid "Import…"
-msgstr "Імпорт…"
-
 msgid "Station list"
 msgstr "Список станцій"
 
 msgid "A copy in a file, e.g. for friends"
 msgstr "Копія у файлі, наприклад для друзів"
 
+msgid "Export…"
+msgstr "Експорт…"
+
+msgid "Import…"
+msgstr "Імпорт…"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Збирається лише на цьому комп’ютері й нікуди не надсилається"
+
+msgid "Show"
+msgstr "Показати"
+
 msgid "Updates"
 msgstr "Оновлення"
+
+msgid "Automatic updates"
+msgstr "Автоматичні оновлення"
 
 msgid "Looks for a new version every few hours"
 msgstr "Кожні кілька годин перевіряє, чи є нова версія"
@@ -185,11 +203,23 @@ msgstr "Перевірити"
 msgid "About"
 msgstr "Про програму"
 
+msgid "Version {0}"
+msgstr "Версія {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Вийти з Minimalistic Radio"
 
+msgid "Nothing collected yet"
+msgstr "Поки нічого не зібрано"
+
+msgid "Collected since {0}"
+msgstr "Збирається з {0}"
+
 msgid "Not checked yet."
 msgstr "Ще не перевірялося."
+
+msgid "Last checked: {0}"
+msgstr "Остання перевірка: {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Збережено станцій: {0}."
@@ -232,6 +262,60 @@ msgstr "Видалити"
 
 msgid "Station options"
 msgstr "Параметри станції"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Статистику вимкнено. Нічого нового не записується."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Тут поки нічого немає. Послухайте радіо деякий час і поверніться."
+
+msgid "Clear statistics"
+msgstr "Очистити статистику"
+
+msgid "Listening time"
+msgstr "Час прослуховування"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} на день"
+
+msgid "Song titles"
+msgstr "Назви пісень"
+
+msgid "Longest"
+msgstr "Найдовше"
+
+msgid "Top stations"
+msgstr "Найчастіше слухані станції"
+
+msgid "Top artists"
+msgstr "Найчастіше слухані виконавці"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "За назвами пісень від станцій · {0} часу прослуховування"
+
+msgid "Not enough song titles yet"
+msgstr "Поки замало назв пісень"
+
+msgid "When you listen"
+msgstr "Коли ви слухаєте"
+
+msgid "Most often {0}"
+msgstr "Найчастіше {0}"
+
+msgid "Since {0}"
+msgstr "З {0}"
+
+msgid "1 play"
+msgstr "1 відтворення"
+
+msgid "{0} plays"
+msgstr "відтворень: {0}"
+
+msgid "Clear statistics?"
+msgstr "Очистити статистику?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Усю статистику прослуховування на цьому комп’ютері буде видалено. Історія пісень залишиться."
 
 msgid "This station uses a format that can't be played."
 msgstr "Ця станція мовить у форматі, який не вдається відтворити."
@@ -301,6 +385,12 @@ msgstr "{0} хв"
 
 msgid "Off"
 msgstr "Вимк."
+
+msgid "{0} h {1} min"
+msgstr "{0} год {1} хв"
+
+msgid "{0} h"
+msgstr "{0} год"
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "Не вдалося завантажити оновлення. Радіо спробує пізніше."

@@ -18,12 +18,12 @@ dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out-tes
 ```
 
 - `out-test\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
-- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
+- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history, statistics (a year of sample listening, only in memory: this month, switched off, and everything), the station form, Add a station and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots` (without the `MinimalisticRadio-shot-` prefix). The `tray-menu` picture puts the real menu above a drawn corner of the Windows 11 taskbar, as wide as the Linux tray picture. The stations, songs and cover are the same as in the Linux pictures, and only in memory. Don't touch the mouse while it runs: the panel closes when it loses focus, and a hovered menu item shows up highlighted.
 
 ## Translations
 
-The code is in English: each text goes through `L("…")` (`Lc("context", "…")` where one English word needs two translations, like the switch's "Off") and is looked up in `src/Lang/<code>.po`, a gettext catalog whose msgid is the English text. The build puts every catalog into the exe compressed (about 3 KB each); a text missing from a catalog, or marked fuzzy, shows in English. To correct a translation, edit its `msgstr` in a text editor or Poedit. A new text in the code needs an entry in every catalog: the self-test lists the missing ones. The pictures of `--test-menu --preview --lang uk` show whether longer texts still fit.
+The code is in English: each text goes through `L("…")` (`Lc("context", "…")` where one English word needs two translations, like the switch's "Off"; `Ln("{0} play", "{0} plays", n)` for a text with a number, whose catalog entry has `msgid_plural` and a `msgstr[n]` for each plural form of the catalog's `Plural-Forms` header) and is looked up in `src/Lang/<code>.po`, a gettext catalog whose msgid is the English text. The build puts every catalog into the exe compressed (about 3 KB each); a text missing from a catalog, or marked fuzzy, shows in English. To correct a translation, edit its `msgstr` in a text editor or Poedit. A new text in the code needs an entry in every catalog: the self-test lists the missing ones. The pictures of `--test-menu --preview --lang uk` show whether longer texts still fit.
 
 ## Releases
 
@@ -38,6 +38,7 @@ Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release wi
 - Song titles come from the stream's ICY metadata; cover art from the iTunes Search API, used only when the artist matches.
 - Windows media controls (Win+A, media keys, lock screen) are fed through `SystemMediaTransportControls`. A Start menu shortcut with the app's ID lets Windows and taskbar media players know the app.
 - Updates: every 6 hours the latest GitHub release is checked and downloaded in the background; a click on the green arrow renames the running exe to `*.old`, puts the new one in its place and restarts.
+- Statistics (Settings › Statistics): a session runs while a station plays (a reconnect to the same station within 2 minutes continues it) and is saved every 5 minutes; songs are recorded with the history's entries. Both go to `statistics.json` next to the history and never leave the computer. Switched off in Settings (kept in `preferences.json`), nothing new is recorded and what was collected stays. The counting (periods in local time, sessions over a period's edge, top lists, hours) is in `Services/Statistics.cs`, without WPF, and the self-test checks it.
 
 ## Project structure
 
@@ -46,7 +47,7 @@ src/
   Program.cs     startup, single instance
   Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), dragging stations (StationDrag), station card (RadioOsd), README pictures (RadioShots, test build only)
   Audio/         station connection, decoding by Windows
-  Services/      cover art, updates, storage, Windows integration, language (Lang)
+  Services/      cover art, updates, storage, listening statistics, Windows integration, language (Lang)
   Lang/          translations: one gettext catalog per language (pl, de, uk, cs, es, fr, it, pt)
   Theme/         colours and Windows 11 style controls
   Assets/        app icon (radio.ico) and the Lucide icons' licence

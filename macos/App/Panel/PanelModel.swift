@@ -11,6 +11,8 @@ final class PanelModel: ObservableObject {
         case search
         case history
         case settings
+        /// Opened from Settings, and back to it.
+        case statistics
         /// Add (nil) or edit (the station's index) a station by its address.
         case station(Int?)
     }
@@ -30,6 +32,11 @@ final class PanelModel: ObservableObject {
     @Published private(set) var revision = 0
     /// Set by the panel controller: hides the panel.
     var close: () -> Void = {}
+    /// For the pictures (--screenshot): sample statistics instead of the real ones (nothing is saved), and the
+    /// update button and the Updates settings as a release shows them.
+    var sampleStatistics: StatisticsLog?
+    var sampleUpdate: String?
+    var showsUpdatesAlways = false
 
     init(controller: RadioController, logos: LogoCache) {
         self.controller = controller
@@ -55,8 +62,33 @@ final class PanelModel: ObservableObject {
         }
     }
 
-    /// Esc: back to the stations, or closes the panel there.
+    /// Where ‹ and Esc go: Statistics back to Settings, every other page to the stations.
+    var parent: Page {
+        page == .statistics ? .settings : .stations
+    }
+
+    /// Esc: back a page, or closes the panel on the stations.
     func back() {
-        if page == .stations { close() } else { page = .stations }
+        if page == .stations { close() } else { page = parent }
+    }
+
+    /// The green update button's tooltip, while an update is ready.
+    var updateLabel: String? {
+        sampleUpdate ?? AppDelegate.shared?.updater?.label
+    }
+
+    var showsUpdates: Bool {
+        showsUpdatesAlways || AppDelegate.shared?.updater?.enabled == true
+    }
+
+    /// The statistics as they are now (the running session up to this moment).
+    var statistics: StatisticsLog {
+        sampleStatistics ?? controller.statisticsNow
+    }
+
+    /// The station on the list for a history entry or a statistics row: by address, then by name.
+    func station(url: String? = nil, name: String) -> Station? {
+        if let url, let byAddress = controller.stations.first(where: { sameStream($0.url, url) }) { return byAddress }
+        return controller.stations.first { $0.name == name }
     }
 }

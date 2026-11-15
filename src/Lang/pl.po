@@ -7,6 +7,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 msgid "The station doesn't send song titles"
 msgstr "Stacja nie podaje tytułu"
@@ -406,3 +407,87 @@ msgstr "portugalski"
 
 msgid "English"
 msgstr "angielski"
+
+msgid "{0} h {1} min"
+msgstr "{0} godz. {1} min"
+
+msgid "{0} h"
+msgstr "{0} godz."
+
+msgid "{0} play"
+msgid_plural "{0} plays"
+msgstr[0] "{0} odtworzenie"
+msgstr[1] "{0} odtworzenia"
+msgstr[2] "{0} odtworzeń"
+
+msgid "Statistics"
+msgstr "Statystyki"
+
+msgid "Show"
+msgstr "Pokaż"
+
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Zbierane tylko na tym komputerze, nigdzie niewysyłane"
+
+msgid "All"
+msgstr "Wszystko"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Miesiąc"
+
+msgid "Listening time"
+msgstr "Czas słuchania"
+
+msgid "Since {0}"
+msgstr "Od {0}"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} dziennie"
+
+msgid "Song titles"
+msgstr "Tytuły utworów"
+
+msgid "Longest"
+msgstr "Najdłużej bez przerwy"
+
+msgid "Top stations"
+msgstr "Najczęściej słuchane stacje"
+
+msgid "Top artists"
+msgstr "Najczęściej grani wykonawcy"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Na podstawie tytułów podawanych przez stacje · {0} czasu słuchania"
+
+msgid "Not enough song titles yet"
+msgstr "Jeszcze za mało tytułów utworów"
+
+msgid "When you listen"
+msgstr "Kiedy słuchasz"
+
+msgid "Most often {0}"
+msgstr "Najczęściej {0}"
+
+msgid "Clear statistics"
+msgstr "Wyczyść statystyki"
+
+msgid "Clear all statistics? This can't be undone."
+msgstr "Wyczyścić wszystkie statystyki? Tego nie da się cofnąć."
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Na razie nic tu nie ma. Posłuchaj chwilę radia i wróć tutaj."
+
+msgid "Automatic updates"
+msgstr "Automatyczne aktualizacje"
+
+msgid "Collected since {0}"
+msgstr "Zbierane od {0}"
+
+msgid "Nothing collected yet"
+msgstr "Jeszcze nic nie zebrano"
+
+msgid "Statistics are off. Nothing new is recorded."
+msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."
