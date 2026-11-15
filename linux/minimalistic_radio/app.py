@@ -110,6 +110,9 @@ class RadioApplication(Adw.Application):
                              _("Start, check that the window opens, and exit"), None)
         self.add_main_option("screenshot", 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING,
                              _("Save screenshots of the pages in DIR and exit"), "DIR")
+        # Test-only, for CI's pictures of the tray menu on a real desktop: hidden from --help, never translated.
+        self.add_main_option("demo-track", 0, GLib.OptionFlags.HIDDEN, GLib.OptionArg.STRING,
+                             "Play nothing: the last station seems to play, with TEXT as its song", "TEXT")
 
     # ---- Start-up ----
 
@@ -131,19 +134,27 @@ class RadioApplication(Adw.Application):
         action.connect("activate", lambda *_args: handler())
         self.add_action(action)
 
-    def _start_radio(self, autostart: bool) -> None:
+    def _start_radio(self, autostart: bool, demo_track: str | None = None) -> None:
         if self._started:
             return
         self._started = True
-        player = GstPlayer(
-            on_started=lambda: self.controller.on_player_started(),
-            on_title=lambda raw: self.controller.on_player_title(raw),
-            on_error=lambda kind, detail: self.controller.on_player_error(kind, detail),
-            on_eos=lambda: self.controller.on_player_eos(),
-            _=self._)
-        self.controller = RadioController(player, GLibScheduler(), default_paths(), fetch, fetch_file, self._)
+        if demo_track is None:
+            player = GstPlayer(
+                on_started=lambda: self.controller.on_player_started(),
+                on_title=lambda raw: self.controller.on_player_title(raw),
+                on_error=lambda kind, detail: self.controller.on_player_error(kind, detail),
+                on_eos=lambda: self.controller.on_player_eos(),
+                _=self._)
+            get_json, get_file = fetch, fetch_file
+        else:   # --demo-track: no sound and no network, so the song shown stays the one given
+            from .selftest import SilentPlayer
+            player, get_json, get_file = SilentPlayer(), (lambda url, cb: None), (lambda url, path, cb: None)
+        self.controller = RadioController(player, GLibScheduler(), default_paths(), get_json, get_file, self._)
         self.controller.subscribe(self._playback_changed)   # before start(): it may begin playing
         self.controller.start(autostart=autostart)
+        if demo_track is not None:
+            from .selftest import play_demo
+            play_demo(self.controller, demo_track)
         self.mpris = MprisService(self)
         self.mpris.publish()
         self.tray = TrayIcon(self)
@@ -216,7 +227,8 @@ class RadioApplication(Adw.Application):
                     print("self-test ok")
             GLib.idle_add(self._quit_idle)
             return code
-        self._start_radio(autostart or options.contains("stopped"))
+        demo = options.lookup_value("demo-track", GLib.VariantType("s"))
+        self._start_radio(autostart or options.contains("stopped"), demo.get_string() if demo is not None else None)
         if not autostart:
             self.show_window()
             if self.updated:

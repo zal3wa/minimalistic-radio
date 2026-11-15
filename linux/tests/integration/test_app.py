@@ -106,6 +106,24 @@ def test_autostart_stays_hidden(app_id, tmp_path):
     assert app.controller.current == 0   # the last station is chosen, but not played
 
 
+def test_demo_track_seems_to_play_silently(app_id, tmp_path):
+    from minimalistic_radio.selftest import SilentPlayer
+    seed_station(tmp_path)
+    app = RadioApplication(application_id=app_id)
+    fired = set()
+    sources = {"quit": once_after(500, fired, "quit", app.quit)}
+    try:
+        assert app.run(["minimalistic-radio", "--autostart", "--demo-track", "Leonard Cohen - Everybody Knows"]) == 0
+    finally:
+        remove_unfired(fired, sources)
+    assert "quit" in fired
+    assert app.window is None
+    assert isinstance(app.controller.player, SilentPlayer)
+    assert app.controller.status is Status.PLAYING
+    assert app.controller.station_name == "Nowhere"
+    assert app.controller.track == "Leonard Cohen - Everybody Knows"
+
+
 def test_normal_launch_shows_the_window_and_plays(app_id, tmp_path):
     seed_station(tmp_path)
     app = RadioApplication(application_id=app_id)

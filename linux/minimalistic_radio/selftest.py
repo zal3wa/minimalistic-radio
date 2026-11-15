@@ -1,6 +1,7 @@
 """--self-test and --screenshot: the real window, tray menu and MPRIS object on temporary data.
 
 Neither plays anything or touches the user's files, the running radio or the network.
+Also the silent player behind the test-only --demo-track, which CI uses for pictures of the tray menu.
 """
 from __future__ import annotations
 
@@ -44,6 +45,15 @@ class _AppStub:
     """What MprisService needs from the application."""
     def __init__(self, controller: RadioController) -> None:
         self.controller = controller
+
+
+def play_demo(controller: RadioController, track: str) -> None:
+    """--demo-track (test-only): the chosen station seems to play, silently, with `track` as its song. The
+    application gives the controller a SilentPlayer and no network for it."""
+    controller.play()
+    controller.on_player_started()
+    if controller.active:
+        controller._show_track(track)
 
 
 def pump(ms: int) -> None:
