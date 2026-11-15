@@ -97,9 +97,6 @@ extension AppDelegate {
                     scrollToEnd(view)
                     try? await Task.sleep(nanoseconds: 500_000_000)
                 }
-                if look == "light" && (page == .stations || page == .history) && !update, let view = panel.contentView {
-                    describeScrolling(view, page: name)
-                }
                 if let view = panel.contentView, render(view, to: output.appendingPathComponent("macos-\(name)-\(look).png")) {
                     written += 1
                 }
@@ -162,21 +159,6 @@ extension AppDelegate {
             scroll.reflectScrolledClipView(clip)
         }
         for subview in view.subviews { scrollToEnd(subview) }
-    }
-
-    /// For checking the lists' right inset: their scroll views and tables (in the CI log).
-    private func describeScrolling(_ view: NSView, page: String) {
-        if view === panel.contentView { print("scrolling on \(page): system scroller style \(NSScroller.preferredScrollerStyle.rawValue)") }
-        if let scroll = view as? NSScrollView {
-            print("  \(type(of: scroll)) frame \(scroll.frame) clip \(scroll.contentView.frame) document \(scroll.documentView?.frame ?? .zero) "
-                  + "style \(scroll.scrollerStyle.rawValue) vertical \(scroll.hasVerticalScroller) "
-                  + "scroller \(scroll.verticalScroller.map { "\($0.frame) hidden \($0.isHidden)" } ?? "none") insets \(scroll.contentInsets)")
-        }
-        if let table = view as? NSTableView {
-            print("  \(type(of: table)) frame \(table.frame) style \(table.style.rawValue) spacing \(table.intercellSpacing) "
-                  + "columns \(table.tableColumns.map(\.width))")
-        }
-        for subview in view.subviews { describeScrolling(subview, page: page) }
     }
 
     /// `--menu-picture DIR`: the menu bar with the radio's open menu, light and dark (macos-menu-<look>.png),

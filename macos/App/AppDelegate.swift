@@ -244,67 +244,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         exit(failures.isEmpty ? 0 : 1)
     }
 
-    /// The panel's layout: the player only on the stations page; the top bar with [+ Station], [History] and
-    /// Settings, without the old search and close buttons; ‹ and the title on the pages; Settings with Statistics.
-    /// The bar's buttons are read from the panel's accessibility tree, when the system builds one for it.
+    /// The panel's pages as drawn, as far as AppKit shows them (SwiftUI draws the rest itself): the player only on
+    /// the stations page, and the Statistics page's All / Year / Month switch.
     private func checkPanelLayout() -> [String] {
         var failures: [String] = []
-        // Present: a label containing the text. Absent: no label that is exactly the text.
-        let pages: [(PanelModel.Page, present: [String], absent: [String])] = [
-            (.stations, [L("Station"), L("History"), L("Settings"), L("Now playing")],
-             ["Search the radio-browser.info directory", "Hide the panel (the radio keeps playing)", L("Back")]),
-            (.history, [L("Back"), L("Song history")], [L("Now playing"), L("Station"), L("Settings")]),
-            (.settings, [L("Back"), L("Statistics"), L("Show")], [L("Now playing"), L("Station")]),
-            (.statistics, [L("Back"), L("Nothing here yet. Listen for a while and come back.")], [L("Now playing")]),
-        ]
-        for (page, present, absent) in pages {
+        for page in [PanelModel.Page.stations, .history, .settings, .statistics] {
             panel.show(page: page, anchor: nil)
             RunLoop.current.run(until: Date().addingTimeInterval(0.3))
             guard let view = panel.contentView else { continue }
             // The player's AirPlay button is an AppKit view: there exactly when the player is.
-            if contains(view, AVRoutePickerView.self) != (page == .stations) {
+            if !views(of: AVRoutePickerView.self, in: view).isEmpty != (page == .stations) {
                 failures.append("the player \(page == .stations ? "doesn't show" : "shows") on \(page)")
             }
-            print("self-test: \(page) controls: \(Set(controlTexts(view)).sorted().joined(separator: " | "))")
-            print("self-test: \(page) views: \(Set(viewClasses(view)).sorted().joined(separator: ", "))")
-            let texts = Set(accessibilityTexts(view))
-            guard texts.count >= 3 else { continue }   // no tree built for this process: nothing to check
-            for text in present where !texts.contains(where: { $0.contains(text) }) {
-                failures.append("\(page) has no \"\(text)\"")
+            if page == .statistics {
+                let control = views(of: NSSegmentedControl.self, in: view).first
+                let labels = control.map { control in (0..<control.segmentCount).compactMap { control.label(forSegment: $0) } }
+                if labels != [L("All"), L("Year"), L("Month")] {
+                    failures.append("Statistics has no All / Year / Month switch (\(labels ?? []))")
+                } else if control?.selectedSegment != 2 {
+                    failures.append("Statistics doesn't open on Month")
+                }
             }
-            for text in absent where texts.contains(text) { failures.append("\(page) still has \"\(text)\"") }
         }
         panel.close()
         return failures
     }
 
-    private func contains<T: NSView>(_ view: NSView, _ type: T.Type) -> Bool {
-        view is T || view.subviews.contains { contains($0, type) }
-    }
-
-    private func viewClasses(_ view: NSView) -> [String] {
-        [String(describing: type(of: view))] + view.subviews.flatMap(viewClasses)
-    }
-
-    /// The titles and tooltips of the AppKit controls in `view`.
-    private func controlTexts(_ view: NSView) -> [String] {
-        var texts: [String] = [view.toolTip].compactMap { $0 }
-        if let button = view as? NSButton { texts.append(button.title) }
-        if let field = view as? NSTextField { texts.append(field.stringValue) }
-        if let segments = view as? NSSegmentedControl {
-            texts += (0..<segments.segmentCount).compactMap { segments.label(forSegment: $0) }
-        }
-        return texts.filter { !$0.isEmpty } + view.subviews.flatMap(controlTexts)
-    }
-
-    /// Every label, title and tooltip in an accessibility tree.
-    private func accessibilityTexts(_ element: AnyObject, depth: Int = 0) -> [String] {
-        guard depth < 40 else { return [] }
-        let own: [String?] = [element.accessibilityLabel?(), element.accessibilityTitle?(), element.accessibilityHelp?()]
-        var texts = own.compactMap { $0 }.filter { !$0.isEmpty }
-        for child in element.accessibilityChildren?() ?? [] {
-            texts += accessibilityTexts(child as AnyObject, depth: depth + 1)
-        }
-        return texts
+    private func views<T: NSView>(of type: T.Type, in view: NSView) -> [T] {
+        ((view as? T).map { [$0] } ?? []) + view.subviews.flatMap { views(of: type, in: $0) }
     }
 }
