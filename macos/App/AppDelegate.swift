@@ -1,4 +1,5 @@
 import AppKit
+import AVKit
 import RadioCore
 import UniformTypeIdentifiers
 
@@ -94,11 +95,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    /// Quit (the menu, ⌘Q, Settings, an update, logging out): the listening statistics are saved.
+    func applicationWillTerminate(_ notification: Notification) {
+        controller?.willQuit()
+    }
+
     // MARK: - Panel and card (Tasks 15 and 18)
 
-    /// Opens the panel, on `page` ("search", "history", "settings") or the stations.
+    /// Opens the panel, on `page` ("search", "history", "settings", "statistics") or the stations.
     func openPanel(page: String? = nil) {
-        let pages: [String: PanelModel.Page] = ["search": .search, "history": .history, "settings": .settings]
+        let pages: [String: PanelModel.Page] = ["search": .search, "history": .history, "settings": .settings,
+                                                "statistics": .statistics]
         panel.show(page: page.flatMap { pages[$0] }, anchor: statusItem.buttonFrameOnScreen)
     }
 
@@ -167,6 +174,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
+        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min"] where L(text) == text {
+            failures.append("\"\(text)\" isn't translated into Polish")
+        }
         localizer.setting = saved
 
         let pixels = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 16, bitsPerSample: 8,
@@ -178,18 +188,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)
         if !panel.isVisible { failures.append("the panel doesn't open") }
-        panel.model.page = .settings
+        panel.model.page = .statistics
+        panel.model.back()
+        if panel.model.page != .settings { failures.append("Esc on Statistics doesn't go back to Settings") }
         panel.model.back()
         if panel.model.page != .stations { failures.append("Esc on a page doesn't go back to the stations") }
         panel.model.back()
         if panel.isVisible { failures.append("Esc on the stations doesn't close the panel") }
-        for (page, plays) in [(PanelModel.Page.search, false), (.station(nil), false), (.stations, true)] {
+        for (page, plays) in [(PanelModel.Page.search, false), (.station(nil), false), (.stations, true),
+                              (.history, true), (.statistics, true)] {
             panel.model.page = page
             if panel.model.spacePlays != plays { failures.append("Space on \(page) should \(plays ? "" : "not ")play") }
         }
         panel.model.addStation()
         if panel.model.page != .search { failures.append("+ Station doesn't open the search") }
+        failures += checkPanelLayout()
         panel.model.page = .stations
+
+        // Statistics: a session from the start of audio, its song, saved on quitting; the page draws them.
+        controller.select(0)
+        controller.play()
+        controller.onPlayerStarted()
+        controller.onPlayerTitle("Queen - A Kind Of Magic")
+        controller.willQuit()
+        controller.stop()
+        let statistics = loadStatistics(paths.statisticsFile)
+        if statistics.sessions.count != 1 || statistics.songs.map(\.title) != ["Queen - A Kind Of Magic"] {
+            failures.append("the statistics weren't saved to statistics.json (\(statistics.sessions.count) sessions, \(statistics.songs.count) songs)")
+        }
+        if summarizeStatistics(Self.sampleStatistics(now: Date()), period: .month, now: Date()).isEmpty {
+            failures.append("the sample statistics show nothing this month")
+        }
 
         if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
         let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
@@ -213,5 +242,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? FileManager.default.removeItem(at: folder)
         for failure in failures { FileHandle.standardError.write(Data("self-test failed: \(failure)\n".utf8)) }
         exit(failures.isEmpty ? 0 : 1)
+    }
+
+    /// The panel's layout: the player only on the stations page; the top bar with [+ Station], [History] and
+    /// Settings, without the old search and close buttons; ‹ and the title on the pages; Settings with Statistics.
+    /// The bar's buttons are read from the panel's accessibility tree, when the system builds one for it.
+    private func checkPanelLayout() -> [String] {
+        var failures: [String] = []
+        // Present: a label containing the text. Absent: no label that is exactly the text.
+        let pages: [(PanelModel.Page, present: [String], absent: [String])] = [
+            (.stations, [L("Station"), L("History"), L("Settings"), L("Now playing")],
+             ["Search the radio-browser.info directory", "Hide the panel (the radio keeps playing)", L("Back")]),
+            (.history, [L("Back"), L("Song history")], [L("Now playing"), L("Station"), L("Settings")]),
+            (.settings, [L("Back"), L("Statistics"), L("Show")], [L("Now playing"), L("Station")]),
+            (.statistics, [L("Back"), L("Nothing here yet. Listen for a while and come back.")], [L("Now playing")]),
+        ]
+        for (page, present, absent) in pages {
+            panel.show(page: page, anchor: nil)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+            guard let view = panel.contentView else { continue }
+            // The player's AirPlay button is an AppKit view: there exactly when the player is.
+            if contains(view, AVRoutePickerView.self) != (page == .stations) {
+                failures.append("the player \(page == .stations ? "doesn't show" : "shows") on \(page)")
+            }
+            let texts = Set(accessibilityTexts(view))
+            print("self-test: \(texts.count) accessibility texts on \(page)")
+            guard texts.count >= 3 else { continue }   // no tree built for this process: nothing to check
+            for text in present where !texts.contains(where: { $0.contains(text) }) {
+                failures.append("\(page) has no \"\(text)\"")
+            }
+            for text in absent where texts.contains(text) { failures.append("\(page) still has \"\(text)\"") }
+        }
+        panel.close()
+        return failures
+    }
+
+    private func contains<T: NSView>(_ view: NSView, _ type: T.Type) -> Bool {
+        view is T || view.subviews.contains { contains($0, type) }
+    }
+
+    /// Every label, title and tooltip in an accessibility tree.
+    private func accessibilityTexts(_ element: AnyObject, depth: Int = 0) -> [String] {
+        guard depth < 40 else { return [] }
+        let own: [String?] = [element.accessibilityLabel?(), element.accessibilityTitle?(), element.accessibilityHelp?()]
+        var texts = own.compactMap { $0 }.filter { !$0.isEmpty }
+        for child in element.accessibilityChildren?() ?? [] {
+            texts += accessibilityTexts(child as AnyObject, depth: depth + 1)
+        }
+        return texts
     }
 }
