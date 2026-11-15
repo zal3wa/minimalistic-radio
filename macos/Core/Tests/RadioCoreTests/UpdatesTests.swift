@@ -57,3 +57,27 @@ private let releases: [[String: Any]] = [
     #expect(afterCheck(nil, fetchFailed: false, previous: .available(update)) == .none)
     #expect(afterCheck(nil, fetchFailed: false, previous: .downloading(40)) == .downloading(40))
 }
+
+// Final review: one failure must not switch a Mac to DMG updates for good, a signature mismatch must not end in
+// "install this", and the relaunch must wait for the old process.
+
+@Test func updateFailuresChooseTheirFallback() {
+    #expect(updateFallback(for: .network) == .retryLater)
+    #expect(updateFallback(for: .permissionDenied) == .downloadDMG)
+    #expect(updateFallback(for: .unpackFailed) == .downloadDMG)
+    #expect(updateFallback(for: .signatureMismatch) == .openReleasePage)
+    #expect(updateFallback(for: .wrongVersion) == .openReleasePage)
+}
+
+@Test func everyUpdateFailureIsExplained() {
+    let reasons = UpdateError.allCases.map(updateFailureReason)
+    #expect(reasons.allSatisfy { !$0.isEmpty })
+    #expect(Set(reasons).count == UpdateError.allCases.count)
+}
+
+@Test func relaunchWaitsForTheOldProcess() {
+    let command = relaunchCommand(processID: 4321, resume: true)
+    #expect(command.contains("kill -0 4321"))
+    #expect(command.hasSuffix("--args --resume"))
+    #expect(!relaunchCommand(processID: 1, resume: false).contains("--resume"))
+}

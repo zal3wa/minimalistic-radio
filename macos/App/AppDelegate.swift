@@ -178,6 +178,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.model.page != .stations { failures.append("Esc on a page doesn't go back to the stations") }
         panel.model.back()
         if panel.isVisible { failures.append("Esc on the stations doesn't close the panel") }
+        for (page, plays) in [(PanelModel.Page.search, false), (.station(nil), false), (.stations, true)] {
+            panel.model.page = page
+            if panel.model.spacePlays != plays { failures.append("Space on \(page) should \(plays ? "" : "not ")play") }
+        }
+        panel.model.addStation()
+        if panel.model.page != .search { failures.append("+ Station doesn't open the search") }
+        panel.model.page = .stations
 
         if RadioShortcuts.appShortcuts.count != 5 { failures.append("the Shortcuts are incomplete") }
         let empty = RadioController(player: SilentPlayer(), scheduler: MainScheduler(),
