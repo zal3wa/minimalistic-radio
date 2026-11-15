@@ -107,11 +107,17 @@ msgstr "Statistiques"
 msgid "Stations"
 msgstr "Stations"
 
+msgid "Shared station"
+msgstr "Station partagée"
+
 msgid "Add by address"
 msgstr "Ajouter par adresse"
 
 msgid "Edit"
 msgstr "Modifier"
+
+msgid "Link copied"
+msgstr "Lien copié"
 
 msgid "Type a station name"
 msgstr "Saisissez un nom de station"
@@ -236,6 +242,18 @@ msgstr "Stations ajoutées : {0}."
 msgid "Checking…"
 msgstr "Vérification…"
 
+msgid "Add it to your stations and play it now?"
+msgstr "L'ajouter à vos stations et l'écouter maintenant ?"
+
+msgid "Add and play"
+msgstr "Ajouter et écouter"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "This link doesn't contain a station."
+msgstr "Ce lien ne contient pas de station."
+
 msgid "Station name"
 msgstr "Nom de la station"
 
@@ -245,9 +263,6 @@ msgstr "Adresse du flux (HTTP ou HTTPS)"
 msgid "Logo address (optional)"
 msgstr "Adresse du logo (facultatif)"
 
-msgid "Cancel"
-msgstr "Annuler"
-
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -256,6 +271,9 @@ msgstr "Cette adresse est déjà dans la liste."
 
 msgid "Enter a name and a valid stream address. The logo is optional."
 msgstr "Saisissez un nom et une adresse de flux valide. Le logo est facultatif."
+
+msgid "Share"
+msgstr "Partager"
 
 msgid "Remove"
 msgstr "Supprimer"

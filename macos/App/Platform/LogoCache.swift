@@ -9,7 +9,7 @@ import RadioCore
 @MainActor
 final class LogoCache {
     static let logoLimit = 2_000_000      // bytes downloaded at most
-    static let logoPixels = 96            // decoded at most this big: shown at 40 pt, sharp at 2×
+    static let logoPixels = 144           // decoded at most this big: shown up to 72 pt (a shared station), sharp at 2×
     static let retrySeconds: TimeInterval = 300
     static let maxDownloads = 4
 

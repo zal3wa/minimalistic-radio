@@ -14,6 +14,10 @@ struct StationForm: View {
         Form {
             TextField(L("Station name"), text: $name)
             TextField(L("Stream address (HTTP or HTTPS)"), text: $address)
+                .onChange(of: address) { text in
+                    // A pasted share link opens its Shared station page (adding a new station only).
+                    if index == nil { _ = model.openSharedText(text, complete: false) }
+                }
             TextField(L("Logo address (optional)"), text: $logo)
             if let problem {
                 Text(problem).foregroundStyle(.red).font(.callout)
@@ -39,6 +43,7 @@ struct StationForm: View {
     }
 
     private func save() {
+        if index == nil && model.openSharedText(address, complete: true) { return }
         let station = Station(name: name, url: address, logo: logo.isEmpty ? nil : logo)
         let result = index.map { model.controller.updateStation($0, station) } ?? model.controller.addStation(station)
         switch result {
