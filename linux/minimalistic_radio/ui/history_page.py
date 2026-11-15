@@ -59,6 +59,7 @@ class HistoryRow(Adw.ActionRow):
         menu.append(_("Search on YouTube"), "row.youtube")
         self.menu_button = Gtk.MenuButton(icon_name="view-more-symbolic", menu_model=menu, tooltip_text=_("More"),
                                           valign=Gtk.Align.CENTER, css_classes=["flat"])
+        self.menu_button.get_popover().set_halign(Gtk.Align.END)   # opens leftwards: stays inside the window
         self.add_suffix(self.menu_button)
         actions = Gio.SimpleActionGroup()
         for name, handler in (("copy", lambda: page.copy(entry)),

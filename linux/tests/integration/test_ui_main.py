@@ -196,7 +196,7 @@ def test_station_rows(make):
     assert [row.get_title() for row in rows] == ["Alpha", "Beta"]
     assert rows[0].has_css_class("playing") and not rows[1].has_css_class("playing")
     for row in rows:
-        assert menu_labels(row.menu_button.get_menu_model()) == ["Edit", "Remove"]
+        assert menu_labels(row.menu_button.get_menu_model()) == ["Edit", "Share", "Remove"]
 
 
 # ---- Drag to reorder (docs/superpowers/specs/2026-11-14-drag-to-reorder-design.md) ----

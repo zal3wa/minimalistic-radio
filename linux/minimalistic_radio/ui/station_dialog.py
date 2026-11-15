@@ -11,6 +11,7 @@ from gi.repository import Adw, Gtk  # noqa: E402
 
 from ..controller import AddResult  # noqa: E402
 from ..core.models import Station  # noqa: E402
+from ..core.share import is_share_link  # noqa: E402
 from ..core.streams import is_web_url  # noqa: E402
 
 
@@ -18,11 +19,13 @@ class StationDialog(Adw.Dialog):
     """`on_save(station)` returns the controller's AddResult; the dialog closes on ADDED."""
 
     def __init__(self, parent: Gtk.Widget, station: Station | None, on_save: Callable[[Station], AddResult],
-                 _: Callable[[str], str] = lambda s: s) -> None:
+                 _: Callable[[str], str] = lambda s: s, on_link: Callable[[str], bool] | None = None) -> None:
+        """`on_link`: a share link pasted into a field goes there (the Shared station page) and the dialog closes."""
         super().__init__(title=_("Edit station") if station is not None else _("Add by address"),
                          content_width=360, follows_content_size=True)
         self._ = _
         self.on_save = on_save
+        self.on_link = on_link
 
         self.name_row = Adw.EntryRow(title=_("Station name"))
         self.url_row = Adw.EntryRow(title=_("Stream address (HTTP or HTTPS)"))
@@ -62,6 +65,13 @@ class StationDialog(Adw.Dialog):
         return bool(self.name_row.get_text().strip()) and is_web_url(self.url_row.get_text().strip())
 
     def _edited(self, *_args: object) -> None:
+        if self.on_link is not None:
+            for row in (self.url_row, self.name_row):
+                text = row.get_text().strip()
+                if is_share_link(text):
+                    self.close()
+                    self.on_link(text)
+                    return
         self.save_button.set_sensitive(self.can_save())
         self.message.set_visible(False)
 

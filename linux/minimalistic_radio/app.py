@@ -21,6 +21,7 @@ from . import APP_ID, VERSION, i18n  # noqa: E402
 from .audio.player import GstPlayer  # noqa: E402
 from .controller import Change, RadioController  # noqa: E402
 from .core import net  # noqa: E402
+from .core.share import is_share_link  # noqa: E402
 from .core.storage import default_paths  # noqa: E402
 from .glib_scheduler import GLibScheduler  # noqa: E402
 from .platform.background import Autostart  # noqa: E402
@@ -232,8 +233,16 @@ class RadioApplication(Adw.Application):
             GLib.idle_add(self._quit_idle)
             return code
         demo = options.lookup_value("demo-track", GLib.VariantType("s"))
-        self._start_radio(autostart or options.contains("stopped"), demo.get_string() if demo is not None else None)
-        if not autostart:
+        # A share link (the desktop file's %u: a link opened in the browser, or minimalistic-radio <link>). The
+        # first launch then doesn't play the last station: the link's page asks what to play. A second launch
+        # hands its arguments to this instance over D-Bus, so they arrive here too.
+        link = next((arg for arg in command_line.get_arguments()[1:] if is_share_link(arg)), None)
+        self._start_radio(autostart or options.contains("stopped") or link is not None,
+                          demo.get_string() if demo is not None else None)
+        if link is not None:
+            self.show_window()
+            self.window.open_link(link)
+        elif not autostart:
             self.show_window()
             if self.updated:
                 self.window.toast(self._("Updated to version {VERSION}.").replace("{VERSION}", VERSION))

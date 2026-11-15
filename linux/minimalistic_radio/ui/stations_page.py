@@ -62,13 +62,15 @@ class StationRow(Adw.ActionRow):
         self.add_suffix(self.playing_icon)
         menu = Gio.Menu()
         menu.append(_("Edit"), "row.edit")
+        menu.append(_("Share"), "row.share")
         menu.append(_("Remove"), "row.remove")
         self.menu_button = Gtk.MenuButton(icon_name="view-more-symbolic", menu_model=menu,
                                           tooltip_text=_("Station options"), valign=Gtk.Align.CENTER,
                                           css_classes=["flat"])
+        self.menu_button.get_popover().set_halign(Gtk.Align.END)   # opens leftwards: stays inside the window
         self.add_suffix(self.menu_button)
         actions = Gio.SimpleActionGroup()
-        for name, handler in (("edit", page.edit), ("remove", page.remove)):
+        for name, handler in (("edit", page.edit), ("share", page.share), ("remove", page.remove)):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", lambda _action, _param, handler=handler: handler(self.index))
             actions.add_action(action)
@@ -164,7 +166,8 @@ class StationsPage(Adw.NavigationPage):
         self.stack = Gtk.Stack()
         self.stack.add_named(self.scrolled, "list")
         self.stack.add_named(self.empty, "empty")
-        self.toolbar = Adw.ToolbarView(content=self.stack)
+        self.toasts = Adw.ToastOverlay(child=self.stack)   # toasts about the list, above the player
+        self.toolbar = Adw.ToolbarView(content=self.toasts)
         self.toolbar.add_top_bar(self.header)
         self.set_child(self.toolbar)
 
@@ -232,6 +235,9 @@ class StationsPage(Adw.NavigationPage):
 
     def edit(self, index: int) -> None:
         self.window.edit_station(index)
+
+    def share(self, index: int) -> None:
+        self.window.share_station(index)
 
     def remove(self, index: int) -> None:
         self.controller.remove_station(index)

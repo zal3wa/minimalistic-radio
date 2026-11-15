@@ -25,7 +25,7 @@ from ..pictures import picture  # noqa: E402
 
 FALLBACK_ICON = "audio-x-generic-symbolic"   # a station without a logo, as in the station list
 LOGO_LIMIT = 2_000_000    # bytes downloaded at most
-LOGO_PIXELS = 96          # decoded at most this big: shown at 40 px, sharp at 2× scaling
+LOGO_PIXELS = 144         # decoded at most this big: shown at up to 72 px (Shared station), sharp at 2× scaling
 RETRY_SECONDS = 300       # a logo that couldn't be downloaded is tried again after this
 _WORKERS = threading.BoundedSemaphore(4)
 

@@ -49,8 +49,10 @@ def test_screenshots_written(tmp_path):
     folder = tmp_path / "shots"
     assert take_screenshots(RadioApplication(application_id="io.github.zal3wa.minimalistic-radio-shots"), folder) == 0
     files = sorted(folder.glob("linux-*.png"))
-    # Five pages in light and dark, and the settings and statistics scrolled to their end.
-    assert len(files) == 14
-    assert {f.name for f in files} >= {"linux-statistics-light.png", "linux-settings-end-dark.png"}
+    # Six pages in light and dark, the settings and statistics scrolled to their end, the Share menu and its toast.
+    assert len(files) == 20
+    assert {f.name for f in files} >= {"linux-statistics-light.png", "linux-settings-end-dark.png",
+                                       "linux-shared-dark.png", "linux-share-menu-light.png",
+                                       "linux-share-copied-dark.png"}
     widths = {file.name: png_width(file) for file in files}
     assert all(300 < width <= 412 for width in widths.values()), widths   # nothing widens the window

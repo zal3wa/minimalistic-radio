@@ -18,6 +18,7 @@ from typing import Any, Callable, Protocol
 from . import APP_NAME
 from .core.covers import CoverCache, itunes_search_url, pick_cover
 from .core.models import HistoryEntry, Preferences, Station, Statistics
+from .core.share import SharedStation
 from .core.statistics import SAVE_SECONDS, Recorder
 from .core.storage import (
     HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations,
@@ -760,6 +761,28 @@ class RadioController:
             self.prefs.last_played = None
             self._save_preferences()
         self._stations_changed(changes)
+
+    # ---- Shared stations (core/share.py) ----
+
+    def find_station(self, url: str) -> int:
+        """The index of the station on the list with this stream address (the duplicate rule), -1 if none."""
+        return next((i for i, s in enumerate(self.stations) if same_stream(s.url, url)), -1)
+
+    def play_station(self, index: int) -> None:
+        """Plays the station at `index`; one that is already on keeps going."""
+        if 0 <= index < len(self.stations):
+            self.select(index)
+            self.play()
+
+    def add_and_play(self, shared: SharedStation) -> AddResult:
+        """Add and play on the Shared station page: appended at the end and played. One that is on the list
+        already (the link was opened twice) just plays."""
+        result = self.add_station(Station(shared.name, shared.url, shared.logo))
+        if result is AddResult.ADDED:
+            self.play_station(len(self.stations) - 1)
+        elif result is AddResult.DUPLICATE:
+            self.play_station(self.find_station(shared.url))
+        return result
 
     def import_stations(self, path: Path) -> ImportResult:
         """Adds the stations from a list exported here or on Windows, skipping the ones already here."""

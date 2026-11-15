@@ -592,3 +592,27 @@ msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."
 #: minimalistic_radio/ui/settings_page.py
 msgid "Stops the radio and removes it from the tray"
 msgstr "Zastaví rádio a odebere ho z oznamovací oblasti"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Share"
+msgstr "Sdílet"
+
+#: minimalistic_radio/ui/window.py
+msgid "Link copied"
+msgstr "Odkaz zkopírován"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Shared station"
+msgstr "Sdílená stanice"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add it to your stations and play it now?"
+msgstr "Přidat ji mezi vaše stanice a hned ji pustit?"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add and play"
+msgstr "Přidat a přehrát"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "This link doesn't contain a station."
+msgstr "Tento odkaz neobsahuje stanici."

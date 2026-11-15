@@ -11,6 +11,7 @@ minimalistic_radio/ui/bars.py
 minimalistic_radio/ui/window.py
 minimalistic_radio/ui/history_page.py
 minimalistic_radio/ui/settings_page.py
+minimalistic_radio/ui/shared_page.py
 minimalistic_radio/ui/statistics_page.py
 minimalistic_radio/ui/stations_page.py
 minimalistic_radio/ui/search_page.py

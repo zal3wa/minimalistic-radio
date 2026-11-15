@@ -702,3 +702,27 @@ msgstr "Statystyki są wyłączone. Nic nowego nie jest zapisywane."
 #: minimalistic_radio/ui/settings_page.py
 msgid "Stops the radio and removes it from the tray"
 msgstr "Wyłącza radio i usuwa ikonę z zasobnika"
+
+#: minimalistic_radio/ui/stations_page.py
+msgid "Share"
+msgstr "Udostępnij"
+
+#: minimalistic_radio/ui/window.py
+msgid "Link copied"
+msgstr "Skopiowano link"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Shared station"
+msgstr "Udostępniona stacja"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add it to your stations and play it now?"
+msgstr "Dodać ją do Twoich stacji i od razu włączyć?"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Add and play"
+msgstr "Dodaj i odtwórz"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "This link doesn't contain a station."
+msgstr "Ten link nie zawiera stacji."

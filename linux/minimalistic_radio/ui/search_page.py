@@ -18,6 +18,7 @@ from gi.repository import Adw, GLib, Gtk  # noqa: E402
 from ..controller import AddResult, Change, RadioController  # noqa: E402
 from ..core import directory  # noqa: E402
 from ..core.directory import DirectoryStation, DirectoryUnavailable  # noqa: E402
+from ..core.share import is_share_link  # noqa: E402
 from ..core.streams import same_stream  # noqa: E402
 from ..i18n import languages_for, system_languages  # noqa: E402
 from .bars import subpage_bar  # noqa: E402
@@ -110,7 +111,19 @@ class SearchPage(Adw.NavigationPage):
         self.show_suggestions()
         self.entry.grab_focus()
 
+    def _open_link(self) -> bool:
+        """A share link pasted into the box opens the Shared station page instead of a search."""
+        text = self.entry.get_text().strip()
+        if not is_share_link(text):
+            return False
+        self._generation += 1
+        self.entry.set_text("")
+        self.window.open_link(text)
+        return True
+
     def _text_changed(self, entry: Gtk.SearchEntry) -> None:
+        if self._open_link():
+            return
         if not entry.get_text().strip():
             self._generation += 1   # a search on its way is not wanted any more
             self.show_suggestions()
@@ -157,6 +170,8 @@ class SearchPage(Adw.NavigationPage):
     # ---- Search ----
 
     def search(self) -> None:
+        if self._open_link():
+            return
         query = self.entry.get_text().strip()
         if not query:
             return
