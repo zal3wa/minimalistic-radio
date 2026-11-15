@@ -99,14 +99,17 @@ jobs:
           dbus-run-session -- xvfb-run -a _installed/bin/minimalistic-radio --self-test
 
       # Pictures of the window for review (the owner has no Linux). Never fails the job.
+      # GDK_SCALE=2: twice the pixels, as sharp as the Windows pictures from a 4K screen.
       - name: Take the screenshots
         continue-on-error: true
+        env:
+          GDK_SCALE: '2'
         run: |
           cd linux
-          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" python3 -m minimalistic_radio.main --screenshot ../linux-screenshots
+          dbus-run-session -- xvfb-run -a -s "-screen 0 2560x1600x24" python3 -m minimalistic_radio.main --screenshot ../linux-screenshots
           # The installed app has the compiled catalogs: German and Ukrainian show whether the longer words fit.
           for lang in de uk; do
-            LANGUAGE=$lang dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" "$PWD/../_installed/bin/minimalistic-radio" --screenshot ../linux-screenshots/$lang
+            LANGUAGE=$lang dbus-run-session -- xvfb-run -a -s "-screen 0 2560x1600x24" "$PWD/../_installed/bin/minimalistic-radio" --screenshot ../linux-screenshots/$lang
           done
 
       # linux-screenshots, for the metainfo, comes from the Flatpak job.
@@ -188,13 +191,14 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: dbus-run-session -- xvfb-run -a flatpak run io.github.zal3wa.minimalistic-radio --self-test
 
+      # The README's pictures. GDK_SCALE=2: twice the pixels, as sharp as the Windows pictures from a 4K screen.
       - name: Take the screenshots in the sandbox
         id: shots
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           mkdir -p "$PWD/linux-screenshots"
-          dbus-run-session -- xvfb-run -a -s "-screen 0 1280x1024x24" flatpak run --filesystem="$PWD/linux-screenshots" \
-            io.github.zal3wa.minimalistic-radio --screenshot "$PWD/linux-screenshots"
+          dbus-run-session -- xvfb-run -a -s "-screen 0 2560x1600x24" flatpak run --env=GDK_SCALE=2 \
+            --filesystem="$PWD/linux-screenshots" io.github.zal3wa.minimalistic-radio --screenshot "$PWD/linux-screenshots"
 
       - name: Upload the screenshots
         if: ${{ !cancelled() && steps.shots.outcome == 'success' }}

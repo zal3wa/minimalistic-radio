@@ -165,8 +165,11 @@ def run_self_test(app: Any) -> int:
 
 
 def _render(window: Gtk.Window, path: Path) -> None:
+    """At the display's scale: with GDK_SCALE=2 (as CI takes them) the pictures are as sharp as on a 4K screen."""
+    scale = window.get_scale_factor()
     paintable = Gtk.WidgetPaintable.new(window)
     snapshot = Gtk.Snapshot()
+    snapshot.scale(scale, scale)
     paintable.snapshot(snapshot, window.get_width(), window.get_height())
     texture = window.get_renderer().render_texture(snapshot.to_node(), None)
     texture.save_to_png(str(path))

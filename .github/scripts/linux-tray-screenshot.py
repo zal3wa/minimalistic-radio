@@ -34,10 +34,11 @@ APP_ID = "io.github.zal3wa.minimalistic-radio"
 APP_NAME = "Minimalistic Radio"
 APPINDICATOR = "ubuntu-appindicators@ubuntu.com"
 MODES = Path("/usr/share/gnome-shell/modes")
-WIDTH, HEIGHT = 1366, 768
+WIDTH, HEIGHT = 1366, 768      # the screen in logical pixels
+SCALE = 2                       # its scaling: twice the pixels, as sharp as the Windows pictures from a 4K screen
 XDISPLAY = ":99"
 WAYLAND_SOCKET = "wayland-shot"
-MARGIN = 24                     # around the menu (or the window) in the cropped picture
+MARGIN = 24                     # logical pixels around the menu (or the window) in the cropped picture
 SONG = "Leonard Cohen - Everybody Knows"
 STATIONS = [                    # from radio-browser.info
     ("102.7 KIIS FM Los Angeles", "http://stream.revma.ihrhls.com/zc185"),
@@ -159,6 +160,7 @@ def prepare_settings(look: str) -> None:
     gsettings(interface, "document-font-name", "'Sans 11'")
     gsettings(interface, "monospace-font-name", "'Ubuntu Sans Mono 13'")
     gsettings(interface, "font-antialiasing", "'grayscale'")   # Ubuntu's rgba would tint the edges in a picture
+    gsettings(interface, "scaling-factor", f"uint32 {SCALE}")   # the shell takes the monitor's scale from it
     gsettings(interface, "enable-hot-corners", "false")
     gsettings(interface, "enable-animations", "false")
     gsettings("org.gnome.desktop.background", "picture-uri", "'file:///usr/share/backgrounds/warty-final-ubuntu.png'")
@@ -172,6 +174,7 @@ def prepare_settings(look: str) -> None:
     gsettings("org.gnome.shell", "welcome-dialog-last-shown-version", "'999'")
     gsettings("org.gnome.shell", "enabled-extensions", f"['{APPINDICATOR}']")
     for schema, key in (("org.gnome.desktop.interface", "color-scheme"), ("org.gnome.desktop.interface", "gtk-theme"),
+                        ("org.gnome.desktop.interface", "scaling-factor"),
                         ("org.gnome.desktop.interface", "icon-theme"), ("org.gnome.desktop.interface", "font-name"),
                         ("org.gnome.desktop.background", "picture-uri"),
                         ("org.gnome.desktop.background", "picture-uri-dark"), ("org.gnome.shell", "enabled-extensions")):
@@ -188,12 +191,18 @@ def write_radio_config() -> None:
     (folder / "preferences.json").write_text(json.dumps({"LastPlayed": PLAYING, "Language": "en"}), encoding="utf-8")
 
 
-def crop(source: Path, target: Path, left: float, top: float, right: float, bottom: float) -> None:
+def crop(source: Path, target: Path, stage_width: float, scale: float, left: float, bottom: float) -> None:
+    """The top-right corner of the screen: from `left` to the right edge, from the top to `bottom` (in the shell's
+    stage coordinates), with MARGIN more on the left and at the bottom. The picture has the monitor's pixels; the
+    stage counts them too, or logical pixels (then it is narrower than the picture)."""
     pixbuf = GdkPixbuf.Pixbuf.new_from_file(str(source))
-    left, top = max(0, int(left)), max(0, int(top))
-    right, bottom = min(pixbuf.get_width(), int(right)), min(pixbuf.get_height(), int(bottom))
-    pixbuf.new_subpixbuf(left, top, right - left, bottom - top).copy().savev(str(target), "png", [], [])
-    log(f"  wrote {target} ({right - left}x{bottom - top})")
+    ratio = pixbuf.get_width() / stage_width
+    margin = MARGIN * scale
+    x = max(0, int(left * ratio - margin))
+    height = min(pixbuf.get_height(), int(bottom * ratio + margin))
+    width = pixbuf.get_width() - x
+    pixbuf.new_subpixbuf(x, 0, width, height).copy().savev(str(target), "png", [], [])
+    log(f"  wrote {target} ({width}x{height}; picture {pixbuf.get_width()} px for a stage of {stage_width})")
 
 
 class Desktop:
@@ -203,6 +212,7 @@ class Desktop:
         self.display, self.look, self.logs = display, look, logs
         self.processes: list[tuple[str, subprocess.Popen, object]] = []
         self.width = WIDTH
+        self.scale = 1.0
 
     # ---- Processes ----
 
@@ -241,9 +251,10 @@ class Desktop:
             env.pop("DISPLAY", None)
             env.pop("WAYLAND_DISPLAY", None)
             env["XDG_SESSION_TYPE"] = "wayland"
-            args += ["--headless", "--virtual-monitor", f"{WIDTH}x{HEIGHT}", "--wayland-display", WAYLAND_SOCKET]
+            args += ["--headless", "--virtual-monitor", f"{WIDTH * SCALE}x{HEIGHT * SCALE}",
+                     "--wayland-display", WAYLAND_SOCKET]
         else:
-            self._spawn("xvfb", ["Xvfb", XDISPLAY, "-screen", "0", f"{WIDTH}x{HEIGHT}x24", "-nolisten", "tcp",
+            self._spawn("xvfb", ["Xvfb", XDISPLAY, "-screen", "0", f"{WIDTH * SCALE}x{HEIGHT * SCALE}x24", "-nolisten", "tcp",
                                  "+extension", "GLX"], env)
             wait("Xvfb", lambda: self.alive() and Path("/tmp/.X11-unix/X" + XDISPLAY[1:]).exists(), 30)
             env.pop("WAYLAND_DISPLAY", None)
@@ -255,7 +266,9 @@ class Desktop:
         wait("GNOME Shell to finish starting", lambda: self.alive() and shell("!Main.layoutManager._startingUp"), 90)
         shell("Main.overview.hide(); true")
         self.width = shell("global.stage.width")
+        self.scale = shell("global.display.get_monitor_scale(global.display.get_primary_monitor())")
         log("  shell:", info("""({mode: Main.sessionMode.currentMode, stage: [global.stage.width, global.stage.height],
+            scale: global.display.get_monitor_scale(global.display.get_primary_monitor()),
             panel: Main.panel.height, status: Object.keys(Main.panel.statusArea), overview: Main.overview.visible})"""))
         log("  stylesheet:", info("Main.getThemeStylesheet()?.get_path() ?? 'the default'"))
         extension = shell(f"""(() => {{ const e = Main.extensionManager.lookup('{APPINDICATOR}');
@@ -335,8 +348,8 @@ class Desktop:
             raise RuntimeError("the menu closed again")
         full = self.screenshot(self.logs / f"{self.look}-{self.display}-menu-full.png")
         menu, clock = where["menu"], where["clock"]
-        crop(full, out / f"linux-tray-menu-{self.look}.png",
-             min(menu["x"], clock["x"]) - MARGIN, 0, self.width, menu["y"] + menu["h"] + MARGIN)
+        crop(full, out / f"linux-tray-menu-{self.look}.png", self.width, self.scale,
+             min(menu["x"], clock["x"]), menu["y"] + menu["h"])
         shell(js("button.menu.close(0); return true;"))
 
     def shoot_panel(self, out: Path) -> None:
@@ -356,8 +369,8 @@ class Desktop:
         log(f"  window: {window}")
         self.tidy()
         full = self.screenshot(self.logs / f"{self.look}-{self.display}-panel-full.png")
-        crop(full, out / f"linux-tray-panel-{self.look}.png",
-             min(window["x"], window["clock"]["x"]) - MARGIN, 0, self.width, window["y"] + window["h"] + MARGIN)
+        crop(full, out / f"linux-tray-panel-{self.look}.png", self.width, self.scale,
+             min(window["x"], window["clock"]["x"]), window["y"] + window["h"])
 
 
 def take(look: str, display: str, out: Path, logs: Path) -> None:
