@@ -92,7 +92,7 @@ extension AppDelegate {
     }
 
     /// `--menu-picture DIR`: the menu bar with the radio's open menu, light and dark (macos-menu-<look>.png),
-    /// 778 points wide like the Windows and Ubuntu pictures, taken with screencapture while the menu is open.
+    /// taken with screencapture while the menu is open.
     func takeMenuPictures(into output: URL) async -> Int32 {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-menu-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -135,13 +135,13 @@ extension AppDelegate {
         return run.terminationStatus == 0
     }
 
-    /// The top right of the screen: 778 points wide, from the menu bar to just under the menu.
+    /// The top right of the screen: 600 points wide, from the menu bar to just under the menu.
     private func crop(_ source: URL, to target: URL, menu: CGRect?) -> Bool {
         guard let image = NSImage(contentsOf: source)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
               let screen = NSScreen.main else { return false }
         let scale = CGFloat(image.width) / screen.frame.width
         let bottom = menu.map { screen.frame.maxY - $0.minY + 24 } ?? 420
-        let width = min(778, screen.frame.width)
+        let width = min(600, screen.frame.width)   // the Finder's own menus stay out
         let rect = CGRect(x: (screen.frame.width - width) * scale, y: 0, width: width * scale, height: min(bottom, screen.frame.height) * scale)
         guard let cropped = image.cropping(to: rect.integral) else { return false }
         guard let png = NSBitmapImageRep(cgImage: cropped).representation(using: .png, properties: [:]) else { return false }
