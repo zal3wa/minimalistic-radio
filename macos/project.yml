@@ -1,0 +1,50 @@
+# XcodeGen spec for the Mac app (the .xcodeproj is generated, not committed): `cd macos && xcodegen generate`.
+name: MinimalisticRadio
+options:
+  bundleIdPrefix: io.github.zal3wa
+  deploymentTarget:
+    macOS: "13.0"
+  preGenCommand: tools/make_icons.sh
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"          # the one place the version lives; the release job checks the tag against it
+    CURRENT_PROJECT_VERSION: "1"
+    MR_RELEASE_TAG: dev                 # CI sets the release tag (macos-v...); the updater only runs in tagged builds
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+packages:
+  RadioCore:
+    path: Core
+targets:
+  MinimalisticRadio:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        excludes:
+          - "Info.plist"
+          - "Resources/AppIcon.svg"
+      - path: ../data/banned-stations.json
+        buildPhase: resources
+    dependencies:
+      - package: RadioCore
+    settings:
+      base:
+        PRODUCT_NAME: "Minimalistic Radio"
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.zal3wa.minimalistic-radio
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        COMBINE_HIDPI_IMAGES: YES
+schemes:
+  MinimalisticRadio:
+    build:
+      targets:
+        MinimalisticRadio: all

@@ -1,0 +1,4 @@
+*.xcodeproj/
+build/
+.build/
+App/Resources/Assets.xcassets/AppIcon.appiconset/*.png

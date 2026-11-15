@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
-    paths-ignore: ['linux/**', 'docs/superpowers/**', '.github/workflows/linux.yml', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux-tray-screenshot.yml', '.github/scripts/linux-tray-screenshot.py', 'README.md', 'docs/**']
+    paths-ignore: ['linux/**', 'docs/superpowers/**', '.github/workflows/linux.yml', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux-tray-screenshot.yml', '.github/scripts/linux-tray-screenshot.py', 'macos/**', '.github/workflows/macos.yml', 'README.md', 'docs/**']
     tags: ['v*']
   pull_request:
 
