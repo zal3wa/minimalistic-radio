@@ -97,6 +97,8 @@ How it is published: for each `linux-v...` tag, the workflow signs the new build
 
 To publish `main` without a release (for example after a failed deploy): Actions, the "Linux" workflow, Run workflow, branch `main`, tick `publish_repo`. It signs, deploys and checks, and creates no GitHub release.
 
+Put a release tag on a commit that hasn't been published this way. GitHub Pages ignores a second deployment of the same commit, so the tag's run would fail its check (this is what stopped `linux-v1.0.0-beta.3`). Any new commit, even a small README change, avoids it.
+
 The key:
 
 - Two GitHub secrets: `FLATPAK_GPG_PRIVATE_KEY` (the private key, ASCII-armoured, no passphrase) and `FLATPAK_GPG_KEY_ID` (`2722144004B0F37F`).
