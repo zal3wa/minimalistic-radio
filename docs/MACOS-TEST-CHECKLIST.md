@@ -9,7 +9,7 @@ The first betas have only the menu next to the clock (a click or a right click o
 1. **Installing.** Download the DMG from the release page and open it. Drag Minimalistic Radio to Applications, then open it from Applications.
    - macOS says it can't check the app: click Done. Open System Settings → Privacy & Security, scroll down to "Minimalistic Radio was blocked…", click **Open Anyway**, and confirm with your password.
    - Expected: the radio's icon appears in the menu bar, next to the clock. No icon in the Dock.
-2. **Your stations and song titles.** On Windows: Settings → Station list → Export…, and copy the file to the Mac. On the Mac: the radio's menu → **Import…**, and choose the file.
+2. **Your stations and song titles.** On Windows: Settings → Station list → Export…, and copy the file to the Mac. On the Mac: the radio's menu → **Import…** (from beta 2 on: the window's Settings → Station list → **Import…**), and choose the file.
    - Play Antyradio Hard, then KIIS FM, Radio 357 and an RMF station (menu → Station).
    - Expected: each one plays, and after a short while the song's title shows in the menu (under the station's name). Note any station whose title never shows.
 3. **Keys and Control Center.** While a station plays:
@@ -27,6 +27,18 @@ The first betas have only the menu next to the clock (a click or a right click o
    - Expected: the radio restarts by itself, playing the same station if it was playing.
 7. **The second update (when beta 3 is out).** Update again the same way.
    - Expected: nothing is asked this time.
+
+## The whole app (beta 4 and later)
+
+From beta 4 the radio has its window. A click on the icon opens it under the icon; a right click opens the menu.
+
+1. **The window.** It opens under the icon and closes on a click elsewhere, on Esc, or on another click on the icon. The station list shows the logos; a click on a station plays it; dragging a station moves it; ⋯ → Edit and Remove work.
+2. **Now playing.** The song and its cover show at the bottom; the copy button turns into "Copied" and the song is in the clipboard. The speaker mutes and unmutes; the slider shows its value while dragged; the moon sets the sleep timer, and the radio stops at the end.
+3. **AirPlay.** The AirPlay button lists your HomePod, Apple TV or AirPlay speaker, and the radio plays there.
+4. **Search.** + Station: Recommended and Popular in your country show at once. Search for a station, add it with +; it shows a check mark afterwards. Add by address works with a stream address.
+5. **History and settings.** The history lists the songs with the station and time; ⋯ → Search on Spotify and YouTube open the browser. Settings: change the language (the window and the menu change at once), Open at login, Export… and Import…, Check now.
+6. **The station card.** Switch stations with ⏭ or the menu: a card shows the station under the icon for a moment. Settings → Show station changes off: no card.
+7. **Keys.** In the window: Space plays and stops, ⌘F opens the search, ⌘, the settings, ⌘W closes it, ⌘Q quits the radio.
 
 ## Results
 

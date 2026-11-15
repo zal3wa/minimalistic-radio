@@ -78,3 +78,31 @@ Full-size pictures of Minimalistic Radio. [Back to the README](../../README.md)
   <source media="(prefers-color-scheme: dark)" srcset="linux-settings-dark.png">
   <img src="linux-settings-light.png" alt="Settings on Linux">
 </picture>
+
+## macOS: click on the icon: the player
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="macos-stations-dark.png">
+  <img src="macos-stations-light.png" alt="The player on macOS">
+</picture>
+
+## macOS: station search
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="macos-search-dark.png">
+  <img src="macos-search-light.png" alt="Station search on macOS">
+</picture>
+
+## macOS: song history
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="macos-history-dark.png">
+  <img src="macos-history-light.png" alt="Song history on macOS">
+</picture>
+
+## macOS: settings
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="macos-settings-dark.png">
+  <img src="macos-settings-light.png" alt="Settings on macOS">
+</picture>
