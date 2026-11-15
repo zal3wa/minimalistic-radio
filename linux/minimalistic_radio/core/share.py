@@ -30,14 +30,16 @@ class SharedStation:
     logo: str | None = None
 
 
-def _https(value: str | None) -> bool:
-    return bool(value) and len(value) <= MAX_ADDRESS and is_web_url(value) and urlsplit(value).scheme.lower() == "https"
+def _web_address(value: str | None) -> bool:
+    """An absolute http or https address of at most MAX_ADDRESS characters (a stream, or a logo: the page shows an
+    http logo through https)."""
+    return bool(value) and len(value) <= MAX_ADDRESS and is_web_url(value)
 
 
 def share_link(station: Station) -> str:
     """The web link for a station (the logo only when it is one the link may carry)."""
     fields = [("n", station.name), ("u", station.url)]
-    if _https(station.logo):
+    if _web_address(station.logo):
         fields.append(("l", station.logo))
     return WEB_LINK + urlencode(fields)
 
@@ -79,10 +81,10 @@ def read_link(text: str | None) -> SharedStation | None:
         fields.setdefault(key, value)   # the first one counts, as URLSearchParams.get does
     url = fields.get("u", "").strip()
     name = _clean_name(fields.get("n", ""))
-    if not name or len(url) > MAX_ADDRESS or not is_web_url(url):
+    if not name or not _web_address(url):
         return None
     logo = fields.get("l", "").strip()
-    return SharedStation(name, url, logo if _https(logo) else None)
+    return SharedStation(name, url, logo if _web_address(logo) else None)
 
 
 def address_text(url: str) -> str:

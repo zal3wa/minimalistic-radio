@@ -1,4 +1,6 @@
 """Share links (core/share.py): building, reading, checking, and matching a shared station with the list."""
+from urllib.parse import quote
+
 import pytest
 
 from minimalistic_radio.core.models import Station
@@ -35,10 +37,14 @@ def test_plus_and_percent_twenty_are_spaces():
     assert read_link(WEB_LINK + "n=1%2B1&u=https://357.example/").name == "1+1"
 
 
-def test_only_a_valid_https_logo_goes_into_the_link():
-    assert "l=" not in share_link(Station("A", "http://a.example/", "http://a.example/logo.png"))
-    assert "l=" not in share_link(Station("A", "http://a.example/", "https://a.example/" + "x" * MAX_ADDRESS))
+def test_an_http_or_https_logo_goes_into_the_link():
+    favicon = Station("My Radios", "http://www.my-radios.com/live", "http://www.my-radios.com/favicon.ico")
+    assert "&l=http%3A%2F%2Fwww.my-radios.com%2Ffavicon.ico" in share_link(favicon)
+    assert read_link(share_link(favicon)).logo == "http://www.my-radios.com/favicon.ico"
     assert "l=" in share_link(Station("A", "http://a.example/", "https://a.example/logo.png"))
+    for logo in ("https://a.example/" + "x" * MAX_ADDRESS, "ftp://a.example/logo.png", "javascript:alert(1)",
+                 "logo.png", "", None):
+        assert "l=" not in share_link(Station("A", "http://a.example/", logo)), logo
 
 
 @pytest.mark.parametrize("query", [
@@ -65,10 +71,17 @@ def test_the_name_is_cleaned_and_cut():
     assert long.name == "x" * MAX_NAME
 
 
+def test_an_http_or_https_logo_is_kept():
+    for logo in ("http://logo.example/a.png", "https://logo.example/a.png", "HTTP://LOGO.example/favicon.ico"):
+        shared = read_link(WEB_LINK + "n=A&u=https://a.example/&l=" + quote(logo, safe=""))
+        assert shared == SharedStation("A", "https://a.example/", logo), logo
+
+
 def test_a_bad_logo_is_dropped_silently():
-    for logo in ("http%3A%2F%2Flogo.example%2Fa.png", "not-a-url", "https%3A%2F%2F" + "a" * MAX_ADDRESS, ""):
+    for logo in ("javascript%3Aalert(1)", "ftp%3A%2F%2Flogo.example%2Fa.png", "logo.example%2Fa.png", "not-a-url",
+                 "%2Fa.png", "https%3A%2F%2F" + "a" * MAX_ADDRESS, "http%3A%2F%2F" + "a" * MAX_ADDRESS, ""):
         shared = read_link(WEB_LINK + "n=A&u=https://a.example/&l=" + logo)
-        assert shared == SharedStation("A", "https://a.example/", None)
+        assert shared == SharedStation("A", "https://a.example/", None), logo
 
 
 def test_unknown_keys_are_ignored_and_the_first_value_counts():
