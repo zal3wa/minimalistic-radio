@@ -316,20 +316,37 @@ internal sealed partial class Radio
         panel.SetResourceReference(Control.ForegroundProperty, "Fg");
         TextOptions.SetTextFormattingMode(panel, TextFormattingMode.Display);
         playerPanel = panel;
-        // Menus and file dialogs opened from the panel keep it open while they are shown.
-        int holdOpen = 0;
+        // A click elsewhere closes the panel, like the Windows flyouts. Its own menus and file dialogs keep it open while
+        // they are shown: the menus that are open right now, not a count, so none can be left over. Once the panel has
+        // lost the activation and nothing of its own is open any more, it closes: when it is deactivated, when one of its
+        // menus closes (a click elsewhere with a menu open deactivates the panel first and closes the menu after), and on
+        // every tick of the dismiss timer below.
+        var openMenus = new HashSet<ContextMenu>();
+        int dialogs = 0;
+        bool wasActive = false;
+        bool keepOpen = false;
 #if SELFTEST
-        if (testMenu) holdOpen = 1;   // the self-test keeps the panel open, as if a menu were shown
+        keepOpen = testMenu && !dismissCheck;   // the self-test keeps its panels open, whatever the mouse does meanwhile
+        panelHeld = () => dialogs > 0 || openMenus.Any(menu => menu.IsOpen);
 #endif
-        panel.Closed += (_, _) => { if (playerPanel == panel) playerPanel = null; };
-        panel.Deactivated += (_, _) => Post(() =>
+        bool Held() => keepOpen || dialogs > 0 || openMenus.Any(menu => menu.IsOpen);
+        void CloseIfLeft()
         {
-            if (playerPanel == panel && !panel.IsActive && holdOpen == 0) panel.Close();
-        });
+            if (playerPanel != panel || !wasActive || panel.IsActive || Held()) return;
+            sinceDismiss.Restart();   // a click on the tray icon that took the activation must not open it again
+            panel.Close();
+        }
+        panel.Closed += (_, _) => { if (playerPanel == panel) playerPanel = null; };
+        panel.Activated += (_, _) => wasActive = true;
+        panel.Deactivated += (_, _) => Post(CloseIfLeft);
         void Hold(ContextMenu menu)
         {
-            menu.Opened += (_, _) => holdOpen++;
-            menu.Closed += (_, _) => holdOpen--;
+            menu.Opened += (_, _) => openMenus.Add(menu);
+            menu.Closed += (_, _) =>
+            {
+                openMenus.Remove(menu);
+                Post(CloseIfLeft);
+            };
         }
 
         // The list starts 12 px under the bar, like its sides (its border and the rows' margin add a pixel each).
@@ -1216,7 +1233,7 @@ internal sealed partial class Radio
                     FileName = AppName + " - " + L("stations") + ".json", DefaultExt = ".json",
                     Filter = L("Station list") + " (*.json)|*.json"
                 };
-                holdOpen++;
+                dialogs++;
                 try
                 {
                     if (dialog.ShowDialog(panel) != true) return;
@@ -1227,7 +1244,7 @@ internal sealed partial class Radio
                 {
                     Report(L("Couldn't save the file."));
                 }
-                finally { holdOpen--; }
+                finally { dialogs--; }
             };
             import.Click += (_, _) =>
             {
@@ -1235,7 +1252,7 @@ internal sealed partial class Radio
                 {
                     Filter = L("Station list") + " (*.json)|*.json|" + L("All files") + "|*.*"
                 };
-                holdOpen++;
+                dialogs++;
                 try
                 {
                     if (dialog.ShowDialog(panel) != true) return;
@@ -1254,7 +1271,7 @@ internal sealed partial class Radio
                     if (fresh.Count == 0) Report(L("All stations from this file are already on the list."));
                     else if (ApplyStations(Stations.Concat(fresh).ToList())) Report(L("Stations added: {0}.", fresh.Count));
                 }
-                finally { holdOpen--; }
+                finally { dialogs--; }
             };
             settings.Children.Add(Group(L("Stations")));
             var transfer = Columns((stationsNote, Star), (export, Auto), (import, Auto));
@@ -1592,13 +1609,17 @@ internal sealed partial class Radio
 
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         timer.Tick += (_, _) => RefreshPanel();
-        // Clicking anywhere outside the panel closes it, like the Windows flyouts.
+        // Clicking anywhere outside the panel closes it, like the Windows flyouts, also when it never got the activation
+        // (opened from another program). A press shorter than a tick (a touchpad tap) shows in the "pressed since"
+        // bit; the first tick only learns the buttons' state, so the click that opened the panel doesn't count.
         bool pointerDown = true;
         var dismiss = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
         dismiss.Tick += (_, _) =>
         {
-            bool down = GetAsyncKeyState(1) < 0 || GetAsyncKeyState(2) < 0;
-            if (down && !pointerDown && holdOpen == 0)
+            CloseIfLeft();
+            if (playerPanel != panel) return;
+            bool down = (GetAsyncKeyState(1) & 0x8001) != 0 | (GetAsyncKeyState(2) & 0x8001) != 0;
+            if (down && !pointerDown && !Held())
             {
                 IntPtr handle = new WindowInteropHelper(panel).Handle;
                 System.Drawing.Point point = Forms.Cursor.Position;
@@ -1743,6 +1764,71 @@ internal sealed partial class Radio
     }
 
 #if SELFTEST
+    private bool dismissCheck;      // VerifyDismiss: this panel isn't kept open by the self-test
+    private Func<bool> panelHeld;   // the open panel's menus or dialogs that keep it open right now
+
+    // Self-test of a click elsewhere (--test-menu): another window taking the activation closes the panel, also when one
+    // of its menus is open at that moment (2.6.0 then left it open: the menu still held it when the panel was deactivated,
+    // and closed only after), and a menu that has closed, even while its page was built again, no longer holds it.
+    private async Task VerifyDismiss()
+    {
+        var elsewhere = new Window
+        {
+            Width = 160, Height = 60, Left = 0, Top = 0, Topmost = true, ShowInTaskbar = false, Title = AppName + " (self-test)",
+            WindowStartupLocation = WindowStartupLocation.Manual
+        };
+        dismissCheck = true;
+        try
+        {
+            Button Find(Func<Button, bool> match) => Descendants(playerPanel).OfType<Button>().First(match);
+            async Task Check(string what, string page, Func<Task> before)
+            {
+                playerPanel?.Close();
+                OpenPlayer(page);
+                await Task.Delay(500);
+                // Without the activation (a test started in the background) a click elsewhere can't be played here.
+                if (playerPanel?.IsActive != true) return;
+                await before();
+                elsewhere.Show();
+                elsewhere.Activate();
+                await Task.Delay(500);
+                elsewhere.Hide();
+                if (playerPanel != null) throw new InvalidOperationException("Panel nie zamyka się po kliknięciu gdzie indziej: " + what);
+            }
+            await Check("świeżo otwarty", "stations", () => Task.CompletedTask);
+            await Check("z otwartym menu wyłącznika czasowego", "stations", async () =>
+            {
+                Find(button => button.ToolTip as string == L("Sleep timer")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                await Task.Delay(300);
+                if (panelHeld?.Invoke() != true) throw new InvalidOperationException("Otwarte menu nie trzyma panelu.");
+            });
+            await Check("po menu stacji", "stations", async () =>
+            {
+                Button options = Descendants(playerPanel).OfType<ListBox>().First(item => item.IsVisible).Items.OfType<Grid>().First()
+                    .Children.OfType<Button>().Last();
+                options.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                await Task.Delay(300);
+                ((ContextMenu)options.Tag).IsOpen = false;
+                await Task.Delay(200);
+                if (panelHeld?.Invoke() != false || playerPanel?.IsActive != true)
+                    throw new InvalidOperationException("Zamknięte menu stacji nadal trzyma panel.");
+            });
+            await Check("z menu historii otwartym, gdy strona buduje się od nowa", "history", async () =>
+            {
+                Find(button => button.ToolTip as string == L("More")).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                await Task.Delay(300);
+                AddToHistory("Test - Nowy utwór");   // a new song: the page is built again while its menu is open
+                await Task.Delay(500);
+            });
+        }
+        finally
+        {
+            dismissCheck = false;
+            elsewhere.Close();
+            playerPanel?.Close();
+        }
+    }
+
     // Self-test of the copy feedback: the panel's bubble says "Copied" after the copy button, and the tray's card
     // reads "Copied to clipboard" on its second line. A busy clipboard is not a failure of the app, so it is skipped.
     private async Task VerifyCopyFeedback(bool preview)

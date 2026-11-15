@@ -452,6 +452,7 @@ internal sealed partial class Radio
                 await VerifyStationDrag();
                 await VerifyVolumeRow();
                 await VerifyCopyFeedback(preview);
+                await VerifyDismiss();
             }
         }
         catch (Exception error)
