@@ -222,12 +222,15 @@ class RadioApplication(Adw.Application):
             self.logos = LogoCache(self.controller.paths.cache / "logos")
         return RadioWindow(self.controller, self._, application=self, logos=self.logos)
 
-    def show_window(self) -> None:
+    def show_window(self, startup_id: str | None = None) -> None:
+        """`startup_id`: the desktop's activation token (the tray's), so Wayland lets the window take the focus."""
         if self.window is None:
             self._start_radio(True)   # an action from outside before any launch: the radio, but not playing
             self.window = self._create_window()
             self.window.set_hide_on_close(True)
             self.window.connect("close-request", self._window_closing)
+        if startup_id:
+            self.window.set_startup_id(startup_id)
         self.window.present()
 
     def rebuild_window(self, page: str) -> None:

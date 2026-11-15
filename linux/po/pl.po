@@ -190,6 +190,10 @@ msgstr "Kopiuj tytuł"
 msgid "Copied"
 msgstr "Skopiowano"
 
+#: minimalistic_radio/ui/window.py
+msgid "Press Copy to copy the song"
+msgstr "Naciśnij Kopiuj, aby skopiować piosenkę"
+
 #: minimalistic_radio/ui/footer.py
 msgid "The station doesn't send song titles"
 msgstr "Stacja nie podaje tytułu"

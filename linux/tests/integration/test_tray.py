@@ -193,9 +193,22 @@ def test_activate_shows_panel(make, watcher):
 def test_scroll_changes_volume(make, watcher):
     _, c, _, _, _ = make()
     item = Client(ITEM_PATH, ITEM)
-    item.call("Scroll", GLib.Variant("(is)", (120, "vertical")))
+    item.call("Scroll", GLib.Variant("(is)", (120, "vertical")))   # KDE: 120 a notch, positive is up
     assert c.volume == 35
     item.call("Scroll", GLib.Variant("(is)", (-120, "vertical")))
+    assert c.volume == 30
+    item.call("Scroll", GLib.Variant("(is)", (60, "vertical")))    # half a notch (a touchpad): not yet a step
+    assert c.volume == 30
+    item.call("Scroll", GLib.Variant("(is)", (60, "vertical")))
+    assert c.volume == 35
+
+
+def test_scroll_the_gtk_way(make, watcher):
+    _, c, _, _, _ = make()
+    item = Client(ITEM_PATH, ITEM)
+    item.call("Scroll", GLib.Variant("(is)", (1, "vertical")))     # AppIndicator, Xfce: 1 a notch, positive is down
+    assert c.volume == 25
+    item.call("Scroll", GLib.Variant("(is)", (-1, "vertical")))
     assert c.volume == 30
 
 
@@ -276,6 +289,19 @@ def test_layout_updated_on_change(make, watcher):
     updated = [params for name, params in menu.signals if name == "LayoutUpdated"]
     assert updated[-1][0] > revision
     assert layout(menu)[0] > revision
+
+
+def test_about_to_show_after_a_change(make, watcher):
+    _, c, tray, _, _ = make()
+    menu = Client(MENU_PATH, MENU)
+    stations = tray.menu.id_of("stations")
+    menu.call("GetLayout", GLib.Variant("(iias)", (stations, 1, [])))
+    assert menu.call("AboutToShow", GLib.Variant("(i)", (stations,))) == (False,)
+    c.select(1)
+    assert menu.call("AboutToShow", GLib.Variant("(i)", (stations,))) == (True,)   # KDE reads the submenu again
+    _, (_, _, children) = menu.call("GetLayout", GLib.Variant("(iias)", (stations, 1, [])))
+    toggles = {number: props["toggle-state"] for number, props, _ in children}
+    assert toggles[tray.menu.id_of("station:1")] == 1
 
 
 def test_watcher_restart_reregisters(make, watcher):

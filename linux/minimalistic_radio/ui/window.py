@@ -147,6 +147,10 @@ class RadioWindow(Adw.ApplicationWindow):
         """Copies the song title and shows "Copied" (the tray menu's song item calls it)."""
         self.footer.copy_track()
 
+    def ask_to_copy(self) -> None:
+        """The tray's song item, when the window never got the focus (Wayland): the Copy button can copy."""
+        self.toast(self._("Press Copy to copy the song"))
+
     def toast(self, text: str) -> None:
         """Shows `text` at the bottom of the window, in place of the previous toast."""
         if self._toast is not None:

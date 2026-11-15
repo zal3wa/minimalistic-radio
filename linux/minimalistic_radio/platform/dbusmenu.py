@@ -62,7 +62,7 @@ INTROSPECTION = f"""
     </method>
     <signal name="ItemsPropertiesUpdated">
       <arg name="updatedProps" type="a(ia{{sv}})"/>
-      <arg name="removedProps" type="a(ia{{sv}})"/>
+      <arg name="removedProps" type="a(ias)"/>
     </signal>
     <signal name="LayoutUpdated">
       <arg name="revision" type="u"/>
@@ -115,6 +115,7 @@ class DBusMenu:
         self._items: list[MenuItem] | None = None
         self._numbers: dict[str, int] = {}          # MenuItem id -> number, for as long as the menu exists
         self._nodes: dict[int, MenuItem] = {}       # the current layout, by number
+        self._served: dict[int, int] = {}           # number -> the revision whose children GetLayout last sent
         info = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION).lookup_interface(IFACE)
         self._registration = connection.register_object(path, info, self._on_method_call, self._on_get_property, None)
 
@@ -163,6 +164,7 @@ class DBusMenu:
         children = (self._items or []) if number == ROOT else self._nodes[number].children
         nested = []
         if depth != 0:
+            self._served[number] = self.revision
             nested = [GLib.Variant("(ia{sv}av)", self._layout(self._numbers[child.id], depth - 1, names))
                       for child in children]
         return number, self._item_properties(number, names), nested
@@ -205,11 +207,17 @@ class DBusMenu:
             for number, event, _data, _time in events:
                 self._event(number, event)
         elif method == "AboutToShow":
-            invocation.return_value(GLib.Variant("(b)", (False,)))
+            invocation.return_value(GLib.Variant("(b)", (self._stale(args[0]),)))
         elif method == "AboutToShowGroup":
-            invocation.return_value(GLib.Variant("(aiai)", ([], [])))
+            ids = args[0]
+            invocation.return_value(GLib.Variant("(aiai)", ([n for n in ids if self._stale(n)],
+                                                            [n for n in ids if not self._known(n)])))
         else:
             invocation.return_value(None)
+
+    def _stale(self, number: int) -> bool:
+        """The desktop's copy of this submenu is older than the menu: KDE reads it again only when told so."""
+        return self._known(number) and self._served.get(number) != self.revision
 
     def _event(self, number: int, event: str) -> None:
         item = self._nodes.get(number)

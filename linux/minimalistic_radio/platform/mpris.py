@@ -4,6 +4,7 @@ Pause means Stop, like on Windows: a radio stream has nothing to resume.
 """
 from __future__ import annotations
 
+import math
 import os
 from typing import Any
 
@@ -49,9 +50,7 @@ INTROSPECTION = f"""
     <method name="OpenUri"><arg direction="in" name="Uri" type="s"/></method>
     <signal name="Seeked"><arg name="Position" type="x"/></signal>
     <property name="PlaybackStatus" type="s" access="read"/>
-    <property name="LoopStatus" type="s" access="readwrite"/>
     <property name="Rate" type="d" access="readwrite"/>
-    <property name="Shuffle" type="b" access="readwrite"/>
     <property name="Metadata" type="a{{sv}}" access="read"/>
     <property name="Volume" type="d" access="readwrite"/>
     <property name="Position" type="x" access="read"/>
@@ -115,6 +114,10 @@ class MprisService:
                     OBJECT_PATH, info, self._on_method_call, self._on_get_property, self._on_set_property))
         except GLib.Error as error:
             self.error = error.message
+            if self._connection is not None:
+                for registration in self._registrations:   # the interface already exported goes too
+                    self._connection.unregister_object(registration)
+            self._registrations = []
             self._connection = None   # no session bus: the radio works without media keys
             return
         if not self._subscribed:
@@ -163,9 +166,7 @@ class MprisService:
     @staticmethod
     def _static_player_properties() -> dict[str, GLib.Variant]:
         return {
-            "LoopStatus": GLib.Variant("s", "None"),
             "Rate": GLib.Variant("d", 1.0),
-            "Shuffle": GLib.Variant("b", False),
             "Position": GLib.Variant("x", 0),
             "MinimumRate": GLib.Variant("d", 1.0),
             "MaximumRate": GLib.Variant("d", 1.0),
@@ -192,9 +193,11 @@ class MprisService:
 
     def _on_set_property(self, connection, sender, path, interface, name, value) -> bool:
         if interface == PLAYER_IFACE and name == "Volume":
-            self.controller.set_volume(round(value.get_double() * 100))
+            volume = value.get_double()
+            if math.isfinite(volume):   # NaN or infinity: ignored
+                self.controller.set_volume(round(max(0.0, min(1.0, volume)) * 100))
             return True
-        return interface == PLAYER_IFACE and name in ("LoopStatus", "Rate", "Shuffle")   # accepted, ignored
+        return interface == PLAYER_IFACE and name == "Rate"   # accepted, ignored
 
     def _on_change(self, change: Change) -> None:
         if self._connection is None:
@@ -214,6 +217,7 @@ class MprisService:
     # ---- Methods ----
 
     def _on_method_call(self, connection, sender, path, interface, method, parameters, invocation) -> None:
+        invocation.return_value(None)   # answered first: whatever happens next, the caller isn't left waiting
         c = self.controller
         if interface == ROOT_IFACE:
             if method == "Raise":
@@ -231,4 +235,3 @@ class MprisService:
         elif method == "Previous":
             c.previous_station()
         # Seek, SetPosition and OpenUri: nothing to seek in a live stream.
-        invocation.return_value(None)

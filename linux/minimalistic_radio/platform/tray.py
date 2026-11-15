@@ -31,6 +31,7 @@ PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
 ICON_NAME = APP_ID + "-symbolic"
 PIXMAP_SIZES = (16, 22, 32, 48)
 SCROLL_NOTCH = 120       # one wheel notch, as KDE counts it
+GTK_SCROLL_MAX = 2       # a delta this small is counted in notches, the GDK way (positive = down)
 VOLUME_STEP = 5
 FOCUS_WAIT_MS = 1000
 
@@ -61,6 +62,7 @@ INTROSPECTION = f"""
     <method name="Scroll">
       <arg direction="in" name="delta" type="i"/><arg direction="in" name="orientation" type="s"/>
     </method>
+    <method name="ProvideXdgActivationToken"><arg direction="in" name="token" type="s"/></method>
     <signal name="NewTitle"/>
     <signal name="NewIcon"/>
     <signal name="NewAttentionIcon"/>
@@ -130,14 +132,19 @@ def pixmap_variant(images: list[tuple[int, int, bytes]]) -> GLib.Variant:
     return builder.end()
 
 
-def _when_focused(window: Any, callback: Callable[[], None]) -> None:
-    """Runs `callback` once `window` has the focus, or after FOCUS_WAIT_MS if it never gets it."""
+def _on_wayland(window: Any) -> bool:
+    """On Wayland only the focused app may set the clipboard; on X11 any app can."""
+    return window.get_display().__gtype__.name.startswith("GdkWayland")
+
+
+def _when_focused(window: Any, focused: Callable[[], None], unfocused: Callable[[], None]) -> None:
+    """Runs `focused` once `window` has the focus, or `unfocused` after FOCUS_WAIT_MS if it never gets it."""
     if window.is_active():
-        callback()
+        focused()
         return
     done = []
 
-    def finish() -> None:
+    def finish(callback: Callable[[], None]) -> None:
         if not done:
             done.append(True)
             window.disconnect(handler)
@@ -146,10 +153,10 @@ def _when_focused(window: Any, callback: Callable[[], None]) -> None:
     def on_active(_window: Any, _pspec: Any) -> None:
         if window.is_active():
             GLib.source_remove(timer)
-            finish()
+            finish(focused)
 
     def on_timeout() -> bool:
-        finish()
+        finish(unfocused)
         return GLib.SOURCE_REMOVE
 
     handler = window.connect("notify::is-active", on_active)
@@ -176,6 +183,8 @@ class TrayIcon(GObject.Object):
         self._visible: bool | None = None      # None until known
         self._tooltip: tuple[str, str] | None = None
         self._pixmaps = GLib.Variant("a(iiay)", [])
+        self._scroll_rest = 0                  # KDE's wheel: the part of a notch not yet turned into a step
+        self._activation_token: str | None = None   # from the desktop, for the next window shown (KDE Wayland)
         self._subscribed = False
         self._info = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION).lookup_interface(ITEM_IFACE)
 
@@ -308,6 +317,9 @@ class TrayIcon(GObject.Object):
     def _on_get_property(self, connection, sender, path, interface, name):
         if name == "ToolTip":
             title, body = tooltip(self.controller)
+            if any(mark in body for mark in "&<>"):
+                # Xfce reads the body as markup and KDE guesses: escaped in a <span>, both show the text as it is.
+                body = f"<span>{GLib.markup_escape_text(body, -1)}</span>"
             return GLib.Variant("(sa(iiay)ss)", ("", [], title, body))
         if name == "IconPixmap":
             return self._pixmaps
@@ -330,8 +342,10 @@ class TrayIcon(GObject.Object):
 
     def _on_method_call(self, connection, sender, path, interface, method, parameters, invocation) -> None:
         invocation.return_value(None)   # answered first: the click may open the window
-        if method == "Activate":
-            self._action("show-panel")
+        if method == "ProvideXdgActivationToken":
+            self._activation_token = parameters.unpack()[0] or None
+        elif method == "Activate":
+            self._show_panel()
         elif method == "SecondaryActivate":
             self.controller.toggle()
         elif method == "Scroll":
@@ -340,17 +354,29 @@ class TrayIcon(GObject.Object):
         # ContextMenu: the desktop draws the menu itself, from Menu.
 
     def _scroll(self, delta: int, orientation: str) -> None:
-        """A notch up is 5 % louder. Hosts count a notch as 120 (KDE) or 1, so each call is at least one step."""
+        """A notch up is 5 % louder. KDE sends 120 per notch, positive up (a touchpad sends parts of it); the
+        Ubuntu AppIndicator extension and Xfce send 1 per notch, positive down, as GDK counts."""
         if orientation.lower() != "vertical" or delta == 0:
             return
-        steps = max(1, abs(delta) // SCROLL_NOTCH) * (1 if delta > 0 else -1)
-        self.controller.set_volume(self.controller.volume + steps * VOLUME_STEP)
+        if abs(delta) <= GTK_SCROLL_MAX:
+            steps = -delta
+        else:
+            self._scroll_rest += delta
+            steps = int(self._scroll_rest / SCROLL_NOTCH)   # toward zero: the rest waits for the next part
+            self._scroll_rest -= steps * SCROLL_NOTCH
+        if steps:
+            self.controller.set_volume(self.controller.volume + steps * VOLUME_STEP)
 
     # ---- The menu ----
 
     def _action(self, name: str) -> None:
         if self.app.lookup_action(name) is not None:
             self.app.activate_action(name, None)
+
+    def _show_panel(self) -> None:
+        """Opens the panel with the desktop's activation token, if it sent one, so KDE on Wayland focuses it."""
+        token, self._activation_token = self._activation_token, None
+        self.app.show_window(token)
 
     def _on_menu(self, key: str) -> None:
         c = self.controller
@@ -376,8 +402,10 @@ class TrayIcon(GObject.Object):
 
     def _copy_track(self) -> None:
         """The panel copies the song: on Wayland only the focused app can set the clipboard, and a click in
-        the desktop's tray menu leaves the focus with the desktop."""
-        self._action("show-panel")
+        the desktop's tray menu leaves the focus with the desktop. Without the focus on Wayland, the panel
+        asks for its Copy button instead of claiming it copied."""
+        self._show_panel()
         window = self.app.window
         if window is not None:
-            _when_focused(window, window.copy_track)
+            _when_focused(window, window.copy_track,
+                          window.ask_to_copy if _on_wayland(window) else window.copy_track)
