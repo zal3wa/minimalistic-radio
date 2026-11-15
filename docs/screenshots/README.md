@@ -43,3 +43,38 @@ Full-size pictures of Minimalistic Radio. [Back to the README](../../README.md)
   <source media="(prefers-color-scheme: dark)" srcset="card-dark.png">
   <img src="card-light.png" alt="Station change card">
 </picture>
+
+## Linux: the tray menu on Ubuntu
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="linux-tray-menu-dark.png">
+  <img src="linux-tray-menu-light.png" alt="The tray menu on Ubuntu, next to the clock">
+</picture>
+
+## Linux: stations
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="linux-stations-dark.png">
+  <img src="linux-stations-light.png" alt="The station list on Linux">
+</picture>
+
+## Linux: station search
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="linux-search-dark.png">
+  <img src="linux-search-light.png" alt="Station search on Linux">
+</picture>
+
+## Linux: song history
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="linux-history-dark.png">
+  <img src="linux-history-light.png" alt="Song history on Linux">
+</picture>
+
+## Linux: settings
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="linux-settings-dark.png">
+  <img src="linux-settings-light.png" alt="Settings on Linux">
+</picture>

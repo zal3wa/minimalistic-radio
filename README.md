@@ -6,10 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/zal3wa/minimalistic-radio/releases/latest/download/Minimalistic-Radio.exe"><img src="docs/download-windows.svg" height="56" alt="Download for Windows"></a>
-  <a href="#linux"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a>
+  <a href="https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a>
 </p>
 
-<p align="center"><sub>Not signed yet: if Windows SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.</sub></p>
+<p align="center"><sub>Windows: not signed yet, so if SmartScreen asks, choose <i>More info</i> → <i>Run anyway</i>.<br>Linux: the file opens in GNOME Software or Discover, and the radio then updates itself. On Ubuntu, <a href="#linux">enable Flatpak first</a>.</sub></p>
 
 <table align="center">
   <tr>
@@ -91,33 +91,33 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
 <table align="center">
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#linux-stations"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-stations-dark.png">
         <img src="docs/screenshots/linux-stations-light.png" width="400" alt="The station list on Linux">
-      </picture>
+      </picture></a>
       <br>Stations
     </td>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#linux-station-search"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-search-dark.png">
         <img src="docs/screenshots/linux-search-light.png" width="400" alt="Station search on Linux">
-      </picture>
+      </picture></a>
       <br>Station search
     </td>
   </tr>
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#linux-song-history"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-history-dark.png">
         <img src="docs/screenshots/linux-history-light.png" width="400" alt="Song history on Linux">
-      </picture>
+      </picture></a>
       <br>Song history
     </td>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#linux-settings"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-settings-dark.png">
         <img src="docs/screenshots/linux-settings-light.png" width="400" alt="Settings on Linux">
-      </picture>
+      </picture></a>
       <br>Settings
     </td>
   </tr>
@@ -126,10 +126,10 @@ Linux beta testers are welcome: see the [test checklist](docs/LINUX-TEST-CHECKLI
 <table align="center">
   <tr>
     <td align="center" valign="top">
-      <picture>
+      <a href="docs/screenshots/README.md#linux-the-tray-menu-on-ubuntu"><picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/linux-tray-menu-dark.png">
         <img src="docs/screenshots/linux-tray-menu-light.png" width="778" alt="The tray menu on Ubuntu: Stop, Station, Volume, Sleep timer, the station and its song, Settings and Quit">
-      </picture>
+      </picture></a>
       <br>The tray menu on Ubuntu, next to the clock
     </td>
   </tr>
