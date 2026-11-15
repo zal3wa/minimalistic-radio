@@ -261,14 +261,19 @@ extension AppDelegate {
         var menuFrame: CGRect?
         var itemCentre: CGPoint?
         var captured = false
+        var openWindow: NSWindow?
+        var sharp: CGImage?
         showMenu(menu, positioning: spotify, at: rowPlace, in: content, closingAfter: 1.4, whileOpen: { menuWindow in
             menuFrame = menuWindow.frame
+            openWindow = menuWindow
             if let row = self.menuItemRow(spotify.title, in: menuWindow) {
                 itemCentre = CGPoint(x: row.midX, y: row.midY)
                 CGWarpMouseCursorPosition(CGPoint(x: row.midX, y: screenTop - row.midY))   // and the pointer on it
             }
         }, beforeClosing: {
             captured = capturePanel(after)
+            // The menu's own views drawn at 2× (the screen here is 1×): its text and highlight, sharp.
+            if let root = openWindow?.contentView?.superview ?? openWindow?.contentView { sharp = self.renderImage(root) }
         })
         try? await Task.sleep(nanoseconds: 300_000_000)
 
@@ -300,6 +305,31 @@ extension AppDelegate {
                 guard difference > 9 else { continue }
                 let index = (y * width + x) * 4
                 for channel in 0..<4 { picture[index + channel] = big[index + channel] }
+            }
+        }
+        // Over that, the menu's views drawn at 2× where they drew something (premultiplied "over").
+        if let sharp {
+            let menuX = Int(((menuFrame.minX - panelFrame.minX) * scale).rounded())
+            let menuY = Int(((panelFrame.maxY - menuFrame.maxY) * scale).rounded())
+            let sharpWidth = sharp.width, sharpHeight = sharp.height
+            if let layer = rgba(sharp, sharpWidth, sharpHeight) {
+                if let debug = image(layer, sharpWidth, sharpHeight),
+                   let png = NSBitmapImageRep(cgImage: debug).representation(using: .png, properties: [:]) {
+                    try? png.write(to: file.deletingLastPathComponent()
+                        .appendingPathComponent(file.deletingPathExtension().lastPathComponent + "-layer.png"))
+                }
+                for y in 0..<sharpHeight where (0..<height).contains(menuY + y) {
+                    for x in 0..<sharpWidth where (0..<width).contains(menuX + x) {
+                        let source = (y * sharpWidth + x) * 4, target = ((menuY + y) * width + menuX + x) * 4
+                        let alpha = Int(layer[source + 3])
+                        guard alpha > 0 else { continue }
+                        for channel in 0..<4 {
+                            let under: Int = Int(picture[target + channel]) * (255 - alpha) / 255
+                            let over: Int = Int(layer[source + channel])
+                            picture[target + channel] = UInt8(min(255, over + under))
+                        }
+                    }
+                }
             }
         }
         guard let composed = image(picture, width, height),
