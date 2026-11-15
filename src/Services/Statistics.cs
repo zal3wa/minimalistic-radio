@@ -43,6 +43,8 @@ internal sealed class Statistics
 {
     // Back to the same station this soon after a dropped connection, the session goes on.
     private static readonly TimeSpan ReconnectWindow = TimeSpan.FromMinutes(2);
+    // Twice the app's 5 minutes between updates of a playing session.
+    private static readonly TimeSpan LongestGap = TimeSpan.FromMinutes(10);
     // Top artists need song titles for at least this part of the listening time.
     private const double EnoughTitlesShare = 0.2;
     private const int TopCount = 5;
@@ -76,10 +78,12 @@ internal sealed class Statistics
         resumable = null;
     }
 
-    // While the station plays: the session lasts until now (saved every few minutes, so a crash loses little).
+    // While the station plays: the session lasts until now (saved every few minutes, so a crash loses little). The app
+    // updates it every 5 minutes; a longer gap means the computer was asleep (or its clock jumped), and nothing played
+    // meanwhile, so the session isn't stretched over it.
     internal void Tick(DateTime now)
     {
-        if (open != null && now > open.End) open.End = now;
+        if (open != null && now > open.End && now - open.End <= LongestGap) open.End = now;
     }
 
     // The station stopped. canResume: not stopped on purpose (a dropped connection, an error), so a reconnect to the
@@ -393,6 +397,11 @@ internal sealed class Statistics
         recorded.Clear(t.AddMinutes(40));   // the station keeps playing: its session starts again from now
         Check(recorded.Songs.Count == 0 && recorded.Sessions.Count == 1 && recorded.Recording && recorded.Sessions[0].Start == t.AddMinutes(40) &&
             !recorded.Sessions[0].Titles, "czyszczenie w trakcie słuchania.");
+        // Asleep (no update for hours), the computer played nothing: waking up doesn't stretch the session over the night.
+        recorded.Tick(t.AddMinutes(45));
+        recorded.End(t.AddHours(9), true);
+        recorded.Begin("Radio A", "https://a.example/live", t.AddHours(9));
+        Check(recorded.Sessions.Count == 2 && recorded.Sessions[0].End == t.AddMinutes(45), "sesja po uśpieniu komputera.");
 
         // Top lists, the songs, the share of song titles and the 20 % threshold.
         Statistics top = Played(("Antyradio Hard", At(2026, 11, 2, 20), At(2026, 11, 2, 22), true), ("Radio 357", At(2026, 11, 3, 20), At(2026, 11, 3, 23), false),
