@@ -64,14 +64,6 @@
   </tr>
 </table>
 
-## Taskbar player (optional)
-
-On Windows 11 the song title and the radio's buttons can also sit on the taskbar:
-
-1. Install the free [Windhawk](https://windhawk.net).
-2. In it, install the [Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player) mod.
-3. Right-click the player → *Settings* → set the click action to *Open media app*. A click on the player then opens the radio's panel.
-
 ## Languages
 
 English, Polish, German, Ukrainian, Czech, Spanish, French, Italian and Portuguese (Settings → Language). Native speakers: if a translation sounds wrong, please fix it in [`src/Lang/*.po`](src/Lang) and send a pull request.

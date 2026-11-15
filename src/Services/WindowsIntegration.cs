@@ -8,7 +8,7 @@ using static Lang;
 
 // A Start menu shortcut carrying the app's ID ("Minimalistic Radio"). With it Windows knows the app:
 // its name and icon show in the media controls, and "shell:AppsFolder\Minimalistic Radio" starts it,
-// which is what the Windhawk taskbar player's "Open media app" click does.
+// which is what taskbar media players do to open the app.
 internal static class StartMenu
 {
     internal static string LinkPath => Path.Combine(

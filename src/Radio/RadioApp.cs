@@ -898,7 +898,7 @@ internal sealed partial class Radio
     // ---- Windows media controls (Win+A, media keys, lock screen) ----
 
     // A muted, looping silent clip keeps "Minimalistic Radio" in the Windows media controls
-    // (and the Windhawk taskbar player) even while the radio is stopped.
+    // (and taskbar media players) even while the radio is stopped.
     private void AttachMediaSession()
     {
         try

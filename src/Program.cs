@@ -31,7 +31,7 @@ internal static class Program
         if (chosen >= 0 && chosen + 1 < args.Length) Lang.Setting = args[chosen + 1];
 #endif
         bool updated = args.Contains("--updated");
-        // Same names as earlier versions, so an old copy and the Windhawk taskbar mod keep working with this one.
+        // Same names as earlier versions, so an old copy and taskbar media players keep working with this one.
         string instanceName = @"Local\RadioNaZywo", panelName = @"Local\MinimalisticRadio.Panel";
 #if SELFTEST
         // The self-test runs beside the radio, under names of its own.

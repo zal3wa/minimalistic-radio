@@ -36,7 +36,7 @@ Pushing a `v*` tag builds the exe with GitHub Actions and publishes a release wi
 - A dropped connection is retried, waiting a bit longer each time, and after sleep the station connects again at once. When Windows reports the network back (or a new address, as when switching Wi-Fi), it connects right away instead of waiting, even if the retries ran out in the last 10 minutes.
 - The "Add a station" page shows suggestions while the search box is empty: a hand-picked list (radio-browser `stationuuid`s in `Storage.RecommendedIds`) and the most popular stations of the country that goes with the radio's language (`Storage.CountryFor`, never the IP address): the system's "Country or region" if the language is spoken there, otherwise the language's home country; with English, the system's country, cleaned of spam and duplicates. They load once per run.
 - Song titles come from the stream's ICY metadata; cover art from the iTunes Search API, used only when the artist matches.
-- Windows media controls (Win+A, media keys, lock screen) are fed through `SystemMediaTransportControls`. A Start menu shortcut with the app's ID lets Windows and the Windhawk taskbar player know the app.
+- Windows media controls (Win+A, media keys, lock screen) are fed through `SystemMediaTransportControls`. A Start menu shortcut with the app's ID lets Windows and taskbar media players know the app.
 - Updates: every 6 hours the latest GitHub release is checked and downloaded in the background; a click on the green arrow renames the running exe to `*.old`, puts the new one in its place and restarts.
 
 ## Project structure

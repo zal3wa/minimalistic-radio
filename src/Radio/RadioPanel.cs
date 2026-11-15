@@ -1245,7 +1245,7 @@ internal sealed partial class Radio
             list.SelectedIndex = station;
             if (station != shownStation)
             {
-                // The station changed (media keys, tray menu, Windhawk…): bring it into view, but leave
+                // The station changed (media keys, tray menu, taskbar players…): bring it into view, but leave
                 // the list alone otherwise, so scrolling through it by hand isn't undone.
                 shownStation = station;
                 ShowActiveStation(false);
@@ -1303,7 +1303,7 @@ internal sealed partial class Radio
         RefreshPanel();
 
         // Always in the corner next to the notification area, 12 px from the screen edge and the taskbar,
-        // like the Windows 11 flyouts — wherever the panel was opened from (tray, Windhawk, Start menu).
+        // like the Windows 11 flyouts — wherever the panel was opened from (tray, a taskbar player, Start menu).
         void PositionPanel()
         {
             IntPtr handle = new WindowInteropHelper(panel).Handle;

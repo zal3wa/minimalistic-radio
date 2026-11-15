@@ -10,7 +10,7 @@ using System.Windows.Threading;
 using static Lang;
 
 // A small card like the Windows 11 media flyout, shown for a few seconds when the station changes from
-// outside the panel (media keys, Win+A, the tray menu, the Windhawk taskbar player). Windows has no API
+// outside the panel (media keys, Win+A, the tray menu, taskbar media players). Windows has no API
 // that lets an app show its own flyout, so this stands in for it. It never takes focus or clicks.
 internal sealed partial class Radio
 {
