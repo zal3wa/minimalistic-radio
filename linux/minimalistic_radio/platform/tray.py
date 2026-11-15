@@ -278,7 +278,7 @@ class TrayIcon(GObject.Object):
         self._watcher_signals = self._connection.signal_subscribe(
             owner, WATCHER, None, WATCHER_PATH, None, Gio.DBusSignalFlags.NONE, self._on_watcher_signal)
         self._connection.call(
-            owner, WATCHER_PATH, WATCHER, "RegisterStatusNotifierItem", GLib.Variant("(s)", (ITEM_PATH,)),
+            WATCHER, WATCHER_PATH, WATCHER, "RegisterStatusNotifierItem", GLib.Variant("(s)", (ITEM_PATH,)),
             None, Gio.DBusCallFlags.NONE, -1, None, lambda c, result: self._registered(c, result, owner))
 
     def _watcher_vanished(self, connection: Gio.DBusConnection | None, name: str) -> None:
@@ -304,16 +304,19 @@ class TrayIcon(GObject.Object):
             self._ask_for_host(owner)
 
     def _ask_for_host(self, owner: str) -> None:
+        """Asks the watcher by its well-known name: the Snap's unity7 rules allow this Get only to that name, not
+        to the unique one. `owner` only tells a late answer from an earlier watcher apart."""
         def answered(connection: Gio.DBusConnection, result: Gio.AsyncResult) -> None:
             try:
                 host = bool(connection.call_finish(result).unpack()[0])
-            except GLib.Error:
-                host = False
+            except GLib.Error as error:
+                # Refused by a confinement rule, after the watcher took the icon: a tray most likely shows it.
+                host = error.matches(Gio.DBusError.quark(), Gio.DBusError.ACCESS_DENIED)
             if owner == self._watcher:
                 self._set_visible(host)
 
         self._connection.call(
-            owner, WATCHER_PATH, PROPERTIES_IFACE, "Get",
+            WATCHER, WATCHER_PATH, PROPERTIES_IFACE, "Get",
             GLib.Variant("(ss)", (WATCHER, "IsStatusNotifierHostRegistered")), GLib.VariantType("(v)"),
             Gio.DBusCallFlags.NONE, -1, None, answered)
 

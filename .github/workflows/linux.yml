@@ -241,6 +241,45 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: xvfb-run -a snap run minimalistic-radio --self-test
 
+      # The decoders the snap gets from the GNOME platform (MP3, Opus, Vorbis, FLAC), the ICY titles, HTTP and the
+      # sound output, as the app's own GStreamer sees them inside the snap. AAC and HLS are played below.
+      - name: GStreamer elements in the snap
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          snap run --shell minimalistic-radio -c 'python3 -' <<'EOF'
+          import sys
+          import gi
+          gi.require_version("Gst", "1.0")
+          from gi.repository import Gst
+          Gst.init(None)
+          # Each line: what it is for, then the elements that can do it (any one is enough).
+          needed = [
+              ("HTTP", ["souphttpsrc"]),
+              ("ICY titles", ["icydemux"]),
+              ("playback", ["playbin"]),
+              ("MP3 parser", ["mpegaudioparse"]),
+              ("MP3 decoder", ["mpg123audiodec", "avdec_mp3"]),
+              ("Ogg", ["oggdemux"]),
+              ("Opus", ["opusdec"]),
+              ("Vorbis", ["vorbisdec"]),
+              ("FLAC parser", ["flacparse"]),
+              ("FLAC decoder", ["flacdec"]),
+              ("sound output", ["pulsesink", "pipewiresink"]),
+          ]
+          missing = []
+          for purpose, names in needed:
+              found = [n for n in names if Gst.ElementFactory.find(n) is not None]
+              if found:
+                  plugin = Gst.ElementFactory.find(found[0]).get_plugin()
+                  print(f"{purpose}: {found[0]} ({plugin.get_filename() if plugin else '?'})")
+              else:
+                  print(f"{purpose}: MISSING ({' or '.join(names)})")
+                  missing.append(purpose)
+          if missing:
+              print("::error::Missing in the snap: " + ", ".join(missing))
+              sys.exit(1)
+          EOF
+
       - name: HE-AAC check in the snap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
