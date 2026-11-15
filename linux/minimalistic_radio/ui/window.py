@@ -15,16 +15,19 @@ from gi.repository import Adw, Gdk, Gtk  # noqa: E402
 
 from .. import APP_NAME, main  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
+from ..core.share import is_share_link, read_link, share_link  # noqa: E402
 from .footer import Footer  # noqa: E402
 from .history_page import HistoryPage  # noqa: E402
 from .logos import LogoCache  # noqa: E402
 from .search_page import SearchPage  # noqa: E402
 from .settings_page import SettingsPage  # noqa: E402
+from .shared_page import SharedPage  # noqa: E402
 from .station_dialog import StationDialog  # noqa: E402
 from .stations_page import StationsPage  # noqa: E402
 from .statistics_page import StatisticsPage  # noqa: E402
 
-PAGES = ("stations", "search", "history", "settings", "statistics")
+PAGES = ("stations", "search", "history", "settings", "statistics", "shared")
+LINK_COPIED_SECONDS = 2
 OPENS_STATISTICS = ("settings", "history")   # Statistics opens over these, and back goes there
 EVERYTHING = (Change.STATE | Change.STATIONS | Change.TRACK | Change.COVER | Change.VOLUME | Change.SLEEP
               | Change.STATISTICS)
@@ -102,6 +105,8 @@ class RadioWindow(Adw.ApplicationWindow):
         self.navigation.add(self.settings_page)
         self.statistics_page = StatisticsPage(self, controller, self.logos, _)
         self.navigation.add(self.statistics_page)
+        self.shared_page = SharedPage(self, controller, self.logos, _)
+        self.navigation.add(self.shared_page)
         self.toasts = Adw.ToastOverlay(child=self.navigation)
         self.set_content(self.toasts)
 
@@ -194,14 +199,41 @@ class RadioWindow(Adw.ApplicationWindow):
         self.update_arrow.set_visible(label is not None)
         self.update_arrow.set_tooltip_text(label)
 
-    def toast(self, text: str) -> None:
-        """Shows `text` at the bottom of the window, in place of the previous toast."""
+    def share_station(self, index: int) -> None:
+        """Share in a station's ⋯ menu: its link on the clipboard, and "Link copied" for two seconds."""
+        if 0 <= index < len(self.controller.stations):
+            link = share_link(self.controller.stations[index])
+            self.get_clipboard().set_content(Gdk.ContentProvider.new_for_value(link))
+            # Above the player (the list's own overlay), not over the Play button.
+            self.toast(self._("Link copied"), LINK_COPIED_SECONDS, self.stations_page.toasts)
+
+    def open_link(self, text: str) -> bool:
+        """A share link (from the command line, or pasted where a station is added). A station on the list
+        already just plays; any other opens the Shared station page, which asks first. False if `text` isn't
+        a share link."""
+        if not is_share_link(text):
+            return False
+        shared = read_link(text)
+        known = self.controller.find_station(shared.url) if shared is not None else -1
+        if known >= 0:
+            self.controller.play_station(known)
+            self.show_page("stations")
+        else:
+            self.shared_page.show_station(shared)
+            self.show_page("shared")
+        return True
+
+    def toast(self, text: str, seconds: int = 0, overlay: Adw.ToastOverlay | None = None) -> None:
+        """Shows `text` at the bottom of the window (or of `overlay`), in place of the previous toast (`seconds`:
+        libadwaita's usual time if 0)."""
         if self._toast is not None:
             self._toast.dismiss()
         toast = Adw.Toast(title=text, use_markup=False)
+        if seconds:
+            toast.set_timeout(seconds)
         toast.connect("dismissed", self._toast_dismissed)
         self._toast = toast
-        self.toasts.add_toast(toast)
+        (overlay or self.toasts).add_toast(toast)
 
     def _toast_dismissed(self, toast: Adw.Toast) -> None:
         if self._toast is toast:
@@ -215,7 +247,7 @@ class RadioWindow(Adw.ApplicationWindow):
         return None
 
     def add_by_address(self) -> StationDialog:
-        return StationDialog(self, None, self.controller.add_station, self._)
+        return StationDialog(self, None, self.controller.add_station, self._, on_link=self.open_link)
 
     # ---- Keys ----
 

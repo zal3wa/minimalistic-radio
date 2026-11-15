@@ -54,6 +54,7 @@ python.install_sources(
   'ui/reorder.py',
   'ui/search_page.py',
   'ui/settings_page.py',
+  'ui/shared_page.py',
   'ui/station_dialog.py',
   'ui/stations_page.py',
   'ui/statistics_page.py',

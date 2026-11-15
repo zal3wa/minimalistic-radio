@@ -133,6 +133,54 @@ def test_normal_launch_shows_the_window_and_plays(app_id, tmp_path):
     assert app.controller.status is not Status.READY
 
 
+SHARED_LINK = ("minimalistic-radio://add?n=Antyradio+Hard"
+               "&u=https%3A%2F%2Fan05.cdn.eurozet.pl%2FANTHAR.mp3")   # what the share page's button opens
+
+
+def test_a_link_at_the_first_launch_opens_its_page_without_playing(app_id, tmp_path):
+    seed_station(tmp_path)
+    app = RadioApplication(application_id=app_id)
+    seen = {}
+
+    def check():
+        seen["pages"] = app.window.shown_pages()
+        seen["station"] = app.window.shared_page.station
+        app.quit()
+        return GLib.SOURCE_REMOVE
+
+    GLib.timeout_add(500, check)
+    assert app.run(["minimalistic-radio", SHARED_LINK]) == 0
+    assert seen["pages"] == ["stations", "shared"]
+    assert seen["station"].name == "Antyradio Hard"
+    assert app.controller.status is Status.READY   # the last station waits: the page asks first
+    assert [s.name for s in app.controller.stations] == ["Nowhere"]
+
+
+def test_a_link_from_a_second_launch_opens_its_page_in_the_first(app_id):
+    first = RadioApplication(application_id=app_id)
+    assert first.register()
+    second = subprocess.Popen(
+        [sys.executable, "-c",
+         "import sys; from minimalistic_radio.app import RadioApplication;"
+         "sys.exit(RadioApplication(application_id=sys.argv[1]).run(['minimalistic-radio', sys.argv[2]]))",
+         app_id, SHARED_LINK],
+        cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT)})
+    try:
+        assert pump(lambda: first.window is not None and first.window.is_visible()), "no window presented"
+        assert pump(lambda: first.window.shown_pages() == ["stations", "shared"]), "the link's page didn't open"
+        assert first.window.shared_page.station.url == "https://an05.cdn.eurozet.pl/ANTHAR.mp3"
+        assert pump(lambda: second.poll() is not None)
+        assert second.returncode == 0
+    finally:
+        if second.poll() is None:
+            second.kill()
+        first.quit()
+        if first.mpris is not None:
+            first.mpris.unpublish()
+        if first.tray is not None:
+            first.tray.stop()
+
+
 def test_close_hides_not_quits(app_id):
     app = RadioApplication(application_id=app_id)
     fired, seen = set(), {}
