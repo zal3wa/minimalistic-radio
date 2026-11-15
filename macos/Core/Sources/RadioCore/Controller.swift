@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // The radio itself: what plays, reconnecting, the sleep timer, song history and the station list.
@@ -108,12 +109,24 @@ public final class RadioController {
 
     private var listeners: [Int: (Change) -> Void] = [:]
     private var nextListener = 0
+    private let covers = CoverCache()
     private var fade = 100
+    private var sleepTimer: AnyObject?
+    // Muting: unmute goes back to the level from before the last burst of changes (see setVolume).
+    private var unmuteVolume = Preferences().volume
+    private var volumeBefore = Preferences().volume
+    private var volumeChangedAt: Date?
     // The playback session: one per play(), until stop() or the next play().
     private var session = 0
     private var url = ""
     private var kind = "generic"
+    private var attempt = 0
     private var everPlayed = false
+    private var attemptStarted = Date.distantPast
+    private var retryTimer: AnyObject?
+    private var pollTimer: AnyObject?
+    private var switchTimer: AnyObject?   // set while a switched station waits to connect
+    private var polling = false
 
     public init(player: AudioPlayer, scheduler: Scheduler, paths: Paths, fetch: @escaping FetchJSON,
                 fetchFile: @escaping FetchFile, localize: @escaping (String) -> String = { $0 }) {
@@ -166,10 +179,25 @@ public final class RadioController {
         prefs = loadPreferences(paths.preferencesFile)
         history = loadHistory(paths.historyFile)
         volume = prefs.volume
+        pruneCovers()
         current = stations.firstIndex { $0.url == prefs.lastPlayed } ?? -1
         player.setVolume(effectiveVolume)
         emit([.state, .stations, .volume, .history, .preferences])
         if current >= 0 && !autostart { play() }
+    }
+
+    /// Keeps only the newest cover pictures, so the cache doesn't grow with every song.
+    private func pruneCovers() {
+        let files = FileManager.default
+        guard let entries = try? files.contentsOfDirectory(at: paths.coversFolder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey]) else { return }
+        let dated: [(Date, URL)] = entries.compactMap { url in
+            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true else { return nil }
+            return (values.contentModificationDate ?? .distantPast, url)
+        }
+        for (_, url) in dated.sorted(by: { $0.0 > $1.0 }).dropFirst(coversKept) {
+            try? files.removeItem(at: url)
+        }
     }
 
     // Saving never stops the radio. Only a station list that couldn't be saved is worth telling (as Windows).
@@ -195,8 +223,12 @@ public final class RadioController {
     // MARK: - Playback
 
     /// Starts the chosen station (the first one if none is chosen). A station already on keeps going.
-    public func play() {
+    /// False when there is nothing to play (no stations yet).
+    @discardableResult
+    public func play() -> Bool {
+        guard !stations.isEmpty else { return false }
         if !active { startSession() }
+        return true
     }
 
     /// A new connection to the chosen station, dropping the current one (StartPlayback on Windows).
@@ -206,7 +238,9 @@ public final class RadioController {
         endSession()
         url = stations[current].url
         kind = stationKind(url)
+        attempt = 0
         everPlayed = false
+        polling = false
         connect()
         emit([.state, .track, .cover])
     }
@@ -226,31 +260,91 @@ public final class RadioController {
     /// Forgets the current session: callbacks still on their way are ignored from now on.
     private func endSession() {
         session += 1
+        for timer in [retryTimer, pollTimer, switchTimer].compactMap({ $0 }) { scheduler.cancel(timer) }
+        retryTimer = nil
+        pollTimer = nil
+        switchTimer = nil
         gaveUpOnNetworkAt = nil
         track = nil
         coverPath = nil
     }
 
     private func connect() {
+        retryTimer = nil
         status = .connecting
         message = nil
+        attemptStarted = scheduler.now()
         player.play(url)
+    }
+
+    private func retry(_ wanted: Int) {
+        guard wanted == session, status == .retrying else { return }
+        connect()
+        emit(.state)
+    }
+
+    /// The stream broke (`error`) or simply ended (nil). Mirrors the retry loop of StartPlayback on Windows.
+    private func connectionEnded(_ error: String?) {
+        let now = scheduler.now()
+        if now.timeIntervalSince(attemptStarted) > longConnection { attempt = 0 }
+        if attempt >= (everPlayed ? retriesOncePlayed : retriesNeverPlayed) {
+            if let error {
+                stop(message: error)
+                gaveUpOnNetworkAt = now
+            } else {
+                stop(message: L("The broadcast has ended"))
+            }
+            return
+        }
+        let delay = backoff[min(attempt, backoff.count - 1)]
+        attempt += 1
+        player.stop()
+        track = nil
+        coverPath = nil
+        status = .retrying
+        message = L("Connection lost. Retrying in {0} s…").replacingOccurrences(of: "{0}", with: String(Int(delay)))
+        let wanted = session
+        retryTimer = scheduler.callLater(delay) { [weak self] in self?.retry(wanted) }
+        emit([.state, .track, .cover])
+    }
+
+    /// The network settled: connect now instead of waiting out a retry, or start again if the retries ran out
+    /// because the connection was lost less than 10 minutes ago. A playing station kept its connection (a VPN, a new
+    /// interface), unless the network was down in between.
+    public func networkAvailable(wasDown: Bool = true) {
+        if status == .playing && !wasDown { return }
+        comeBack()
+    }
+
+    /// Back from sleep: the old connection is dead.
+    public func resumed() {
+        comeBack()
+    }
+
+    private func comeBack() {
+        if active { startSession(); return }
+        if let lost = gaveUpOnNetworkAt, scheduler.now().timeIntervalSince(lost) < networkReturnWindow { startSession() }
     }
 
     // MARK: - Called by the player (on the main thread)
 
+    /// While a switch waits to connect, the player still plays the station from before: not this one's news.
     private func connected() -> Bool {
-        status == .connecting || status == .playing
+        switchTimer == nil && (status == .connecting || status == .playing)
     }
 
     public func onPlayerStarted() {
-        guard status == .connecting else { return }
+        guard status == .connecting, switchTimer == nil else { return }
         everPlayed = true
         status = .playing
         message = nil
         prefs.lastPlayed = url
         savePrefs()
         emit(.state)
+        if kind == "radio357" && !polling {
+            polling = true
+            pollRadio357(session)
+        }
     }
 
     public func onPlayerTitle(_ raw: String) {
@@ -260,24 +354,78 @@ public final class RadioController {
 
     public func onPlayerError(_ kind: ErrorKind, detail: String) {
         guard connected() else { return }
-        stop(message: detail)
+        if kind == .network { connectionEnded(detail) } else { stop(message: detail) }
     }
 
     public func onPlayerEOS() {
-        guard connected() else { return }
-        stop(message: L("The broadcast has ended"))
+        if connected() { connectionEnded(nil) }
     }
 
-    // MARK: - Titles, history
+    // MARK: - Titles, covers, history
 
     private func showTrack(_ raw: String?) {
         let title = parseTitle(raw, kind: kind)
+        let artwork = title != nil ? artworkFromRaw(raw) : nil
         if title == track { return }
         track = title
         coverPath = nil
         var changes: Change = [.track, .cover]
         if let title, addToHistory(title) { changes.insert(.history) }
         emit(changes)
+        guard let title else { return }
+        if let artwork { downloadCover(artwork, title) } else { findCover(title) }
+    }
+
+    private func stillShowing(_ wanted: Int, _ title: String) -> Bool {
+        wanted == session && track == title
+    }
+
+    private func findCover(_ title: String) {
+        let known = covers.get(title)
+        if known.known {
+            if let url = known.url { downloadCover(url, title) }
+            return
+        }
+        guard let search = itunesSearchURL(title) else { return }
+        let wanted = session
+        fetch(search) { [weak self] payload in
+            guard let self, let payload else { return }   // a failed lookup isn't remembered: asked again next time
+            let cover = pickCover(artist: splitTrack(title).artist ?? "", payload: payload)
+            self.covers.put(title, cover)
+            if let cover, self.stillShowing(wanted, title) { self.downloadCover(cover, title) }
+        }
+    }
+
+    private func downloadCover(_ address: String, _ title: String) {
+        guard let source = URL(string: address) else { return }
+        let hex = Insecure.SHA1.hash(data: Data(address.utf8)).map { String(format: "%02x", $0) }.joined()
+        let file = paths.coversFolder.appendingPathComponent(hex + ".jpg")
+        if FileManager.default.fileExists(atPath: file.path) {
+            showCover(file)
+            return
+        }
+        guard (try? FileManager.default.createDirectory(at: paths.coversFolder, withIntermediateDirectories: true)) != nil else { return }
+        let wanted = session
+        fetchFile(source, file) { [weak self] ok in
+            guard let self, ok, self.stillShowing(wanted, title) else { return }
+            self.showCover(file)
+        }
+    }
+
+    private func showCover(_ file: URL) {
+        coverPath = file
+        emit(.cover)
+    }
+
+    /// Every 10 s after each answer, while this session lasts.
+    private func pollRadio357(_ wanted: Int) {
+        pollTimer = nil
+        guard wanted == session else { return }
+        fetch(radio357URL) { [weak self] payload in
+            guard let self, wanted == self.session else { return }
+            if self.connected() { self.showTrack(radio357Title(payload)) }
+            self.pollTimer = self.scheduler.callLater(radio357PollSeconds) { [weak self] in self?.pollRadio357(wanted) }
+        }
     }
 
     private func addToHistory(_ title: String) -> Bool {
@@ -295,16 +443,67 @@ public final class RadioController {
         emit(.history)
     }
 
-    // MARK: - Volume
+    // MARK: - Volume and sleep timer
 
     public func setVolume(_ percent: Int) {
         let value = max(0, min(100, percent))
         guard value != volume else { return }
+        // Changes less than a second apart count as one (as on Windows): turned down to 0 that way,
+        // unmuting brings back the level from before them, not the 1 % passed last.
+        let now = scheduler.now()
+        if volumeChangedAt.map({ now.timeIntervalSince($0) > volumeBurst }) ?? true { volumeBefore = volume }
+        volumeChangedAt = now
+        if value == 0 && volumeBefore > 0 { unmuteVolume = volumeBefore }
         volume = value
         prefs.volume = value
         player.setVolume(effectiveVolume)
         savePrefs()
         emit(.volume)
+    }
+
+    /// The speaker button: mutes, or unmutes to the level from before (30 if there was none).
+    public func toggleMute() {
+        let before = volume
+        setVolume(before == 0 ? unmuteVolume : 0)
+        if before > 0 { unmuteVolume = before }
+    }
+
+    public func setSleepTimer(minutes: Int?) {
+        if let timer = sleepTimer {
+            scheduler.cancel(timer)
+            sleepTimer = nil
+        }
+        let minutes = (minutes ?? 0) > 0 ? minutes : nil
+        sleepMinutes = minutes
+        sleepAt = minutes.map { scheduler.now().addingTimeInterval(Double($0) * 60) }
+        setFade(100)
+        if minutes != nil {
+            sleepTimer = scheduler.callLater(1) { [weak self] in self?.sleepTick() }
+        }
+        emit(.sleep)
+    }
+
+    private func sleepTick() {
+        sleepTimer = nil
+        guard let sleepAt else { return }
+        let left = sleepAt.timeIntervalSince(scheduler.now())
+        if left <= 0 {
+            if active {
+                stop(message: L("Stopped by the sleep timer"))
+            } else {
+                gaveUpOnNetworkAt = nil   // the network coming back must not start it again
+            }
+            setSleepTimer(minutes: nil)   // after stopping, so the full volume never sounds
+            return
+        }
+        setFade(left >= fadeSeconds ? 100 : Int(left * 100 / fadeSeconds))
+        sleepTimer = scheduler.callLater(1) { [weak self] in self?.sleepTick() }
+    }
+
+    private func setFade(_ value: Int) {
+        guard value != fade else { return }
+        fade = value
+        player.setVolume(effectiveVolume)
     }
 
     // MARK: - Choosing a station
@@ -315,7 +514,18 @@ public final class RadioController {
         var changes: Change = switched ? .switched : []
         if index != current {
             current = index
-            if active {
+            if active && switched {
+                // Shows the new station at once, but connects only after a pause in switching: skipping through
+                // stations doesn't connect to each one.
+                endSession()   // also drops a switch still waiting
+                status = .connecting
+                message = nil
+                switchTimer = scheduler.callLater(switchSettle) { [weak self] in
+                    self?.switchTimer = nil
+                    self?.startSession()
+                }
+                changes.formUnion([.state, .track, .cover])
+            } else if active {
                 startSession()
             } else {
                 gaveUpOnNetworkAt = nil   // another station chosen: don't bring back the lost one

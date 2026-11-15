@@ -14,5 +14,11 @@ msgstr "Seznam stanic se nepodařilo uložit."
 msgid "The broadcast has ended"
 msgstr "Vysílání skončilo"
 
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Spojení ztraceno. Znovu za {0} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Zastaveno časovačem vypnutí"
+
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Toto není seznam stanic Minimalistic Radio."

@@ -14,5 +14,11 @@ msgstr "Не вдалося зберегти список станцій."
 msgid "The broadcast has ended"
 msgstr "Трансляцію завершено"
 
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Зв’язок втрачено. Повтор через {0} с…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Зупинено таймером сну"
+
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "Це не список станцій Minimalistic Radio."

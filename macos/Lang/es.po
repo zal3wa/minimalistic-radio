@@ -14,5 +14,11 @@ msgstr "No se pudo guardar la lista de emisoras."
 msgid "The broadcast has ended"
 msgstr "La emisión ha terminado"
 
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Se perdió la conexión. Reintentando en {0} s…"
+
+msgid "Stopped by the sleep timer"
+msgstr "Detenido por el temporizador"
+
 msgid "This isn't a Minimalistic Radio station list."
 msgstr "No es una lista de emisoras de Minimalistic Radio."
