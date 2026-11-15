@@ -31,6 +31,9 @@ msgstr "Iniciar oculta, como al empezar la sesión"
 msgid "Started again after an update"
 msgstr "Iniciada de nuevo tras una actualización"
 
+msgid "Open the window without playing"
+msgstr "Abrir la ventana sin reproducir"
+
 msgid "Start, check that the window opens, and exit"
 msgstr "Iniciar, comprobar que se abre la ventana y salir"
 
@@ -298,9 +301,6 @@ msgstr "Todas las emisoras de este archivo ya están en la lista."
 
 msgid "stations"
 msgstr "emisoras"
-
-msgid "Icons: Lucide (ISC)"
-msgstr "Iconos: Lucide (ISC)"
 
 msgid "Connecting…"
 msgstr "Conectando…"

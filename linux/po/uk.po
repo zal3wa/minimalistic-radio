@@ -31,6 +31,9 @@ msgstr "Запустити приховано, як на початку сеан
 msgid "Started again after an update"
 msgstr "Запущено знову після оновлення"
 
+msgid "Open the window without playing"
+msgstr "Відкрити вікно без відтворення"
+
 msgid "Start, check that the window opens, and exit"
 msgstr "Запустити, перевірити, що вікно відкривається, і вийти"
 
@@ -298,9 +301,6 @@ msgstr "Усі станції з цього файлу вже є у списку
 
 msgid "stations"
 msgstr "станції"
-
-msgid "Icons: Lucide (ISC)"
-msgstr "Значки: Lucide (ISC)"
 
 msgid "Connecting…"
 msgstr "Підключення…"

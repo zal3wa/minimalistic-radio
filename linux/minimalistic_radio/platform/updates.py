@@ -125,11 +125,14 @@ class UpdateMonitor:
             window.toast(self.app._("Couldn't update. Try again later."))
 
     def _restart(self) -> None:
-        """The newest installed version, through the portal; this one quits once it is on its way."""
+        """The newest installed version, through the portal; this one quits once it is on its way.
+
+        Playing, the new version plays and shows its window. Not playing, it doesn't play, and it starts hidden
+        only if the window is hidden now: the click came from the tray, and a window popping up would surprise."""
         argv = ["minimalistic-radio", "--updated"]
-        controller = self.app.controller
+        controller, window = self.app.controller, self.app.window
         if controller is None or not controller.active:
-            argv.append("--autostart")
+            argv.append("--stopped" if window is not None and window.get_visible() else "--autostart")
         try:
             cwd = os.getcwd().encode() + b"\0"
             self._bus.call(PORTAL, PORTAL_PATH, PORTAL, "Spawn",

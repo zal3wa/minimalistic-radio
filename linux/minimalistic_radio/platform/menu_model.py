@@ -31,7 +31,7 @@ def _separator(name: int | str) -> MenuItem:
 
 
 def _shorten(text: str) -> str:
-    """At most TOOLTIP_BODY_MAX characters, ending with "…" when cut (a song title can be very long)."""
+    """At most TOOLTIP_BODY_MAX characters, ending with "…" when cut (a song or a station name can be very long)."""
     return text if len(text) <= TOOLTIP_BODY_MAX else text[:TOOLTIP_BODY_MAX - 1] + "…"
 
 
@@ -58,7 +58,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
 
     sleeping = c.sleep_at is not None
     label = _("Stops at {time}").format(time=f"{c.sleep_at:%H:%M}") if sleeping else _("Sleep timer")
-    timer = [MenuItem(f"sleep:{m}", f"{m} min", toggle="radio", checked=c.sleep_minutes == m)
+    timer = [MenuItem(f"sleep:{m}", _("{n} min").format(n=m), toggle="radio", checked=c.sleep_minutes == m)
              for m in SLEEP_MINUTES]
     timer.append(MenuItem("sleep:off", _("Off"), toggle="radio", checked=not sleeping))
     items.append(MenuItem("sleep", label, icon="weather-clear-night-symbolic", children=timer))
@@ -80,7 +80,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
 def tooltip(c: RadioController) -> tuple[str, str]:
     name = c.station_name
     title = f"{APP_NAME} · {name}" if name else APP_NAME
-    return title, _shorten(c.track or "")
+    return _shorten(title), _shorten(c.track or "")
 
 
 def mpris_metadata(c: RadioController) -> dict[str, Any]:

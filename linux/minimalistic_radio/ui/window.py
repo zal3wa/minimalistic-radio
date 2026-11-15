@@ -90,6 +90,7 @@ class RadioWindow(Adw.ApplicationWindow):
         controller.subscribe(self._changed)
         self._changed(EVERYTHING)
         if controller.corrupt_stations:
+            controller.corrupt_stations = False   # told once per run: a window built again doesn't repeat it
             self.toast(_("Your station list couldn't be read. It was saved as stations.json.bad."))
 
     def _destroyed(self, _window: Gtk.Window) -> None:

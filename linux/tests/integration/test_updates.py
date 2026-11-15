@@ -121,7 +121,13 @@ def test_apply_updates_then_restarts(started):
     assert portal.updates == [("", {})] and not portal.spawns
     portal.emit("Progress", status=2)
     assert pump(lambda: app.quits)
-    assert portal.spawns == [(["minimalistic-radio", "--updated", "--autostart"], 2)]
+    # Not playing, with the window open: the new version opens its window, without playing.
+    assert portal.spawns == [(["minimalistic-radio", "--updated", "--stopped"], 2)]
+    # Not playing, with the window hidden (the tray's item): it starts hidden.
+    app.window.set_visible(False)
+    app.updates._restart()
+    assert pump(lambda: len(app.quits) == 2)
+    assert portal.spawns[-1] == (["minimalistic-radio", "--updated", "--autostart"], 2)
 
 
 def test_restart_while_playing_keeps_playing(started):

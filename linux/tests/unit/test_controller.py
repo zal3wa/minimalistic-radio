@@ -237,6 +237,13 @@ def test_next_previous_wrap_and_flag_switch(ctl):
     ctl.select(0); seen = []; ctl.subscribe(seen.append); ctl.previous_station()
     assert ctl.current == len(ctl.stations) - 1 and any(Change.SWITCHED in c for c in seen)
     ctl.next_station(); assert ctl.current == 0
+def test_quick_switches_connect_once_to_the_last_station(ctl):
+    playing(ctl); ctl.player.calls.clear()
+    for _ in range(5):
+        ctl.next_station(); ctl.scheduler.advance(0.05)                      # five presses within 300 ms
+    assert ctl.current == 2 and ctl.status is Status.CONNECTING and ctl.player.calls == []
+    ctl.scheduler.advance(0.3)
+    assert ctl.player.calls == [("play", C.url)]
 def test_add_station_rejects_invalid_and_duplicates(ctl):
     assert ctl.add_station(Station("", "http://x/a")) is AddResult.INVALID
     assert ctl.add_station(Station("Copy", A.url.replace("http:", "https:") + "/")) is AddResult.DUPLICATE

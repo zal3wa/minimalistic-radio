@@ -104,6 +104,8 @@ class RadioApplication(Adw.Application):
                              _("Start hidden, as when the session starts"), None)
         self.add_main_option("updated", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
                              _("Started again after an update"), None)
+        self.add_main_option("stopped", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
+                             _("Open the window without playing"), None)
         self.add_main_option("self-test", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
                              _("Start, check that the window opens, and exit"), None)
         self.add_main_option("screenshot", 0, GLib.OptionFlags.NONE, GLib.OptionArg.STRING,
@@ -214,7 +216,7 @@ class RadioApplication(Adw.Application):
                     print("self-test ok")
             GLib.idle_add(self._quit_idle)
             return code
-        self._start_radio(autostart)
+        self._start_radio(autostart or options.contains("stopped"))
         if not autostart:
             self.show_window()
             if self.updated:
@@ -232,6 +234,7 @@ class RadioApplication(Adw.Application):
             self.session.close()
         if self.notifier is not None:
             self.notifier.close()
+            self.notifier.withdraw()
         if self.mpris is not None:
             self.mpris.unpublish()
         if self.tray is not None:

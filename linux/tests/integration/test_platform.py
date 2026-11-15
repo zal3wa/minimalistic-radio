@@ -277,6 +277,7 @@ def test_switch_notification(setup, monkeypatch):
     controller.select(0)
     controller.next_station()
     assert sent == ["station"] and notifier.last_title == "Beta"
+    assert notifier.last_body == "Ready to play"   # switched while stopped: the status, not "Connecting…"
     controller.prefs.show_station_popup = False
     controller.next_station()
     assert len(sent) == 1

@@ -101,7 +101,7 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     assert about.get_version() == VERSION
     assert about.get_license_type() == Gtk.License.MIT_X11
     assert about.get_website() == "https://github.com/zal3wa/minimalistic-radio"
-    assert "Icons: Lucide (ISC)" in about.get_comments()
+    assert "Lucide" not in (about.get_comments() or "")   # Linux uses the system's icons
     about.close()
 
     page.quit_button.emit("clicked")

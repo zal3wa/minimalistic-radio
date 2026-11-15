@@ -31,6 +31,9 @@ msgstr "Spustit skryté, jako při startu relace"
 msgid "Started again after an update"
 msgstr "Znovu spuštěno po aktualizaci"
 
+msgid "Open the window without playing"
+msgstr "Otevřít okno bez přehrávání"
+
 msgid "Start, check that the window opens, and exit"
 msgstr "Spustit, ověřit, že se otevře okno, a skončit"
 
@@ -298,9 +301,6 @@ msgstr "Všechny stanice z tohoto souboru už jsou v seznamu."
 
 msgid "stations"
 msgstr "stanice"
-
-msgid "Icons: Lucide (ISC)"
-msgstr "Ikony: Lucide (ISC)"
 
 msgid "Connecting…"
 msgstr "Připojování…"

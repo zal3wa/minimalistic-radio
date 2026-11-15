@@ -341,5 +341,5 @@ def test_empty_state(make):
 
 def test_corrupt_list_toast(make):
     window, controller = make(stations_text="{ not a station list")
-    assert controller.corrupt_stations
     assert wait_for(lambda: CORRUPT in texts(window.toasts))
+    assert not controller.corrupt_stations   # told once: a window built again (a language change) doesn't repeat it

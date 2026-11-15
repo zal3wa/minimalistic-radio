@@ -35,6 +35,7 @@ FADE_SECONDS = 30                            # the sleep timer fades out over it
 RADIO357_POLL_SECONDS = 10
 COVERS_KEPT = 200                            # pictures kept in the cover cache
 VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
+SWITCH_SETTLE = 0.3                          # a media key or tray switch connects once switching pauses this long
 LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
 
 
@@ -146,6 +147,7 @@ class RadioController:
         self._attempt_started = datetime.min
         self._retry_timer: object | None = None
         self._poll_timer: object | None = None
+        self._switch_timer: object | None = None   # set while a switched station waits to connect
         self._polling = False
 
     # ---- State ----
@@ -292,10 +294,10 @@ class RadioController:
     def _end_session(self) -> None:
         """Forgets the current session: callbacks still on their way are ignored from now on."""
         self._session += 1
-        for timer in (self._retry_timer, self._poll_timer):
+        for timer in (self._retry_timer, self._poll_timer, self._switch_timer):
             if timer is not None:
                 self.scheduler.cancel(timer)
-        self._retry_timer = self._poll_timer = None
+        self._retry_timer = self._poll_timer = self._switch_timer = None
         self.gave_up_on_network_at = None
         self.track = None
         self.cover_path = None
@@ -355,10 +357,11 @@ class RadioController:
     # ---- Called by the player (on the main loop) ----
 
     def _connected(self) -> bool:
-        return self.status in (Status.CONNECTING, Status.PLAYING)
+        # While a switch waits to connect, the player still plays the station from before: not this one's news.
+        return self._switch_timer is None and self.status in (Status.CONNECTING, Status.PLAYING)
 
     def on_player_started(self) -> None:
-        if self.status is not Status.CONNECTING:
+        if self.status is not Status.CONNECTING or self._switch_timer is not None:
             return
         self._ever_played = True
         self.status = Status.PLAYING
@@ -545,13 +548,23 @@ class RadioController:
     # ---- Choosing a station ----
 
     def select(self, index: int, switched: bool = False) -> None:
-        """`switched`: by a media key or the tray menu, so the desktop shows which station is on."""
+        """`switched`: by a media key or the tray menu, so the desktop shows which station is on.
+
+        A switch while on shows the new station at once, but connects only after SWITCH_SETTLE without another
+        switch: skipping through stations doesn't connect to each one, and the player never stops a stream it has
+        just started (GStreamer can crash on that)."""
         if not 0 <= index < len(self.stations):
             return
         changes = Change.SWITCHED if switched else Change(0)
         if index != self.current:
             self.current = index
-            if self.active:
+            if self.active and switched:
+                self._end_session()   # also drops a switch still waiting
+                self.status = Status.CONNECTING
+                self.message = None
+                self._switch_timer = self.scheduler.call_later(SWITCH_SETTLE, self._switch_settled)
+                changes |= Change.STATE | Change.TRACK | Change.COVER
+            elif self.active:
                 self._start()
             else:
                 self.gave_up_on_network_at = None   # another station chosen: don't bring back the lost one
@@ -559,6 +572,10 @@ class RadioController:
                 self.message = None
                 changes |= Change.STATE
         self._emit(changes)
+
+    def _switch_settled(self) -> None:
+        self._switch_timer = None
+        self._start()
 
     def next_station(self) -> None:
         if self.stations:

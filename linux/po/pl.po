@@ -47,6 +47,10 @@ msgid "Started again after an update"
 msgstr "Uruchomione ponownie po aktualizacji"
 
 #: minimalistic_radio/app.py
+msgid "Open the window without playing"
+msgstr "Otwórz okno bez odtwarzania"
+
+#: minimalistic_radio/app.py
 msgid "Start, check that the window opens, and exit"
 msgstr "Uruchom, sprawdź, czy okno się otwiera, i zakończ"
 
@@ -400,10 +404,6 @@ msgstr "Wszystkie stacje z tego pliku już są na liście."
 #: minimalistic_radio/ui/settings_page.py
 msgid "stations"
 msgstr "stacje"
-
-#: minimalistic_radio/ui/settings_page.py
-msgid "Icons: Lucide (ISC)"
-msgstr "Ikony: Lucide (ISC)"
 
 #: minimalistic_radio/platform/notifications.py
 msgid "Connecting…"

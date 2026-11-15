@@ -31,6 +31,9 @@ msgstr "Versteckt starten, wie beim Start der Sitzung"
 msgid "Started again after an update"
 msgstr "Nach einer Aktualisierung neu gestartet"
 
+msgid "Open the window without playing"
+msgstr "Fenster ohne Wiedergabe öffnen"
+
 msgid "Start, check that the window opens, and exit"
 msgstr "Starten, prüfen, ob sich das Fenster öffnet, und beenden"
 
@@ -298,9 +301,6 @@ msgstr "Alle Sender aus dieser Datei sind schon in der Liste."
 
 msgid "stations"
 msgstr "Sender"
-
-msgid "Icons: Lucide (ISC)"
-msgstr "Symbole: Lucide (ISC)"
 
 msgid "Connecting…"
 msgstr "Verbinden…"

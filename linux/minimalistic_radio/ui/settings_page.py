@@ -180,8 +180,7 @@ class SettingsPage(Adw.NavigationPage):
 
     def show_about(self) -> Adw.AboutDialog:
         about = Adw.AboutDialog(application_name=APP_NAME, application_icon=APP_ID, version=VERSION,
-                                license_type=Gtk.License.MIT_X11, website=WEBSITE,
-                                comments=self._("Icons: Lucide (ISC)"))
+                                license_type=Gtk.License.MIT_X11, website=WEBSITE)
         about.present(self.window)
         self.about = about
         return about
