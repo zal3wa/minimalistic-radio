@@ -14,8 +14,32 @@ msgstr "Quitter"
 msgid "Add a station first."
 msgstr "Ajoutez d'abord une station."
 
+msgid "Station"
+msgstr "Station"
+
+msgid "History"
+msgstr "Historique"
+
+msgid "Settings"
+msgstr "Paramètres"
+
 msgid "Now playing"
 msgstr "En cours de lecture"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "Song history"
+msgstr "Historique des titres"
+
+msgid "Statistics"
+msgstr "Statistiques"
+
+msgid "Show"
+msgstr "Afficher"
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Rien pour l'instant. Écoutez la radio un moment, puis revenez."
 
 msgid "Copied"
 msgstr "Copié"
@@ -76,24 +100,6 @@ msgstr "Plus"
 
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Déplacez Minimalistic Radio dans Applications pour recevoir les mises à jour."
-
-msgid "Station"
-msgstr "Station"
-
-msgid "Search the radio-browser.info directory"
-msgstr "Rechercher dans l'annuaire radio-browser.info"
-
-msgid "Back"
-msgstr "Retour"
-
-msgid "Song history"
-msgstr "Historique des titres"
-
-msgid "Settings"
-msgstr "Paramètres"
-
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Masquer le panneau (la radio continue)"
 
 msgid "Stations"
 msgstr "Stations"
@@ -161,17 +167,20 @@ msgstr "Afficher les changements de station"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Une carte sous l'icône après une touche multimédia ou un changement depuis le menu"
 
+msgid "Station list"
+msgstr "Liste des stations"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Une copie dans un fichier, p. ex. pour des amis"
+
 msgid "Export…"
 msgstr "Exporter…"
 
 msgid "Import…"
 msgstr "Importer…"
 
-msgid "Station list"
-msgstr "Liste des stations"
-
-msgid "A copy in a file, e.g. for friends"
-msgstr "Une copie dans un fichier, p. ex. pour des amis"
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Collectées uniquement sur cet ordinateur, jamais envoyées ailleurs"
 
 msgid "Updates"
 msgstr "Mises à jour"
@@ -185,11 +194,17 @@ msgstr "Vérifier"
 msgid "About"
 msgstr "À propos"
 
+msgid "Version {0}"
+msgstr "Version {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Quitter Minimalistic Radio"
 
 msgid "Not checked yet."
 msgstr "Pas encore vérifié."
+
+msgid "Last checked: {0}"
+msgstr "Dernière vérification : {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Stations enregistrées : {0}."
@@ -232,6 +247,63 @@ msgstr "Supprimer"
 
 msgid "Station options"
 msgstr "Options de la station"
+
+msgid "All"
+msgstr "Tout"
+
+msgid "Year"
+msgstr "Année"
+
+msgid "Month"
+msgstr "Mois"
+
+msgid "Clear statistics"
+msgstr "Effacer les statistiques"
+
+msgid "Listening time"
+msgstr "Temps d'écoute"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} par jour"
+
+msgid "Song titles"
+msgstr "Titres reçus"
+
+msgid "Longest"
+msgstr "Écoute la plus longue"
+
+msgid "Top stations"
+msgstr "Stations les plus écoutées"
+
+msgid "Top artists"
+msgstr "Artistes les plus écoutés"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "D'après les titres envoyés par les stations · {0} du temps d'écoute"
+
+msgid "Not enough song titles yet"
+msgstr "Pas encore assez de titres"
+
+msgid "When you listen"
+msgstr "Quand vous écoutez"
+
+msgid "Most often {0}"
+msgstr "Le plus souvent {0}"
+
+msgid "Since {0}"
+msgstr "Depuis le {0}"
+
+msgid "1 play"
+msgstr "1 écoute"
+
+msgid "{0} plays"
+msgstr "{0} écoutes"
+
+msgid "Clear statistics?"
+msgstr "Effacer les statistiques ?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Toutes les statistiques d'écoute de cet ordinateur seront effacées. L'historique des titres est conservé."
 
 msgid "This station uses a format that can't be played."
 msgstr "Cette station utilise un format qui ne peut pas être lu."
@@ -301,6 +373,12 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Désactivé"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "Impossible de télécharger la mise à jour. La radio réessaiera plus tard."

@@ -14,8 +14,32 @@ msgstr "Salir"
 msgid "Add a station first."
 msgstr "Primero añade una emisora."
 
+msgid "Station"
+msgstr "Emisora"
+
+msgid "History"
+msgstr "Historial"
+
+msgid "Settings"
+msgstr "Configuración"
+
 msgid "Now playing"
 msgstr "Sonando ahora"
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "Song history"
+msgstr "Historial de canciones"
+
+msgid "Statistics"
+msgstr "Estadísticas"
+
+msgid "Show"
+msgstr "Mostrar"
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Aún no hay nada aquí. Escucha la radio un rato y vuelve."
 
 msgid "Copied"
 msgstr "Copiado"
@@ -76,24 +100,6 @@ msgstr "Más"
 
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Mueve Minimalistic Radio a Aplicaciones para recibir actualizaciones."
-
-msgid "Station"
-msgstr "Emisora"
-
-msgid "Search the radio-browser.info directory"
-msgstr "Busca en el directorio radio-browser.info"
-
-msgid "Back"
-msgstr "Atrás"
-
-msgid "Song history"
-msgstr "Historial de canciones"
-
-msgid "Settings"
-msgstr "Configuración"
-
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Ocultar el panel (la radio sigue sonando)"
 
 msgid "Stations"
 msgstr "Emisoras"
@@ -161,17 +167,20 @@ msgstr "Mostrar cambios de emisora"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Una tarjeta bajo el icono tras una tecla multimedia o un cambio desde el menú"
 
+msgid "Station list"
+msgstr "Lista de emisoras"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Una copia en un archivo, p. ej. para amigos"
+
 msgid "Export…"
 msgstr "Exportar…"
 
 msgid "Import…"
 msgstr "Importar…"
 
-msgid "Station list"
-msgstr "Lista de emisoras"
-
-msgid "A copy in a file, e.g. for friends"
-msgstr "Una copia en un archivo, p. ej. para amigos"
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Se recopilan solo en este ordenador y nunca se envían a ningún sitio"
 
 msgid "Updates"
 msgstr "Actualizaciones"
@@ -185,11 +194,17 @@ msgstr "Comprobar ahora"
 msgid "About"
 msgstr "Acerca de"
 
+msgid "Version {0}"
+msgstr "Versión {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Salir de Minimalistic Radio"
 
 msgid "Not checked yet."
 msgstr "Aún no se ha comprobado."
+
+msgid "Last checked: {0}"
+msgstr "Última comprobación: {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Emisoras guardadas: {0}."
@@ -232,6 +247,63 @@ msgstr "Quitar"
 
 msgid "Station options"
 msgstr "Opciones de la emisora"
+
+msgid "All"
+msgstr "Todo"
+
+msgid "Year"
+msgstr "Año"
+
+msgid "Month"
+msgstr "Mes"
+
+msgid "Clear statistics"
+msgstr "Borrar estadísticas"
+
+msgid "Listening time"
+msgstr "Tiempo de escucha"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} al día"
+
+msgid "Song titles"
+msgstr "Títulos de canciones"
+
+msgid "Longest"
+msgstr "Sesión más larga"
+
+msgid "Top stations"
+msgstr "Emisoras más escuchadas"
+
+msgid "Top artists"
+msgstr "Artistas más escuchados"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Según los títulos que envían las emisoras · {0} del tiempo de escucha"
+
+msgid "Not enough song titles yet"
+msgstr "Aún no hay suficientes títulos"
+
+msgid "When you listen"
+msgstr "Cuándo escuchas"
+
+msgid "Most often {0}"
+msgstr "Más a menudo: {0}"
+
+msgid "Since {0}"
+msgstr "Desde el {0}"
+
+msgid "1 play"
+msgstr "1 reproducción"
+
+msgid "{0} plays"
+msgstr "{0} reproducciones"
+
+msgid "Clear statistics?"
+msgstr "¿Borrar las estadísticas?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Se borrarán todas las estadísticas de escucha de este ordenador. El historial de canciones se conserva."
 
 msgid "This station uses a format that can't be played."
 msgstr "Esta emisora usa un formato que no se puede reproducir."
@@ -301,6 +373,12 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Desactivado"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "No se pudo descargar la actualización. La radio lo intentará más tarde."

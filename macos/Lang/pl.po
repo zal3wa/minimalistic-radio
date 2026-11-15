@@ -14,8 +14,32 @@ msgstr "Zakończ"
 msgid "Add a station first."
 msgstr "Najpierw dodaj stację."
 
+msgid "Station"
+msgstr "Stacja"
+
+msgid "History"
+msgstr "Historia"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
 msgid "Now playing"
 msgstr "Teraz gra"
+
+msgid "Back"
+msgstr "Wstecz"
+
+msgid "Song history"
+msgstr "Historia utworów"
+
+msgid "Statistics"
+msgstr "Statystyki"
+
+msgid "Show"
+msgstr "Pokaż"
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Na razie nic tu nie ma. Posłuchaj radia przez jakiś czas i wróć."
 
 msgid "Copied"
 msgstr "Skopiowano"
@@ -76,24 +100,6 @@ msgstr "Więcej"
 
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Przenieś Minimalistic Radio do Aplikacji, aby dostawać aktualizacje."
-
-msgid "Station"
-msgstr "Stacja"
-
-msgid "Search the radio-browser.info directory"
-msgstr "Szukaj w katalogu radio-browser.info"
-
-msgid "Back"
-msgstr "Wstecz"
-
-msgid "Song history"
-msgstr "Historia utworów"
-
-msgid "Settings"
-msgstr "Ustawienia"
-
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Ukryj panel (radio gra dalej)"
 
 msgid "Stations"
 msgstr "Stacje"
@@ -161,17 +167,20 @@ msgstr "Pokazuj zmianę stacji"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Karta pod ikonką po zmianie klawiszem multimedialnym lub z menu"
 
+msgid "Station list"
+msgstr "Lista stacji"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopia w pliku, np. dla znajomych"
+
 msgid "Export…"
 msgstr "Eksportuj…"
 
 msgid "Import…"
 msgstr "Importuj…"
 
-msgid "Station list"
-msgstr "Lista stacji"
-
-msgid "A copy in a file, e.g. for friends"
-msgstr "Kopia w pliku, np. dla znajomych"
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Zbierane tylko na tym komputerze i nigdzie niewysyłane"
 
 msgid "Updates"
 msgstr "Aktualizacje"
@@ -185,11 +194,17 @@ msgstr "Sprawdź teraz"
 msgid "About"
 msgstr "O aplikacji"
 
+msgid "Version {0}"
+msgstr "Wersja {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Zakończ Minimalistic Radio"
 
 msgid "Not checked yet."
 msgstr "Jeszcze nie sprawdzano."
+
+msgid "Last checked: {0}"
+msgstr "Ostatnio sprawdzono: {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Zapisano stacje: {0}."
@@ -232,6 +247,63 @@ msgstr "Usuń"
 
 msgid "Station options"
 msgstr "Opcje stacji"
+
+msgid "All"
+msgstr "Wszystko"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Miesiąc"
+
+msgid "Clear statistics"
+msgstr "Wyczyść statystyki"
+
+msgid "Listening time"
+msgstr "Czas słuchania"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} dziennie"
+
+msgid "Song titles"
+msgstr "Tytuły utworów"
+
+msgid "Longest"
+msgstr "Najdłużej"
+
+msgid "Top stations"
+msgstr "Najczęściej słuchane stacje"
+
+msgid "Top artists"
+msgstr "Najczęściej słuchani wykonawcy"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Z tytułów utworów wysyłanych przez stacje · {0} czasu słuchania"
+
+msgid "Not enough song titles yet"
+msgstr "Jeszcze za mało tytułów utworów"
+
+msgid "When you listen"
+msgstr "Kiedy słuchasz"
+
+msgid "Most often {0}"
+msgstr "Najczęściej {0}"
+
+msgid "Since {0}"
+msgstr "Od {0}"
+
+msgid "1 play"
+msgstr "1 odtworzenie"
+
+msgid "{0} plays"
+msgstr "odtworzenia: {0}"
+
+msgid "Clear statistics?"
+msgstr "Wyczyścić statystyki?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Wszystkie statystyki słuchania na tym komputerze zostaną usunięte. Historia utworów zostanie."
 
 msgid "This station uses a format that can't be played."
 msgstr "Ta stacja nadaje w formacie, którego nie da się odtworzyć."
@@ -301,6 +373,12 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Wył."
+
+msgid "{0} h {1} min"
+msgstr "{0} godz. {1} min"
+
+msgid "{0} h"
+msgstr "{0} godz."
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "Nie udało się pobrać aktualizacji. Radio spróbuje ponownie później."

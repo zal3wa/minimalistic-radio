@@ -3,8 +3,8 @@ import RadioCore
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings, as on Windows, in the Mac's grouped style: language, open at login, the station card, the station
-/// list's export and import, updates, about, quit.
+/// Settings, the same on every system, in the Mac's grouped style: General (language, open at login, the station
+/// card), Stations (export and import), Statistics, Updates, About, Quit.
 struct SettingsPage: View {
     @ObservedObject var model: PanelModel
     @State private var listMessage: String?
@@ -38,16 +38,26 @@ struct SettingsPage: View {
             }
             Section(L("Stations")) {
                 LabeledContent {
-                    HStack {
-                        Button(L("Export…"), action: exportStations)
-                        Button(L("Import…"), action: importStations)
-                    }
+                    EmptyView()
                 } label: {
                     Text(L("Station list"))
                     Text(listMessage ?? L("A copy in a file, e.g. for friends"))
                 }
+                HStack {
+                    Spacer()
+                    Button(L("Export…"), action: exportStations)
+                    Button(L("Import…"), action: importStations)
+                }
             }
-            if AppDelegate.shared?.updater?.enabled == true {
+            Section {
+                LabeledContent {
+                    Button(L("Show")) { model.page = .statistics }
+                } label: {
+                    Text(L("Statistics"))
+                    Text(L("Collected only on this computer, never sent anywhere"))
+                }
+            }
+            if model.showsUpdates {
                 Section(L("Updates")) {
                     Toggle(isOn: Binding(get: { controller.prefs.checkUpdates }, set: { controller.setCheckUpdates($0) })) {
                         Text(L("Updates"))
@@ -61,12 +71,32 @@ struct SettingsPage: View {
                 }
             }
             Section(L("About")) {
-                LabeledContent(appName, value: version)
-                Link("github.com/zal3wa/minimalistic-radio", destination: URL(string: "https://github.com/zal3wa/minimalistic-radio")!)
-                Text("MIT License").foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 38, height: 38)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(appName)
+                        Text(L("Version {0}").replacingOccurrences(of: "{0}", with: version) + " · MIT")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 4)
+                    Link(destination: URL(string: "https://github.com/zal3wa/minimalistic-radio")!) {
+                        HStack(spacing: 2) {
+                            Text("GitHub")
+                            Image(systemName: "arrow.up.right").imageScale(.small)
+                        }
+                    }
+                    .help("github.com/zal3wa/minimalistic-radio")
+                }
             }
             Section {
-                Button(L("Quit Minimalistic Radio"), role: .destructive) { NSApp.terminate(nil) }
+                HStack {
+                    Button(L("Quit Minimalistic Radio"), role: .destructive) { NSApp.terminate(nil) }
+                    Spacer()
+                }
             }
         }
         .formStyle(.grouped)
@@ -80,7 +110,8 @@ struct SettingsPage: View {
 
     private var lastCheck: String {
         guard let last = controller.prefs.lastUpdateCheck else { return L("Not checked yet.") }
-        return DateFormatter.localizedString(from: last, dateStyle: .short, timeStyle: .short)
+        return L("Last checked: {0}").replacingOccurrences(
+            of: "{0}", with: DateFormatter.localizedString(from: last, dateStyle: .short, timeStyle: .short))
     }
 
     private func setOpenAtLogin(_ on: Bool) {

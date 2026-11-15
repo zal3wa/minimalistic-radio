@@ -14,8 +14,32 @@ msgstr "Ukončit"
 msgid "Add a station first."
 msgstr "Nejdřív přidejte stanici."
 
+msgid "Station"
+msgstr "Stanice"
+
+msgid "History"
+msgstr "Historie"
+
+msgid "Settings"
+msgstr "Nastavení"
+
 msgid "Now playing"
 msgstr "Právě hraje"
+
+msgid "Back"
+msgstr "Zpět"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Statistics"
+msgstr "Statistiky"
+
+msgid "Show"
+msgstr "Zobrazit"
+
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
 
 msgid "Copied"
 msgstr "Zkopírováno"
@@ -76,24 +100,6 @@ msgstr "Další"
 
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Přesuňte Minimalistic Radio do Aplikací, abyste dostávali aktualizace."
-
-msgid "Station"
-msgstr "Stanice"
-
-msgid "Search the radio-browser.info directory"
-msgstr "Hledat v katalogu radio-browser.info"
-
-msgid "Back"
-msgstr "Zpět"
-
-msgid "Song history"
-msgstr "Historie skladeb"
-
-msgid "Settings"
-msgstr "Nastavení"
-
-msgid "Hide the panel (the radio keeps playing)"
-msgstr "Skrýt panel (rádio hraje dál)"
 
 msgid "Stations"
 msgstr "Stanice"
@@ -161,17 +167,20 @@ msgstr "Zobrazovat změnu stanice"
 msgid "A card under the icon after a media key or menu switch"
 msgstr "Karta pod ikonou po multimediální klávese nebo přepnutí v nabídce"
 
+msgid "Station list"
+msgstr "Seznam stanic"
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopie v souboru, např. pro přátele"
+
 msgid "Export…"
 msgstr "Exportovat…"
 
 msgid "Import…"
 msgstr "Importovat…"
 
-msgid "Station list"
-msgstr "Seznam stanic"
-
-msgid "A copy in a file, e.g. for friends"
-msgstr "Kopie v souboru, např. pro přátele"
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Shromažďuje se jen v tomto počítači a nikam se neodesílá"
 
 msgid "Updates"
 msgstr "Aktualizace"
@@ -185,11 +194,17 @@ msgstr "Zkontrolovat"
 msgid "About"
 msgstr "O aplikaci"
 
+msgid "Version {0}"
+msgstr "Verze {0}"
+
 msgid "Quit Minimalistic Radio"
 msgstr "Ukončit Minimalistic Radio"
 
 msgid "Not checked yet."
 msgstr "Zatím nekontrolováno."
+
+msgid "Last checked: {0}"
+msgstr "Naposledy zkontrolováno: {0}"
 
 msgid "Stations saved: {0}."
 msgstr "Uloženo stanic: {0}."
@@ -232,6 +247,63 @@ msgstr "Odebrat"
 
 msgid "Station options"
 msgstr "Možnosti stanice"
+
+msgid "All"
+msgstr "Vše"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Month"
+msgstr "Měsíc"
+
+msgid "Clear statistics"
+msgstr "Vymazat statistiky"
+
+msgid "Listening time"
+msgstr "Doba poslechu"
+
+msgid "≈ {0} a day"
+msgstr "≈ {0} denně"
+
+msgid "Song titles"
+msgstr "Názvy skladeb"
+
+msgid "Longest"
+msgstr "Nejdelší poslech"
+
+msgid "Top stations"
+msgstr "Nejposlouchanější stanice"
+
+msgid "Top artists"
+msgstr "Nejposlouchanější interpreti"
+
+msgid "From song titles sent by the stations · {0} of listening time"
+msgstr "Z názvů skladeb, které posílají stanice · {0} doby poslechu"
+
+msgid "Not enough song titles yet"
+msgstr "Zatím málo názvů skladeb"
+
+msgid "When you listen"
+msgstr "Kdy posloucháte"
+
+msgid "Most often {0}"
+msgstr "Nejčastěji {0}"
+
+msgid "Since {0}"
+msgstr "Od {0}"
+
+msgid "1 play"
+msgstr "1 přehrání"
+
+msgid "{0} plays"
+msgstr "{0} přehrání"
+
+msgid "Clear statistics?"
+msgstr "Vymazat statistiky?"
+
+msgid "All listening statistics on this computer will be deleted. The song history stays."
+msgstr "Všechny statistiky poslechu v tomto počítači budou smazány. Historie skladeb zůstane."
 
 msgid "This station uses a format that can't be played."
 msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."
@@ -301,6 +373,12 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Vypnuto"
+
+msgid "{0} h {1} min"
+msgstr "{0} h {1} min"
+
+msgid "{0} h"
+msgstr "{0} h"
 
 msgid "Couldn't download the update. The radio will try again later."
 msgstr "Aktualizaci se nepodařilo stáhnout. Rádio to zkusí později znovu."
