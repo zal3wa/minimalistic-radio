@@ -117,11 +117,15 @@ the right.
    login (existing texts and descriptions); Show station changes (existing texts).
 2. **Stations** (header): "Station list" with "A copy in a file, e.g. for friends"; under it, a second row with
    [Export…] [Import…] aligned right. Status messages after export/import stay as today.
-3. **Statistics** card, **no header**: title "Statistics", description "Collected only on this computer, never sent
-   anywhere", button [Show] on the right, which opens the Statistics page.
-4. **Updates** (header), Windows and macOS only (Linux updates come through Flatpak): the Updates toggle with "Looks for
-   a new version every few hours", and a row "Last checked: …" with [Check now] (Windows: [Update] when one is ready, as
-   today).
+3. **Statistics** card, **no header**, two rows *(the owner's later edit of the mockups)*:
+   - title "Statistics", description "Collected only on this computer, never sent anywhere", and an **on/off toggle**
+     (on by default). Off: nothing new is recorded (no sessions, no songs); what was collected stays.
+   - under a divider: "Collected since {date}" (the first recorded session's day, the long date format of the UI
+     language; "Nothing collected yet" when there is none) and the [Show] button on the right, which opens the
+     Statistics page.
+4. **Updates** (header), Windows and macOS only (Linux updates come through Flatpak): the toggle row titled
+   **"Automatic updates"** *(the owner's later edit)* with "Looks for a new version every few hours", and a row "Last
+   checked: …" with [Check now] (Windows: [Update] when one is ready, as today).
 5. **About** (header): one row: the **app icon** (Windows/Linux: the round icon from `docs/icon.svg` /
    `linux/data/icons/.../io.github.zal3wa.minimalistic-radio.svg`, 32 px; macOS: the rounded-square app icon, 38 px),
    "Minimalistic Radio", description "Version X · MIT" (Windows keeps " · Lucide icons"), and a "GitHub ↗" link on the
@@ -159,6 +163,9 @@ Opened from Settings › Statistics › [Show]. Title "Statistics". Content, top
 
 With no data in the chosen period, the page shows the switch and one line: "Nothing here yet. Listen for a while and
 come back."
+
+When collecting is switched off, a grey line under the period switch says "Statistics are off. Nothing new is
+recorded."; what was collected before is still shown.
 
 ### What is recorded, and how it is counted
 
