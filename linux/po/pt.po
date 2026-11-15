@@ -285,9 +285,6 @@ msgstr "Versão"
 msgid "Quit Minimalistic Radio"
 msgstr "Sair do Minimalistic Radio"
 
-msgid "Stops the radio and removes it from the tray"
-msgstr "Para o rádio e retira-o da área de notificação"
-
 #, python-brace-format
 msgid "Stations saved: {n}."
 msgstr "Estações guardadas: {n}."
@@ -329,3 +326,254 @@ msgstr "Atualizado para a versão {VERSION}."
 
 msgid "Couldn't update. Try again later."
 msgstr "Não foi possível atualizar. Tente novamente mais tarde."
+
+#: minimalistic_radio/ui/window.py
+msgid "History"
+msgstr "Histórico"
+
+#: minimalistic_radio/ui/bars.py
+msgid "Close (the radio keeps playing)"
+msgstr "Fechar (o rádio continua a tocar)"
+
+#: minimalistic_radio/app.py
+msgid "Open it again from the tray icon."
+msgstr "Volte a abri-lo a partir do ícone na área de notificação."
+
+#: minimalistic_radio/ui/settings_page.py minimalistic_radio/ui/statistics_page.py
+msgid "Statistics"
+msgstr "Estatísticas"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Collected only on this computer, never sent anywhere"
+msgstr "Recolhidas apenas neste computador, nunca enviadas para lado nenhum"
+
+#: minimalistic_radio/ui/settings_page.py
+msgid "Show"
+msgstr "Mostrar"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "All"
+msgstr "Tudo"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Year"
+msgstr "Ano"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Month"
+msgstr "Mês"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Nothing here yet. Listen for a while and come back."
+msgstr "Ainda não há nada aqui. Ouça durante algum tempo e volte."
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Listening time"
+msgstr "Tempo de audição"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Song titles"
+msgstr "Títulos de músicas"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Longest"
+msgstr "Audição mais longa"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Top stations"
+msgstr "Estações mais ouvidas"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Top artists"
+msgstr "Artistas mais ouvidos"
+
+#: minimalistic_radio/ui/statistics_page.py
+#, python-brace-format
+msgid "From song titles sent by the stations · {share} of listening time"
+msgstr "A partir dos títulos enviados pelas estações · {share} do tempo de audição"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Not enough song titles yet"
+msgstr "Ainda não há títulos suficientes"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "When you listen"
+msgstr "Quando ouve"
+
+#: minimalistic_radio/ui/statistics_page.py
+#, python-brace-format
+msgid "Most often {hours}"
+msgstr "Com mais frequência: {hours}"
+
+#: minimalistic_radio/ui/statistics_page.py
+#, python-brace-format
+msgid "≈ {time} a day"
+msgstr "≈ {time} por dia"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Clear statistics"
+msgstr "Limpar estatísticas"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Clear statistics?"
+msgstr "Limpar as estatísticas?"
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "The listening time and the songs counted so far are deleted. The song history stays."
+msgstr "O tempo de audição e as músicas contados até agora serão apagados. O histórico de músicas mantém-se."
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "Clear"
+msgstr "Limpar"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "{h} h {min} min"
+msgstr "{h} h {min} min"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "{h} h"
+msgstr "{h} h"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "{month} {year}"
+msgstr "{month} de {year}"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "{day} {month} {year}"
+msgstr "{day} de {month} de {year}"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "Since {date}"
+msgstr "Desde {date}"
+
+#: minimalistic_radio/core/statistics.py
+#, python-brace-format
+msgid "{n} play"
+msgid_plural "{n} plays"
+msgstr[0] "{n} reprodução"
+msgstr[1] "{n} reproduções"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "January"
+msgstr "janeiro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "February"
+msgstr "fevereiro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "March"
+msgstr "março"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "April"
+msgstr "abril"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "May"
+msgstr "maio"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "June"
+msgstr "junho"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "July"
+msgstr "julho"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "August"
+msgstr "agosto"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "September"
+msgstr "setembro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "October"
+msgstr "outubro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "November"
+msgstr "novembro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "month"
+msgid "December"
+msgstr "dezembro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "January"
+msgstr "janeiro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "February"
+msgstr "fevereiro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "March"
+msgstr "março"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "April"
+msgstr "abril"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "May"
+msgstr "maio"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "June"
+msgstr "junho"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "July"
+msgstr "julho"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "August"
+msgstr "agosto"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "September"
+msgstr "setembro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "October"
+msgstr "outubro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "November"
+msgstr "novembro"
+
+#: minimalistic_radio/core/statistics.py
+msgctxt "date"
+msgid "December"
+msgstr "dezembro"
