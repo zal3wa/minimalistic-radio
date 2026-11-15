@@ -77,7 +77,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Panel and card (Tasks 15 and 18)
 
-    func openPanel(page: String? = nil) {}
+    /// Until the panel exists (Task 15), a click shows the menu.
+    func openPanel(page: String? = nil) {
+        statusItem.showMenu()
+    }
 
     func showCard(_ text: String? = nil) {}
 
