@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using static Lang;
 
 // Same JSON shape as earlier versions: [{"Name":…,"Url":…,"Logo":…}] and {"Volume":…,"LastPlayed":…}.
 public sealed class SavedStation
@@ -22,7 +23,7 @@ public sealed class Preferences
 {
     public int Volume { get; set; }
     public string LastPlayed { get; set; }
-    public string Language { get; set; }   // "auto", "pl", "en"
+    public string Language { get; set; }   // "auto" or a language code (Lang.Languages)
     public bool? CheckUpdates { get; set; }
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
@@ -221,7 +222,7 @@ internal static class Storage
         try { popular = CleanPopular((await Fetch(client, route, token)).Where(entry => entry.Working), recommended); }
         catch (HttpRequestException error) { Debug.WriteLine(error); complete = false; }   // the recommended ones are still shown
         if (recommended.Length == 0 && popular.Length == 0)
-            throw new HttpRequestException(Lang.T("Nie udało się połączyć z katalogiem stacji.", "Couldn't reach the station directory."));
+            throw new HttpRequestException(L("Couldn't reach the station directory."));
         return new SuggestionList { Recommended = recommended, Popular = popular, Country = country, Complete = complete };
     }
 
@@ -267,6 +268,6 @@ internal static class Storage
                 Debug.WriteLine(error);
             }
         }
-        throw new HttpRequestException(Lang.T("Nie udało się połączyć z katalogiem stacji.", "Couldn't reach the station directory."));
+        throw new HttpRequestException(L("Couldn't reach the station directory."));
     }
 }

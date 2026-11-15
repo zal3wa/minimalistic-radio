@@ -117,7 +117,7 @@ internal sealed partial class Radio
     private void RefreshOsd()
     {
         osdTitle.Text = osdCopied ?? StationName;
-        osdText.Text = osdCopied != null ? T("Skopiowano do schowka", "Copied to clipboard") : track ?? (session == null ? status : playing ? T("Teraz gra", "Now playing") : status);
+        osdText.Text = osdCopied != null ? L("Copied to clipboard") : track ?? (session == null ? status : playing ? L("Now playing") : status);
         string picture = CoverUrl;
         if (picture == osdPicture) return;
         osdPicture = picture;

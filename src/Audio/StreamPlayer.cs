@@ -6,12 +6,13 @@ using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage.Streams;
+using static Lang;
 
 // Plays an MP3/AAC radio stream with the decoders built into Windows:
 // frames from FrameReader are handed one by one to a MediaStreamSource.
 internal static class StreamPlayer
 {
-    private static string ConnectionLost => Lang.T("Połączenie ze stacją zostało przerwane.", "The connection to the station was lost.");
+    private static string ConnectionLost => L("The connection to the station was lost.");
 
     // Blocks until the stream ends (returns), fails (throws) or is cancelled (throws OperationCanceledException).
     // Throws UnsupportedFormatException, before any sound, for streams Windows cannot decode.
@@ -29,7 +30,7 @@ internal static class StreamPlayer
             { throw new OperationCanceledException(cancel); }
             catch (Exception error) when (error is System.IO.IOException || error is System.IO.InvalidDataException)
             { throw new InvalidOperationException(ConnectionLost, error); }
-            if (first == null) throw new InvalidOperationException(Lang.T("Stacja nie nadaje dźwięku.", "The station isn't sending any sound."));
+            if (first == null) throw new InvalidOperationException(L("The station isn't sending any sound."));
 
             var done = new TaskCompletionSource<Exception>();
             MediaStreamSource source = CreateSource(frames, first, cancel, done);
@@ -42,8 +43,7 @@ internal static class StreamPlayer
                 bool playing = false;
                 // A decoder failure before the first sound means Windows can't play this format.
                 player.MediaFailed += (_, e) => done.TrySetResult(playing
-                    ? new InvalidOperationException(Lang.T("Nie udało się odtworzyć stacji. Spróbuj ponownie.",
-                        "Couldn't play the station. Try again."))
+                    ? new InvalidOperationException(L("Couldn't play the station. Try again."))
                     : new UnsupportedFormatException());
                 player.PlaybackSession.PlaybackStateChanged += (session, _) =>
                 {

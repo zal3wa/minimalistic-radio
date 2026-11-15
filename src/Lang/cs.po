@@ -1,0 +1,408 @@
+# Czech translation of Minimalistic Radio.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Project-Id-Version: Minimalistic Radio 2.5.0\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "The station doesn't send song titles"
+msgstr "Stanice neposílá názvy skladeb"
+
+msgid "Ready to play"
+msgstr "Připraveno k přehrávání"
+
+msgid "Connecting to the station…"
+msgstr "Připojování ke stanici…"
+
+msgid "Updated to version {0}"
+msgstr "Aktualizováno na verzi {0}"
+
+msgid "Play"
+msgstr "Přehrát"
+
+msgid "Stop"
+msgstr "Zastavit"
+
+msgid "Station"
+msgstr "Stanice"
+
+msgid "Volume"
+msgstr "Hlasitost"
+
+msgid "Up 5%"
+msgstr "Zvýšit o 5%"
+
+msgid "Down 5%"
+msgstr "Snížit o 5%"
+
+msgid "Mute"
+msgstr "Ztlumit"
+
+msgid "Sleep timer"
+msgstr "Časovač vypnutí"
+
+msgid "Update to {0}"
+msgstr "Aktualizovat na {0}"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Quit"
+msgstr "Ukončit"
+
+msgid "Couldn't copy the title."
+msgstr "Název se nepodařilo zkopírovat."
+
+msgid "Stops at {0}"
+msgstr "Vypne se v {0}"
+
+#. {0}: minutes, in the sleep timer menu.
+msgid "{0} min"
+msgstr "{0} min"
+
+#. The sleep timer menu: no timer.
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Stopped by the sleep timer"
+msgstr "Zastaveno časovačem vypnutí"
+
+msgid "Connection lost. Retrying in {0} s…"
+msgstr "Spojení ztraceno. Znovu za {0} s…"
+
+msgid "The broadcast has ended"
+msgstr "Vysílání skončilo"
+
+msgid "Stopped"
+msgstr "Zastaveno"
+
+msgid "Click to copy the song"
+msgstr "Kliknutím zkopírujete skladbu"
+
+msgid "Copy song: {0}"
+msgstr "Kopírovat skladbu: {0}"
+
+msgid "Checking…"
+msgstr "Kontrola…"
+
+msgid "You have the latest version."
+msgstr "Máte nejnovější verzi."
+
+msgid "Downloading version {0}…"
+msgstr "Stahování verze {0}…"
+
+msgid "Couldn't check for updates."
+msgstr "Aktualizace se nepodařilo zkontrolovat."
+
+msgid "Couldn't install it. Opening the page with the new version."
+msgstr "Instalace se nezdařila. Otevírám stránku s novou verzí."
+
+#. The label next to an on/off switch, as in Windows Settings.
+msgctxt "switch"
+msgid "On"
+msgstr "Zapnuto"
+
+#. The label next to an on/off switch, as in Windows Settings.
+msgctxt "switch"
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Station name"
+msgstr "Název stanice"
+
+msgid "Stream address (HTTP or HTTPS)"
+msgstr "Adresa streamu (HTTP nebo HTTPS)"
+
+msgid "Logo address (optional)"
+msgstr "Adresa loga (nepovinné)"
+
+msgid "Copied"
+msgstr "Zkopírováno"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Type a station name"
+msgstr "Zadejte název stanice"
+
+msgid "Search"
+msgstr "Hledat"
+
+msgid "Search the radio-browser.info directory"
+msgstr "Hledat v katalogu radio-browser.info"
+
+msgid "Add by address"
+msgstr "Přidat podle adresy"
+
+msgid "Song history"
+msgstr "Historie skladeb"
+
+msgid "Hide the panel (the radio keeps playing)"
+msgstr "Skrýt panel (rádio hraje dál)"
+
+msgid "Update Ready!"
+msgstr "Aktualizace připravena!"
+
+msgid "Stations"
+msgstr "Stanice"
+
+msgid "Back"
+msgstr "Zpět"
+
+msgid "Couldn't save the station list."
+msgstr "Seznam stanic se nepodařilo uložit."
+
+msgid "Searching…"
+msgstr "Hledání…"
+
+msgid "No results."
+msgstr "Žádné výsledky."
+
+msgid "The station directory is unavailable right now. Try again."
+msgstr "Katalog je dočasně nedostupný. Zkuste to znovu."
+
+msgid "Loading suggestions…"
+msgstr "Načítání návrhů…"
+
+msgid "Recommended"
+msgstr "Doporučené"
+
+msgid "Popular in your country"
+msgstr "Oblíbené ve vaší zemi"
+
+msgid "Popular worldwide"
+msgstr "Oblíbené ve světě"
+
+msgid "History"
+msgstr "Historie"
+
+msgid "Add a station"
+msgstr "Přidat stanici"
+
+msgid "This station is already on the list."
+msgstr "Tato stanice už je v seznamu."
+
+msgid "Enter a name and a valid stream address. The logo is optional."
+msgstr "Zadejte název a platnou adresu streamu. Logo je nepovinné."
+
+msgid "This address is already on the list."
+msgstr "Tato adresa už je v seznamu."
+
+msgid "Already on your list"
+msgstr "Už je ve vašem seznamu"
+
+msgid "Add to your stations"
+msgstr "Přidat do stanic"
+
+msgid "Station options"
+msgstr "Možnosti stanice"
+
+msgid "Edit"
+msgstr "Upravit"
+
+msgid "Remove"
+msgstr "Odebrat"
+
+msgid "Songs the radio plays will show up here."
+msgstr "Zde se objeví skladby, které rádio zahraje."
+
+msgid "More"
+msgstr "Další"
+
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "The clipboard is busy."
+msgstr "Schránka je obsazená."
+
+msgid "Search on Spotify"
+msgstr "Hledat na Spotify"
+
+msgid "Search on YouTube"
+msgstr "Hledat na YouTube"
+
+msgid "Clear history"
+msgstr "Vymazat historii"
+
+msgid "Same as Windows"
+msgstr "Podle Windows"
+
+msgid "General"
+msgstr "Obecné"
+
+msgid "Language"
+msgstr "Jazyk"
+
+#. {0}: the name of a language, as in the entries at the end ("Polish", "English"...).
+msgid "In Windows: {0}"
+msgstr "Ve Windows: {0}"
+
+msgid "Start with Windows"
+msgstr "Spouštět s Windows"
+
+msgid "Waits by the clock, doesn't play by itself"
+msgstr "Čeká u hodin, samo nehraje"
+
+msgid "Show station changes"
+msgstr "Zobrazovat změnu stanice"
+
+msgid "A card at the bottom after a media key or menu switch"
+msgstr "Karta dole na obrazovce po přepnutí klávesou nebo z nabídky"
+
+msgid "Export…"
+msgstr "Exportovat…"
+
+msgid "Import…"
+msgstr "Importovat…"
+
+#. Part of the file name of an exported station list: "Minimalistic Radio - stations.json".
+msgid "stations"
+msgstr "stanice"
+
+msgid "Station list"
+msgstr "Seznam stanic"
+
+msgid "Stations saved: {0}."
+msgstr "Uloženo stanic: {0}."
+
+msgid "Couldn't save the file."
+msgstr "Soubor se nepodařilo uložit."
+
+msgid "All files"
+msgstr "Všechny soubory"
+
+msgid "This isn't a Minimalistic Radio station list."
+msgstr "Toto není seznam stanic Minimalistic Radio."
+
+msgid "All stations from this file are already on the list."
+msgstr "Všechny stanice z tohoto souboru už jsou v seznamu."
+
+msgid "Stations added: {0}."
+msgstr "Přidáno stanic: {0}."
+
+msgid "A copy in a file, e.g. for friends"
+msgstr "Kopie v souboru, např. pro přátele"
+
+msgid "Version {0} is ready to install"
+msgstr "Verze {0} je připravena k instalaci"
+
+msgid "Looks for a new version every few hours"
+msgstr "Každých pár hodin hledá novou verzi"
+
+msgid "Not checked yet."
+msgstr "Zatím nekontrolováno."
+
+msgid "Last checked: {0}"
+msgstr "Naposledy zkontrolováno: {0}"
+
+msgid "Update"
+msgstr "Aktualizovat"
+
+msgid "Check now"
+msgstr "Zkontrolovat"
+
+msgid "About"
+msgstr "O aplikaci"
+
+msgid "Version {0}"
+msgstr "Verze {0}"
+
+#. After "Version 2.5.0 · MIT · "; Lucide is a name.
+msgid "Lucide icons"
+msgstr "ikony Lucide"
+
+msgid "Updates"
+msgstr "Aktualizace"
+
+msgid "Quit Minimalistic Radio"
+msgstr "Ukončit Minimalistic Radio"
+
+msgid "Stops the radio and removes it from next to the clock"
+msgstr "Vypne rádio a odebere ikonu u hodin"
+
+msgid "Unmute"
+msgstr "Zrušit ztlumení"
+
+msgid "Copy title"
+msgstr "Kopírovat název"
+
+msgid "Now playing"
+msgstr "Právě hraje"
+
+msgid "Copied to clipboard"
+msgstr "Zkopírováno do schránky"
+
+msgid "The radio is already running. Look for its icon next to the clock."
+msgstr "Rádio už běží. Hledejte jeho ikonu u hodin."
+
+msgid "This station uses a format Windows can't play (only MP3 and AAC)."
+msgstr ""
+"Tato stanice vysílá ve formátu, který Windows neumí přehrát (jen MP3 a "
+"AAC)."
+
+msgid "The station is sending damaged data."
+msgstr "Stanice posílá poškozená data."
+
+msgid "The station's server refused access (403)."
+msgstr "Server stanice odmítl přístup (403)."
+
+msgid "The station's server returned error {0}."
+msgstr "Server stanice vrátil chybu {0}."
+
+msgid "Couldn't connect to the station. Check your internet connection."
+msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
+
+msgid "The connection to the station was lost."
+msgstr "Spojení se stanicí bylo přerušeno."
+
+msgid "The station isn't sending any sound."
+msgstr "Stanice nevysílá žádný zvuk."
+
+msgid "Couldn't play the station. Try again."
+msgstr "Stanici se nepodařilo přehrát. Zkuste to znovu."
+
+msgid "Couldn't reach the station directory."
+msgstr "Ke katalogu stanic se nepodařilo připojit."
+
+msgid "The release has no program file."
+msgstr "Vydání neobsahuje soubor programu."
+
+msgid "The downloaded file is damaged."
+msgstr "Stažený soubor je poškozený."
+
+msgid "Internet radio"
+msgstr "Internetové rádio"
+
+#. Language names, after "In Windows: ".
+msgid "Polish"
+msgstr "polština"
+
+msgid "German"
+msgstr "němčina"
+
+msgid "Ukrainian"
+msgstr "ukrajinština"
+
+msgid "Czech"
+msgstr "čeština"
+
+msgid "Spanish"
+msgstr "španělština"
+
+msgid "French"
+msgstr "francouzština"
+
+msgid "Italian"
+msgstr "italština"
+
+msgid "Portuguese"
+msgstr "portugalština"
+
+msgid "English"
+msgstr "angličtina"

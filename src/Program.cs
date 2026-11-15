@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using Forms = System.Windows.Forms;
+using static Lang;
 
 internal static class Program
 {
@@ -24,6 +25,11 @@ internal static class Program
 #endif
         SetCurrentProcessExplicitAppUserModelID(Radio.AppName);
         Lang.Setting = Storage.Read<Preferences>(Storage.PreferencesFile)?.Language ?? "auto";
+#if SELFTEST
+        // "--lang de": the self-test and its pictures in that language, whatever the settings say.
+        int chosen = Array.IndexOf(args, "--lang");
+        if (chosen >= 0 && chosen + 1 < args.Length) Lang.Setting = args[chosen + 1];
+#endif
         bool updated = args.Contains("--updated");
         // Same names as earlier versions, so an old copy and the Windhawk taskbar mod keep working with this one.
         string instanceName = @"Local\RadioNaZywo", panelName = @"Local\MinimalisticRadio.Panel";
@@ -53,8 +59,7 @@ internal static class Program
                 if (testMenu) { Environment.ExitCode = 2; return; }
 #endif
                 if (args.Contains("--autostart")) return;
-                Forms.MessageBox.Show(Lang.T("Radio jest już uruchomione. Poszukaj ikony obok zegara.",
-                    "The radio is already running. Look for its icon next to the clock."), Radio.AppName);
+                Forms.MessageBox.Show(L("The radio is already running. Look for its icon next to the clock."), Radio.AppName);
                 return;
             }
             if (openPanel) request.Set();

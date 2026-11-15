@@ -226,7 +226,7 @@ internal sealed partial class Radio
     {
         var toggle = new CheckBox { IsChecked = on };
         toggle.SetResourceReference(FrameworkElement.StyleProperty, "ToggleSwitch");
-        void Label() => toggle.Content = toggle.IsChecked == true ? T("Wł.", "On") : T("Wył.", "Off");
+        void Label() => toggle.Content = toggle.IsChecked == true ? Lc("switch", "On") : Lc("switch", "Off");
         Label();
         toggle.Checked += (_, _) => { Label(); changed(true); };
         toggle.Unchecked += (_, _) => { Label(); changed(false); };
@@ -290,9 +290,9 @@ internal sealed partial class Radio
             Minimum = 0, Maximum = 100, Value = volume, IsSnapToTickEnabled = true, TickFrequency = 1,
             SmallChange = 1, LargeChange = 5, IsMoveToPointEnabled = true, VerticalAlignment = VerticalAlignment.Center
         };
-        var name = new TextBox { Tag = T("Nazwa stacji", "Station name"), MaxLength = 100 };
-        var url = new TextBox { Tag = T("Adres strumienia HTTP lub HTTPS", "Stream address (HTTP or HTTPS)"), MaxLength = 2048 };
-        var logo = new TextBox { Tag = T("Adres logotypu (opcjonalnie)", "Logo address (optional)"), MaxLength = 2048 };
+        var name = new TextBox { Tag = L("Station name"), MaxLength = 100 };
+        var url = new TextBox { Tag = L("Stream address (HTTP or HTTPS)"), MaxLength = 2048 };
+        var logo = new TextBox { Tag = L("Logo address (optional)"), MaxLength = 2048 };
         SavedStation editing = null;
         var message = new TextBlock { TextWrapping = TextWrapping.Wrap };
         // The "Copied" bubble: one layer over the whole panel, so it can sit above any button (the copy button, a
@@ -317,7 +317,7 @@ internal sealed partial class Radio
         {
             EndNotice();
             noticeEnd = end;
-            noticeText.Text = T("Skopiowano", "Copied");
+            noticeText.Text = L("Copied");
             notice.Visibility = Visibility.Visible;
             noticeLayer.UpdateLayout();
             Point top = anchor.TranslatePoint(new Point(anchor.ActualWidth / 2, 0), noticeLayer);
@@ -329,20 +329,20 @@ internal sealed partial class Radio
             noticeTimer.Start();
         }
 
-        var add = NewButton(null, IconText(Theme.PlusIcon, T("Stacja", "Station")));
+        var add = NewButton(null, IconText(Theme.PlusIcon, L("Station")));
         add.HorizontalAlignment = HorizontalAlignment.Left;
-        var save = NewButton("AccentButton", T("Zapisz", "Save"));
-        var cancelForm = NewButton(null, T("Anuluj", "Cancel"));
+        var save = NewButton("AccentButton", L("Save"));
+        var cancelForm = NewButton(null, L("Cancel"));
         var fields = Spaced(Orientation.Vertical, 8, name, url, logo,
             Spaced(Orientation.Horizontal, 8, save, cancelForm), message);
         fields.Visibility = Visibility.Collapsed;
 
-        var searchBox = new TextBox { Tag = T("Wpisz nazwę stacji", "Type a station name"), MaxLength = 100 };
-        var searchButton = NewButton(null, T("Szukaj", "Search"));
+        var searchBox = new TextBox { Tag = L("Type a station name"), MaxLength = 100 };
+        var searchButton = NewButton(null, L("Search"));
         searchButton.Margin = new Thickness(8, 0, 0, 0);
         // The search page: box and button, then one line with the status (or a hint) and "Add by address".
-        string searchHint = T("Szukaj w katalogu radio-browser.info", "Search the radio-browser.info directory");
-        var manual = SmallButton("LinkButton", T("Dodaj z adresu", "Add by address"));
+        string searchHint = L("Search the radio-browser.info directory");
+        var manual = SmallButton("LinkButton", L("Add by address"));
         manual.VerticalAlignment = VerticalAlignment.Center;
         manual.Margin = new Thickness(8, 0, -8, 0);
         var results = new ListBox();
@@ -362,13 +362,13 @@ internal sealed partial class Radio
         panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
 
         // Header: title with Update (when ready), History, Settings and Hide; the page title with a back arrow.
-        var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), T("Historia utworów", "Song history"));
-        var settingsButton = NewButton("GhostButton", Theme.Glyph(Theme.SettingsIcon), T("Ustawienia", "Settings"));
+        var historyButton = NewButton("GhostButton", Theme.Glyph(Theme.HistoryIcon), L("Song history"));
+        var settingsButton = NewButton("GhostButton", Theme.Glyph(Theme.SettingsIcon), L("Settings"));
         // Hides the panel (like the X of Windows 11 flyouts); the radio keeps playing next to the clock.
-        var closeButton = NewButton("GhostButton", Theme.Glyph(Theme.CloseIcon), T("Ukryj panel (radio gra dalej)", "Hide the panel (the radio keeps playing)"));
+        var closeButton = NewButton("GhostButton", Theme.Glyph(Theme.CloseIcon), L("Hide the panel (the radio keeps playing)"));
         closeButton.Click += (_, _) => panel.Close();
         // Like Discord: a green arrow appears once a new version is downloaded; a click installs it.
-        var updateButton = NewButton("GhostButton", Theme.Glyph(Theme.UpdateReadyIcon, 18, "Success"), T("Aktualizacja gotowa!", "Update Ready!"));
+        var updateButton = NewButton("GhostButton", Theme.Glyph(Theme.UpdateReadyIcon, 18, "Success"), L("Update Ready!"));
         updateButton.Visibility = Visibility.Collapsed;
         updateButton.Click += (_, _) => InstallUpdate();
         foreach (Button button in new[] { updateButton, historyButton, settingsButton, closeButton })
@@ -378,9 +378,9 @@ internal sealed partial class Radio
         }
         var sectionLabel = new TextBlock
         {
-            Text = T("Stacje", "Stations"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center
+            Text = L("Stations"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center
         };
-        var backButton = NewButton("GhostButton", Theme.Glyph(Theme.BackIcon), T("Wstecz", "Back"));
+        var backButton = NewButton("GhostButton", Theme.Glyph(Theme.BackIcon), L("Back"));
         backButton.Padding = new Thickness(6);
         backButton.Margin = new Thickness(-6, 0, 6, 0);
         backButton.VerticalAlignment = VerticalAlignment.Center;
@@ -442,7 +442,7 @@ internal sealed partial class Radio
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {
-                Forms.MessageBox.Show(T("Nie udało się zapisać listy stacji.", "Couldn't save the station list."), AppName);
+                Forms.MessageBox.Show(L("Couldn't save the station list."), AppName);
                 return false;
             }
         }
@@ -468,19 +468,18 @@ internal sealed partial class Radio
                 CancellationToken searchToken = request.Token;
                 searchButton.IsEnabled = false;
                 results.Items.Clear();
-                searchStatus.Text = T("Szukam…", "Searching…");
+                searchStatus.Text = L("Searching…");
                 try
                 {
                     DirectoryStation[] found = await Storage.Search(metadataClient, query, searchToken);
                     if (searchToken.IsCancellationRequested) return;
                     foreach (DirectoryStation item in found) results.Items.Add(ResultRow(item));
-                    searchStatus.Text = found.Length == 0 ? T("Brak wyników.", "No results.") : "";
+                    searchStatus.Text = found.Length == 0 ? L("No results.") : "";
                 }
                 catch (OperationCanceledException) when (searchToken.IsCancellationRequested) { }
                 catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
                 {
-                    searchStatus.Text = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
-                        "The station directory is unavailable right now. Try again.");
+                    searchStatus.Text = L("The station directory is unavailable right now. Try again.");
                 }
                 finally
                 {
@@ -507,9 +506,8 @@ internal sealed partial class Radio
         async void ShowSuggestions()
         {
             if (!ShowingSuggestions()) return;
-            string loadingText = T("Wczytuję propozycje…", "Loading suggestions…");
-            string unavailable = T("Katalog chwilowo niedostępny. Spróbuj ponownie.",
-                "The station directory is unavailable right now. Try again.");
+            string loadingText = L("Loading suggestions…");
+            string unavailable = L("The station directory is unavailable right now. Try again.");
             // A change of language can change the country (Storage.CurrentCountry): then they load again.
             Storage.SuggestionList shown = suggestions?.Country == Storage.CurrentCountry() ? suggestions : null;
             if (shown == null)
@@ -540,13 +538,13 @@ internal sealed partial class Radio
             searchStatus.Text = shown.Complete ? searchHint : unavailable;
             if (shown.Recommended.Length > 0)
             {
-                results.Items.Add(Heading(T("Polecane", "Recommended")));
+                results.Items.Add(Heading(L("Recommended")));
                 foreach (DirectoryStation item in shown.Recommended) results.Items.Add(ResultRow(item));
             }
             if (shown.Popular.Length > 0)
             {
-                results.Items.Add(Heading(shown.Country != null ? T("Popularne w Twoim kraju", "Popular in your country")
-                    : T("Popularne na świecie", "Popular worldwide")));
+                results.Items.Add(Heading(shown.Country != null ? L("Popular in your country")
+                    : L("Popular worldwide")));
                 foreach (DirectoryStation item in shown.Popular) results.Items.Add(ResultRow(item));
             }
         }
@@ -579,9 +577,9 @@ internal sealed partial class Radio
             settingsPane.Visibility = target == "settings" ? Visibility.Visible : Visibility.Collapsed;
             historyPane.Visibility = target == "history" ? Visibility.Visible : Visibility.Collapsed;
             add.Visibility = stations ? Visibility.Visible : Visibility.Collapsed;
-            sectionLabel.Text = target == "settings" ? T("Ustawienia", "Settings")
-                : target == "history" ? T("Historia", "History")
-                : target == "search" ? T("Dodaj stację", "Add a station") : T("Stacje", "Stations");
+            sectionLabel.Text = target == "settings" ? L("Settings")
+                : target == "history" ? L("History")
+                : target == "search" ? L("Add a station") : L("Stations");
             if (target == "search")
             {
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => searchBox.Focus()));
@@ -632,7 +630,7 @@ internal sealed partial class Radio
             string address = Storage.IsWebUrl(item.ResolvedUrl) ? item.ResolvedUrl : item.Url;
             if (Stations.Any(entry => Storage.SameStream(entry.Url, address)))
             {
-                searchStatus.Text = T("Ta stacja jest już na liście.", "This station is already on the list.");
+                searchStatus.Text = L("This station is already on the list.");
                 return;
             }
             var added = new SavedStation { Name = item.Name.Trim(), Url = address, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null };
@@ -650,13 +648,12 @@ internal sealed partial class Radio
             if (string.IsNullOrEmpty(label) || !Storage.IsWebUrl(address) ||
                 (!string.IsNullOrEmpty(logoAddress) && !Storage.IsWebUrl(logoAddress)))
             {
-                message.Text = T("Podaj nazwę i poprawny adres strumienia. Logo jest opcjonalne.",
-                    "Enter a name and a valid stream address. The logo is optional.");
+                message.Text = L("Enter a name and a valid stream address. The logo is optional.");
                 return;
             }
             if (Stations.Any(item => item != editing && Storage.SameStream(item.Url, address)))
             {
-                message.Text = T("Ten adres jest już na liście.", "This address is already on the list.");
+                message.Text = L("This address is already on the list.");
                 return;
             }
 
@@ -766,7 +763,7 @@ internal sealed partial class Radio
             FrameworkElement mark = Theme.Glyph(known ? Theme.CheckIcon : Theme.PlusIcon, 18, known ? "Success" : null);
             mark.VerticalAlignment = VerticalAlignment.Center;
             var button = NewButton("GhostButton", Columns((badge, Auto), (text, Star), (mark, Auto)),
-                known ? T("Już jest na twojej liście", "Already on your list") : T("Dodaj do stacji", "Add to your stations"));
+                known ? L("Already on your list") : L("Add to your stations"));
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
             button.Padding = new Thickness(10, 6, 10, 6);
             button.Click += (_, _) => AddSearchResult(item);
@@ -805,14 +802,14 @@ internal sealed partial class Radio
                 if (session == null) StartPlayback();
                 list.SelectedIndex = station;
             };
-            var actions = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), T("Opcje stacji", "Station options"));
+            var actions = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("Station options"));
             actions.Padding = new Thickness(8, 6, 8, 6);
             actions.Margin = new Thickness(4, 0, 0, 0);
             var options = new ContextMenu { PlacementTarget = actions, Placement = PlacementMode.Bottom };
             // No Move up / Move down: the station is dragged instead (or moved with Alt+↑/↓).
-            options.Items.Add(Item(T("Edytuj", "Edit"), null, () => Edit(item)));
+            options.Items.Add(Item(L("Edit"), null, () => Edit(item)));
             options.Items.Add(new Separator());
-            options.Items.Add(Item(T("Usuń", "Remove"), null, () => Remove(item)));
+            options.Items.Add(Item(L("Remove"), null, () => Remove(item)));
             Hold(options);
             actions.Click += (_, _) => options.IsOpen = true;
 #if SELFTEST
@@ -833,11 +830,11 @@ internal sealed partial class Radio
             var content = new StackPanel();
             if (history.Count == 0)
             {
-                content.Children.Add(Note(T("Tu pojawią się utwory, które zagra radio.", "Songs the radio plays will show up here.")));
+                content.Children.Add(Note(L("Songs the radio plays will show up here.")));
                 historyPane.Content = content;
                 return;
             }
-            var culture = new CultureInfo(Polish ? "pl-PL" : "en-US");
+            CultureInfo culture = Culture;
             var rows = new StackPanel();
             foreach (HistoryEntry entry in history)
             {
@@ -846,26 +843,26 @@ internal sealed partial class Radio
                 var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 7, 0, 7) };
                 text.Children.Add(new TextBlock { Text = entry.Title, FontSize = 14, TextWrapping = TextWrapping.Wrap });
                 text.Children.Add(Note(entry.Station + " · " + time.ToString(time.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture)));
-                var more = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), T("Więcej", "More"));
+                var more = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("More"));
                 more.Padding = new Thickness(8, 6, 8, 6);
                 more.VerticalAlignment = VerticalAlignment.Center;
                 string query = Uri.EscapeDataString(entry.Title.Replace(" – ", " ").Replace(" - ", " "));
                 var menu = new ContextMenu { PlacementTarget = more, Placement = PlacementMode.Bottom };
-                menu.Items.Add(Item(T("Kopiuj", "Copy"), Theme.CopyIcon, () =>
+                menu.Items.Add(Item(L("Copy"), Theme.CopyIcon, () =>
                 {
                     if (CopyText(entry.Title)) ShowNotice(more);
-                    else message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                    else message.Text = L("The clipboard is busy.");
                 }));
-                menu.Items.Add(Item(T("Szukaj w Spotify", "Search on Spotify"), null,
+                menu.Items.Add(Item(L("Search on Spotify"), null,
                     () => OpenWebPage("https://open.spotify.com/search/" + query)));
-                menu.Items.Add(Item(T("Szukaj w YouTube", "Search on YouTube"), null,
+                menu.Items.Add(Item(L("Search on YouTube"), null,
                     () => OpenWebPage("https://www.youtube.com/results?search_query=" + query)));
                 Hold(menu);
                 more.Click += (_, _) => menu.IsOpen = true;
                 rows.Children.Add(Columns((text, Star), (more, Auto)));
             }
             content.Children.Add(CardFrame(rows, new Thickness(12, 2, 4, 2)));
-            var clear = SmallButton("LinkButton", T("Wyczyść historię", "Clear history"));
+            var clear = SmallButton("LinkButton", L("Clear history"));
             clear.HorizontalAlignment = HorizontalAlignment.Left;
             clear.Margin = new Thickness(-8, 6, 0, 0);
             clear.Click += (_, _) => { ClearHistory(); FillHistory(); };
@@ -883,10 +880,9 @@ internal sealed partial class Radio
 
             // General: language, start with Windows
             var language = new ComboBox { MinWidth = 136 };
-            language.Items.Add(T("Jak w Windows", "Same as Windows"));
-            language.Items.Add("Polski");
-            language.Items.Add("English");
-            string[] languages = { "auto", "pl", "en" };
+            language.Items.Add(L("Same as Windows"));
+            foreach (var (_, ownName) in Languages) language.Items.Add(ownName);   // each language by its own name
+            string[] languages = new[] { "auto" }.Concat(Languages.Select(item => item.Code)).ToArray();
             language.SelectedIndex = Math.Max(0, Array.IndexOf(languages, Lang.Setting));
             language.SelectionChanged += (_, _) =>
             {
@@ -902,14 +898,14 @@ internal sealed partial class Radio
                     OpenPlayer("settings");
                 });
             };
-            settings.Children.Add(Group(T("Ogólne", "General"), true));
-            settings.Children.Add(Card(Theme.Glyph(Theme.GlobeIcon, 20), T("Język", "Language"),
-                T("W Windows: ", "In Windows: ") + (SystemPolish ? T("polski", "Polish") : T("angielski", "English")), language));
-            settings.Children.Add(Card(Theme.Glyph(Theme.PowerIcon, 20), T("Uruchamiaj z Windows", "Start with Windows"),
-                T("Czeka obok zegara, nie gra samo", "Waits by the clock, doesn't play by itself"),
+            settings.Children.Add(Group(L("General"), true));
+            settings.Children.Add(Card(Theme.Glyph(Theme.GlobeIcon, 20), L("Language"),
+                L("In Windows: {0}", LanguageName(SystemLanguage)), language));
+            settings.Children.Add(Card(Theme.Glyph(Theme.PowerIcon, 20), L("Start with Windows"),
+                L("Waits by the clock, doesn't play by itself"),
                 Toggle(Autostart.Enabled, on => Autostart.Set(on, Exe))));
-            settings.Children.Add(Card(Theme.Glyph(Theme.PopupIcon, 20), T("Pokazuj zmianę stacji", "Show station changes"),
-                T("Karta na dole ekranu po zmianie klawiszem lub z menu", "A card at the bottom after a media key or menu switch"),
+            settings.Children.Add(Card(Theme.Glyph(Theme.PopupIcon, 20), L("Show station changes"),
+                L("A card at the bottom after a media key or menu switch"),
                 Toggle(showStationPopup, on => { showStationPopup = on; SavePreferences(); })));
 
             // Stations: export / import (e.g. to give someone your list)
@@ -920,25 +916,25 @@ internal sealed partial class Radio
                 stationsNote.Text = text;
                 stationsNote.Visibility = Visibility.Visible;
             }
-            var export = SmallButton(null, T("Eksportuj…", "Export…"));
-            var import = SmallButton(null, T("Importuj…", "Import…"));
+            var export = SmallButton(null, L("Export…"));
+            var import = SmallButton(null, L("Import…"));
             export.Click += (_, _) =>
             {
                 var dialog = new Microsoft.Win32.SaveFileDialog
                 {
-                    FileName = AppName + " - " + T("stacje", "stations") + ".json", DefaultExt = ".json",
-                    Filter = T("Lista stacji", "Station list") + " (*.json)|*.json"
+                    FileName = AppName + " - " + L("stations") + ".json", DefaultExt = ".json",
+                    Filter = L("Station list") + " (*.json)|*.json"
                 };
                 holdOpen++;
                 try
                 {
                     if (dialog.ShowDialog(panel) != true) return;
                     Storage.Write(dialog.FileName, Stations);
-                    Report(T("Zapisano stacje: ", "Stations saved: ") + Stations.Count + ".");
+                    Report(L("Stations saved: {0}.", Stations.Count));
                 }
                 catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
                 {
-                    Report(T("Nie udało się zapisać pliku.", "Couldn't save the file."));
+                    Report(L("Couldn't save the file."));
                 }
                 finally { holdOpen--; }
             };
@@ -946,7 +942,7 @@ internal sealed partial class Radio
             {
                 var dialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Filter = T("Lista stacji", "Station list") + " (*.json)|*.json|" + T("Wszystkie pliki", "All files") + "|*.*"
+                    Filter = L("Station list") + " (*.json)|*.json|" + L("All files") + "|*.*"
                 };
                 holdOpen++;
                 try
@@ -955,7 +951,7 @@ internal sealed partial class Radio
                     List<SavedStation> loaded = Storage.Read<List<SavedStation>>(dialog.FileName);
                     if (loaded == null)
                     {
-                        Report(T("To nie jest lista stacji Minimalistic Radio.", "This isn't a Minimalistic Radio station list."));
+                        Report(L("This isn't a Minimalistic Radio station list."));
                         return;
                     }
                     var fresh = loaded
@@ -964,14 +960,14 @@ internal sealed partial class Radio
                         .GroupBy(item => Storage.StreamKey(item.Url)).Select(same => same.First())
                         .Select(item => new SavedStation { Name = item.Name.Trim(), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
                         .ToList();
-                    if (fresh.Count == 0) Report(T("Wszystkie stacje z tego pliku już są na liście.", "All stations from this file are already on the list."));
-                    else if (ApplyStations(Stations.Concat(fresh).ToList())) Report(T("Dodano stacje: ", "Stations added: ") + fresh.Count + ".");
+                    if (fresh.Count == 0) Report(L("All stations from this file are already on the list."));
+                    else if (ApplyStations(Stations.Concat(fresh).ToList())) Report(L("Stations added: {0}.", fresh.Count));
                 }
                 finally { holdOpen--; }
             };
-            settings.Children.Add(Group(T("Stacje", "Stations")));
-            settings.Children.Add(Card(Theme.Glyph(Theme.ListIcon, 20), T("Lista stacji", "Station list"),
-                T("Kopia w pliku, np. dla znajomych", "A copy in a file, e.g. for friends"), null,
+            settings.Children.Add(Group(L("Stations")));
+            settings.Children.Add(Card(Theme.Glyph(Theme.ListIcon, 20), L("Station list"),
+                L("A copy in a file, e.g. for friends"), null,
                 Spaced(Orientation.Vertical, 8, Spaced(Orientation.Horizontal, 8, export, import), stationsNote)));
 
             // About and updates
@@ -987,31 +983,31 @@ internal sealed partial class Radio
             };
             refreshUpdates = () =>
             {
-                CultureInfo culture = new CultureInfo(Polish ? "pl-PL" : "en-US");
+                CultureInfo culture = Culture;
                 DateTime? checkedAt = lastUpdateCheck?.ToLocalTime();
                 updateDescription.Text = readyUpdate != null
-                    ? T("Wersja ", "Version ") + readyUpdate.Version.ToString(3) + T(" jest gotowa do instalacji", " is ready to install")
-                    : T("Co kilka godzin sprawdza, czy jest nowa wersja", "Looks for a new version every few hours");
-                updateNote.Text = updateStatus ?? (checkedAt == null ? T("Jeszcze nie sprawdzano.", "Not checked yet.")
-                    : T("Ostatnio sprawdzono: ", "Last checked: ") +
-                      checkedAt.Value.ToString(checkedAt.Value.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture));
-                checkNow.Content = readyUpdate != null ? T("Zaktualizuj", "Update") : T("Sprawdź teraz", "Check now");
+                    ? L("Version {0} is ready to install", readyUpdate.Version.ToString(3))
+                    : L("Looks for a new version every few hours");
+                updateNote.Text = updateStatus ?? (checkedAt == null ? L("Not checked yet.")
+                    : L("Last checked: {0}",
+                      checkedAt.Value.ToString(checkedAt.Value.Date == DateTime.Today ? "HH:mm" : "d MMM, HH:mm", culture)));
+                checkNow.Content = readyUpdate != null ? L("Update") : L("Check now");
                 checkNow.SetResourceReference(FrameworkElement.StyleProperty, readyUpdate != null ? "AccentButton" : (object)typeof(Button));
                 checkNow.IsEnabled = !installing && !checking;
             };
             refreshUpdates();
-            settings.Children.Add(Group(T("O aplikacji", "About")));
+            settings.Children.Add(Group(L("About")));
             settings.Children.Add(Card(new Image { Source = titleIcon, Width = 20, Height = 20 }, AppName,
-                T("Wersja ", "Version ") + Updater.Current.ToString(3) + " · MIT · " + T("ikony Lucide", "Lucide icons"),
+                L("Version {0}", Updater.Current.ToString(3)) + " · MIT · " + L("Lucide icons"),
                 Link("GitHub", Updater.Page)));
-            settings.Children.Add(Card(Theme.Glyph(Theme.UpdateIcon, 20), T("Aktualizacje", "Updates"), updateDescription,
+            settings.Children.Add(Card(Theme.Glyph(Theme.UpdateIcon, 20), L("Updates"), updateDescription,
                 Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); }),
                 Columns((updateNote, Star), (checkNow, Auto))));
             // Quitting is rare and stops the music, so it lives here and in the tray menu, not next to Play.
-            var quit = SmallButton(null, T("Zakończ", "Quit"));
+            var quit = SmallButton(null, L("Quit"));
             quit.Click += (_, _) => Shutdown();
-            settings.Children.Add(Card(Theme.Glyph(Theme.QuitIcon, 20), T("Zakończ Minimalistic Radio", "Quit Minimalistic Radio"),
-                T("Wyłącza radio i usuwa ikonę obok zegara", "Stops the radio and removes it from next to the clock"), quit));
+            settings.Children.Add(Card(Theme.Glyph(Theme.QuitIcon, 20), L("Quit Minimalistic Radio"),
+                L("Stops the radio and removes it from next to the clock"), quit));
             return settings;
         }
         settingsPane.Content = BuildSettings();
@@ -1019,7 +1015,7 @@ internal sealed partial class Radio
         // Footer: now playing, volume with the sleep timer, play/stop.
         // The volume row is like Windows 11's: a speaker button that shows the level and mutes, the slider, and the
         // number in a bubble above the knob while the volume changes by hand. With no label, the slider is named.
-        AutomationProperties.SetName(volumeSlider, T("Głośność", "Volume"));
+        AutomationProperties.SetName(volumeSlider, L("Volume"));
         var muteButton = NewButton("GhostButton", null);
         muteButton.Padding = new Thickness(8, 6, 8, 6);
         muteButton.Margin = new Thickness(-4, 0, 6, 0);
@@ -1030,7 +1026,7 @@ internal sealed partial class Radio
             if (Equals(muteButton.Tag, glyph)) return;
             muteButton.Tag = glyph;
             muteButton.Content = Theme.Glyph(glyph);
-            string tip = volume == 0 ? T("Włącz dźwięk", "Unmute") : T("Wycisz", "Mute");
+            string tip = volume == 0 ? L("Unmute") : L("Mute");
             muteButton.ToolTip = tip;
             AutomationProperties.SetName(muteButton, tip);
         }
@@ -1116,7 +1112,7 @@ internal sealed partial class Radio
                 ShowBubble(false);
         }), true);
         play.Click += (_, _) => TogglePlayback();
-        var copy = NewButton("GhostButton", Theme.Glyph(Theme.CopyIcon), T("Kopiuj tytuł", "Copy title"));
+        var copy = NewButton("GhostButton", Theme.Glyph(Theme.CopyIcon), L("Copy title"));
         copy.Padding = new Thickness(8);
         copy.VerticalAlignment = VerticalAlignment.Center;
         copy.Click += (_, _) =>
@@ -1124,14 +1120,14 @@ internal sealed partial class Radio
             if (track == null) return;
             if (!CopyText(track))
             {
-                message.Text = T("Schowek jest zajęty.", "The clipboard is busy.");
+                message.Text = L("The clipboard is busy.");
                 return;
             }
             copy.Content = Theme.Glyph(Theme.CheckIcon);
             ShowNotice(copy, () => copy.Content = Theme.Glyph(Theme.CopyIcon));
         };
 
-        var sleepButton = NewButton("GhostButton", null, T("Wyłącznik czasowy", "Sleep timer"));
+        var sleepButton = NewButton("GhostButton", null, L("Sleep timer"));
         sleepButton.Padding = new Thickness(8, 6, 8, 6);
         sleepButton.Margin = new Thickness(6, 0, -4, 0);
         sleepButton.Click += (_, _) =>
@@ -1143,7 +1139,7 @@ internal sealed partial class Radio
         };
         var sleepText = Note("");
         sleepText.VerticalAlignment = VerticalAlignment.Center;
-        var cancelSleep = SmallButton("LinkButton", T("Anuluj", "Cancel"));
+        var cancelSleep = SmallButton("LinkButton", L("Cancel"));
         cancelSleep.Click += (_, _) => SetSleepTimer(null);
         var sleepRow = Columns((sleepText, Star), (cancelSleep, Auto));
         bool? shownSleep = null;
@@ -1154,7 +1150,7 @@ internal sealed partial class Radio
         coverBox.Children.Add(fallback);
         coverBox.Children.Add(cover);
         string displayedArtwork = null;
-        var caption = new TextBlock { Text = T("Teraz gra", "Now playing"), FontSize = 11, Opacity = 0.75 };
+        var caption = new TextBlock { Text = L("Now playing"), FontSize = 11, Opacity = 0.75 };
         var trackInfo = Spaced(Orientation.Vertical, 2, caption, now);
         trackInfo.VerticalAlignment = VerticalAlignment.Center;
         trackInfo.Margin = new Thickness(10, 0, 10, 0);
@@ -1254,7 +1250,7 @@ internal sealed partial class Radio
                 shownStation = station;
                 ShowActiveStation(false);
             }
-            string playText = session == null ? T("Odtwórz", "Play") : T("Zatrzymaj", "Stop");
+            string playText = session == null ? L("Play") : L("Stop");
             if (!Equals(play.Tag, playText))
             {
                 play.Tag = playText;
@@ -1424,8 +1420,8 @@ internal sealed partial class Radio
         playerPanel?.Close();
         OpenPlayer();
         await Task.Delay(500);
-        string copied = T("Skopiowano", "Copied");
-        Button copyButton = Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == T("Kopiuj tytuł", "Copy title"));
+        string copied = L("Copied");
+        Button copyButton = Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Copy title"));
         copyButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         var notice = (FrameworkElement)Descendants(playerPanel).OfType<Canvas>().First(layer => layer.Tag as string == "notice").Children[0];
         if (notice.IsVisible && Descendants(notice).OfType<TextBlock>().First().Text != copied)
@@ -1433,7 +1429,7 @@ internal sealed partial class Radio
         if (preview) await SavePreview(playerPanel, "copied");
         playerPanel.Close();
         CopyTrackFromMenu();
-        if (osd?.IsVisible == true && osdText.Text != T("Skopiowano do schowka", "Copied to clipboard"))
+        if (osd?.IsVisible == true && osdText.Text != L("Copied to clipboard"))
             throw new InvalidOperationException("Karta kopiowania ma zły drugi wiersz.");
         osd?.Hide();
     }

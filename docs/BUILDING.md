@@ -18,8 +18,12 @@ dotnet build src/MinimalisticRadio.csproj -c Release -p:SelfTest=true -o out-tes
 ```
 
 - `out-test\Minimalistic Radio.exe --test-menu` runs the self-test (exit code 0 means OK; on failure the log is in `%TEMP%\MinimalisticRadio-test.log`). It works on stations in memory and saves nothing.
-- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`.
+- `--test-menu --preview` also renders the panel, a station being dragged (also far along a long list), menu, settings, history and station card into `%TEMP%\MinimalisticRadio-*.png`. Add `--lang de` (any language code) to run it in that language.
 - `--test-menu --screenshot` renders the README screenshots (English UI) into `%TEMP%\MinimalisticRadio-shot-*.png`; copy them to `docs/screenshots`. The two `tray-*` pictures put the real menu and panel above a drawn corner of the Windows 11 taskbar.
+
+## Translations
+
+The code is in English: each text goes through `L("…")` (`Lc("context", "…")` where one English word needs two translations, like the switch's "Off") and is looked up in `src/Lang/<code>.po`, a gettext catalog whose msgid is the English text. The build puts every catalog into the exe compressed (about 3 KB each); a text missing from a catalog, or marked fuzzy, shows in English. To correct a translation, edit its `msgstr` in a text editor or Poedit. A new text in the code needs an entry in every catalog: the self-test lists the missing ones. The pictures of `--test-menu --preview --lang uk` show whether longer texts still fit.
 
 ## Releases
 
@@ -42,7 +46,8 @@ src/
   Program.cs     startup, single instance
   Radio/         tray icon, menu and playback (RadioApp), the panel (RadioPanel), dragging stations (StationDrag), station card (RadioOsd), README pictures (RadioShots, test build only)
   Audio/         station connection, decoding by Windows
-  Services/      cover art, updates, storage, Windows integration, language
+  Services/      cover art, updates, storage, Windows integration, language (Lang)
+  Lang/          translations: one gettext catalog per language (pl, de, uk, cs, es, fr, it, pt)
   Theme/         colours and Windows 11 style controls
   Assets/        app icon (radio.ico) and the Lucide icons' licence
 docs/            icon.svg (the icon's source), download button, README screenshots

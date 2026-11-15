@@ -27,9 +27,9 @@ using static Lang;
 internal sealed partial class Radio
 {
     internal const string AppName = "Minimalistic Radio";
-    private static string NoTrack => T("Stacja nie podaje tytułu", "The station doesn't send song titles");
-    private static string Ready => T("Gotowe do odtwarzania", "Ready to play");
-    private static string Connecting => T("Łączenie ze stacją…", "Connecting to the station…");
+    private static string NoTrack => L("The station doesn't send song titles");
+    private static string Ready => L("Ready to play");
+    private static string Connecting => L("Connecting to the station…");
     private static readonly List<SavedStation> Stations = new List<SavedStation>();
     private static Storage.SuggestionList suggestions;   // the station search's empty page, loaded once per run
     private static readonly HttpClient metadataClient = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
@@ -145,7 +145,7 @@ internal sealed partial class Radio
             firstCheck.Tick += (_, _) => { firstCheck.Stop(); CheckForUpdates(false); };
             firstCheck.Start();
             if (updated)
-                tray.ShowBalloonTip(4000, AppName, T("Zaktualizowano do wersji ", "Updated to version ") + Updater.Current.ToString(3), Forms.ToolTipIcon.Info);
+                tray.ShowBalloonTip(4000, AppName, L("Updated to version {0}", Updater.Current.ToString(3)), Forms.ToolTipIcon.Info);
         }
         panelListener = ThreadPool.RegisterWaitForSingleObject(panelRequest,
             (_, _) => Post(() => OpenPlayer()), null, Timeout.Infinite, false);
@@ -196,6 +196,7 @@ internal sealed partial class Radio
     {
         try
         {
+            Lang.Verify();   // the catalogs: all there, nothing missing, English for an unknown text
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -473,9 +474,9 @@ internal sealed partial class Radio
     {
         var menu = new ContextMenu();
         menu.Items.Add(session == null
-            ? Item(T("Odtwórz", "Play"), Theme.PlayIcon, StartPlayback, Stations.Count > 0)
-            : Item(T("Zatrzymaj", "Stop"), Theme.StopIcon, () => StopPlayback()));
-        var stations = Item(T("Stacja", "Station"), Theme.RadioIcon);
+            ? Item(L("Play"), Theme.PlayIcon, StartPlayback, Stations.Count > 0)
+            : Item(L("Stop"), Theme.StopIcon, () => StopPlayback()));
+        var stations = Item(L("Station"), Theme.RadioIcon);
         for (int index = 0; index < Stations.Count; index++)
         {
             int selected = index;
@@ -487,15 +488,15 @@ internal sealed partial class Radio
                 }));
         }
 
-        var levels = Item(T("Głośność", "Volume") + $" ({volume}%)", Theme.VolumeIcon);
-        levels.Items.Add(Item(T("Zwiększ o 5%", "Up 5%"), Theme.PlusIcon, () => ChangeVolume(volume + 5), volume < 100));
-        levels.Items.Add(Item(T("Zmniejsz o 5%", "Down 5%"), Theme.MinusIcon, () => ChangeVolume(volume - 5), volume > 0));
+        var levels = Item(L("Volume") + $" ({volume}%)", Theme.VolumeIcon);
+        levels.Items.Add(Item(L("Up 5%"), Theme.PlusIcon, () => ChangeVolume(volume + 5), volume < 100));
+        levels.Items.Add(Item(L("Down 5%"), Theme.MinusIcon, () => ChangeVolume(volume - 5), volume > 0));
         levels.Items.Add(new Separator());
         foreach (int preset in new[] { 0, 25, 50, 75, 100 })
-            levels.Items.Add(Item(preset == 0 ? T("Wycisz", "Mute") : $"{preset}%",
+            levels.Items.Add(Item(preset == 0 ? L("Mute") : $"{preset}%",
                 volume == preset ? Theme.CheckIcon : null, () => ChangeVolume(preset)));
 
-        var sleep = Item(sleepAt == null ? T("Wyłącznik czasowy", "Sleep timer") : SleepLabel, Theme.MoonIcon);
+        var sleep = Item(sleepAt == null ? L("Sleep timer") : SleepLabel, Theme.MoonIcon);
         FillSleepMenu(sleep);
 
         menu.Items.Add(stations);
@@ -515,13 +516,13 @@ internal sealed partial class Radio
         }
         menu.Items.Add(new Separator());
         if (readyUpdate != null)
-            menu.Items.Add(Item(T("Zaktualizuj do ", "Update to ") + readyUpdate.Version.ToString(3), Theme.UpdateReadyIcon, InstallUpdate));
-        menu.Items.Add(Item(T("Ustawienia", "Settings"), Theme.SettingsIcon, () =>
+            menu.Items.Add(Item(L("Update to {0}", readyUpdate.Version.ToString(3)), Theme.UpdateReadyIcon, InstallUpdate));
+        menu.Items.Add(Item(L("Settings"), Theme.SettingsIcon, () =>
         {
             playerPanel?.Close();
             OpenPlayer("settings");
         }));
-        menu.Items.Add(Item(T("Zakończ", "Quit"), Theme.QuitIcon, Shutdown));
+        menu.Items.Add(Item(L("Quit"), Theme.QuitIcon, Shutdown));
         return menu;
     }
 
@@ -539,7 +540,7 @@ internal sealed partial class Radio
         string title = track;
         if (title == null) return;
         if (CopyText(title)) ShowCopiedCard(title);
-        else tray.ShowBalloonTip(2500, AppName, T("Nie udało się skopiować tytułu.", "Couldn't copy the title."), Forms.ToolTipIcon.Warning);
+        else tray.ShowBalloonTip(2500, AppName, L("Couldn't copy the title."), Forms.ToolTipIcon.Warning);
     }
 
     private static bool CopyText(string text)
@@ -577,15 +578,15 @@ internal sealed partial class Radio
 
     // ---- Sleep timer ----
 
-    private string SleepLabel => T("Wyłączy się o ", "Stops at ") + sleepAt?.ToString("HH:mm");
+    private string SleepLabel => L("Stops at {0}", sleepAt?.ToString("HH:mm"));
 
     private void FillSleepMenu(ItemsControl target)
     {
         foreach (int minutes in new[] { 15, 30, 45, 60, 90 })
-            target.Items.Add(Item(minutes + " min", sleepAt != null && sleepMinutes == minutes ? Theme.CheckIcon : null,
+            target.Items.Add(Item(L("{0} min", minutes), sleepAt != null && sleepMinutes == minutes ? Theme.CheckIcon : null,
                 () => SetSleepTimer(minutes)));
         target.Items.Add(new Separator());
-        target.Items.Add(Item(T("Wyłączony", "Off"), sleepAt == null ? Theme.CheckIcon : null, () => SetSleepTimer(null)));
+        target.Items.Add(Item(L("Off"), sleepAt == null ? Theme.CheckIcon : null, () => SetSleepTimer(null)));
     }
 
     private void SetSleepTimer(int? minutes)
@@ -604,7 +605,7 @@ internal sealed partial class Radio
         if (left <= 0)
         {
             SetSleepTimer(null);
-            if (session != null) StopPlayback(T("Wyłączono wyłącznikiem czasowym", "Stopped by the sleep timer"));
+            if (session != null) StopPlayback(L("Stopped by the sleep timer"));
             else lostConnectionAt = null;   // the radio had already lost the station: don't bring it back later
         }
         else Volatile.Write(ref fade, left >= 30 ? 100 : (int)(left * 100 / 30));
@@ -737,7 +738,7 @@ internal sealed partial class Radio
                         track = null;
                         artworkUrl = null;
                         RefreshTrack();
-                        SetStatus(T("Brak połączenia. Ponawiam za ", "Connection lost. Retrying in ") + delay + " s…");
+                        SetStatus(L("Connection lost. Retrying in {0} s…", delay));
                     });
                     await Task.Delay(TimeSpan.FromSeconds(delay), token).ConfigureAwait(false);
                     Post(() => { if (session == request) SetStatus(Connecting); });
@@ -746,7 +747,7 @@ internal sealed partial class Radio
             try
             {
                 await audio;
-                if (session == request) StopPlayback(T("Transmisja zakończyła się", "The broadcast has ended"));
+                if (session == request) StopPlayback(L("The broadcast has ended"));
             }
             catch (Exception error)
             {
@@ -770,7 +771,7 @@ internal sealed partial class Radio
         track = null;
         artworkUrl = null;
         RefreshTrack();
-        SetStatus(message ?? T("Zatrzymano", "Stopped"));
+        SetStatus(message ?? L("Stopped"));
     }
 
     private void SetStatus(string message)
@@ -792,8 +793,8 @@ internal sealed partial class Radio
         if (trackLabel.DesiredSize.Width > trackViewport.Width) trackTimer.Start();
         else trackTimer.Stop();
 
-        trackItem.ToolTip = track != null ? T("Kliknij, aby skopiować utwór", "Click to copy the song") : null;
-        AutomationProperties.SetName(trackItem, track != null ? T("Skopiuj utwór: ", "Copy song: ") + track : NoTrack);
+        trackItem.ToolTip = track != null ? L("Click to copy the song") : null;
+        AutomationProperties.SetName(trackItem, track != null ? L("Copy song: {0}", track) : NoTrack);
     }
 
     private void ScrollTrack()
@@ -1055,19 +1056,19 @@ internal sealed partial class Radio
         SavePreferences();
         if (manual)
         {
-            updateStatus = T("Sprawdzam…", "Checking…");
+            updateStatus = L("Checking…");
             updateVersion++;
         }
         try
         {
             Release latest = await Updater.Latest(metadataClient);
             if (latest == null || latest.Version <= Updater.Current)
-                updateStatus = manual ? T("Masz najnowszą wersję.", "You have the latest version.") : null;
+                updateStatus = manual ? L("You have the latest version.") : null;
             else if (readyUpdate?.Tag != latest.Tag || !File.Exists(readyFile))
             {
                 if (manual)
                 {
-                    updateStatus = T("Pobieram wersję ", "Downloading version ") + latest.Version.ToString(3) + "…";
+                    updateStatus = L("Downloading version {0}…", latest.Version.ToString(3));
                     updateVersion++;
                 }
                 string file = await Updater.Download(latest, null);
@@ -1087,7 +1088,7 @@ internal sealed partial class Radio
             error is UnauthorizedAccessException)
         {
             Debug.WriteLine(error);
-            if (manual) updateStatus = T("Nie udało się sprawdzić aktualizacji.", "Couldn't check for updates.");
+            if (manual) updateStatus = L("Couldn't check for updates.");
         }
         finally { checking = false; }
         updateVersion++;
@@ -1119,8 +1120,7 @@ internal sealed partial class Radio
             installing = false;
             readyUpdate = null;
             readyFile = null;
-            updateStatus = T("Nie udało się zainstalować. Otwieram stronę z nową wersją.",
-                "Couldn't install it. Opening the page with the new version.");
+            updateStatus = L("Couldn't install it. Opening the page with the new version.");
             updateVersion++;
             OpenWebPage(release.Page ?? Updater.Page + "/releases/latest");
         }
@@ -1136,7 +1136,7 @@ internal sealed partial class Radio
         if (saved == null) return;
         volume = Clamp(saved.Volume, 0, 100);
         lastPlayed = saved.LastPlayed;
-        Lang.Setting = saved.Language == "pl" || saved.Language == "en" ? saved.Language : "auto";
+        Lang.Setting = IsSupported(saved.Language) ? saved.Language : "auto";
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
         showStationPopup = saved.ShowStationPopup ?? true;
