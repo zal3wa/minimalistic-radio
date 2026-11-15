@@ -188,7 +188,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)
         if !panel.isVisible { failures.append("the panel doesn't open") }
-        panel.model.page = .statistics
+        panel.model.page = .history
+        panel.model.openStatistics()
+        panel.model.back()
+        if panel.model.page != .history { failures.append("Esc on Statistics doesn't go back to Song history") }
+        panel.model.page = .settings
+        panel.model.openStatistics()
         panel.model.back()
         if panel.model.page != .settings { failures.append("Esc on Statistics doesn't go back to Settings") }
         panel.model.back()

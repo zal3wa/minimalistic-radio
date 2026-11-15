@@ -101,11 +101,11 @@ msgstr "Definições"
 msgid "Back"
 msgstr "Voltar"
 
-msgid "Stations"
-msgstr "Estações"
-
 msgid "Statistics"
 msgstr "Estatísticas"
+
+msgid "Stations"
+msgstr "Estações"
 
 msgid "Add by address"
 msgstr "Adicionar por endereço"
@@ -206,8 +206,8 @@ msgstr "Acerca de"
 msgid "Version {0}"
 msgstr "Versão {0}"
 
-msgid "Quit Minimalistic Radio"
-msgstr "Sair do Minimalistic Radio"
+msgid "Stops the radio and removes it from the menu bar"
+msgstr "Para o rádio e retira-o da barra de menus"
 
 msgid "Nothing collected yet"
 msgstr "Ainda nada recolhido"

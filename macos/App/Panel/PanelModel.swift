@@ -62,9 +62,18 @@ final class PanelModel: ObservableObject {
         }
     }
 
-    /// Where ‹ and Esc go: Statistics back to Settings, every other page to the stations.
+    /// The page Statistics was opened from (Song history or Settings): where ‹ and Esc take it back.
+    private(set) var statisticsFrom = Page.settings
+
+    /// Statistics, from Song history's [Statistics] or Settings › Statistics › Show.
+    func openStatistics() {
+        statisticsFrom = page == .history ? .history : .settings
+        page = .statistics
+    }
+
+    /// Where ‹ and Esc go: Statistics back to where it was opened from, every other page to the stations.
     var parent: Page {
-        page == .statistics ? .settings : .stations
+        page == .statistics ? statisticsFrom : .stations
     }
 
     /// Esc: back a page, or closes the panel on the stations.

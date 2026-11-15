@@ -56,7 +56,7 @@ struct SettingsPage: View {
                     Text(L("Collected only on this computer, never sent anywhere"))
                 }
                 LabeledContent {
-                    Button(L("Show")) { model.page = .statistics }
+                    Button(L("Show")) { model.openStatistics() }
                 } label: {
                     Text(collectedSince).font(.subheadline).foregroundStyle(.secondary)
                 }
@@ -98,11 +98,13 @@ struct SettingsPage: View {
                 }
             }
             Section {
-                HStack {
+                LabeledContent {
                     Button(role: .destructive) { NSApp.terminate(nil) } label: {
-                        Text(L("Quit Minimalistic Radio")).foregroundStyle(.red)
+                        Text(L("Quit")).foregroundStyle(.red)
                     }
-                    Spacer()
+                } label: {
+                    Text(L("Quit"))
+                    Text(L("Stops the radio and removes it from the menu bar"))
                 }
             }
         }
