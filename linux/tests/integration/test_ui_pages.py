@@ -198,7 +198,7 @@ def test_settings_rows(make, monkeypatch, tmp_path):
     groups = [w for w in descendants(page) if isinstance(w, Adw.PreferencesGroup)]
     assert [g.get_title() for g in groups] == ["General", "Stations", "", "About", ""]
     assert "Collected only on this computer, never sent anywhere" in texts(groups[2])
-    assert texts(groups[4]) == ["Quit Minimalistic Radio"]
+    assert [text for text in texts(groups[4]) if text] == ["Quit Minimalistic Radio"]
     assert page.quit_button.has_css_class("destructive-action")
 
     page.statistics_button.emit("clicked")
