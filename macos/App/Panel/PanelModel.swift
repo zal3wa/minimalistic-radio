@@ -93,7 +93,7 @@ final class PanelModel: ObservableObject {
 
     /// A share link opened or pasted: a station already on the list just plays on the stations page; any other asks
     /// on the Shared station page; a link without a station says so there.
-    func openShared(_ link: ShareLink) {
+    func openShared(_ link: StationLink) {
         switch link {
         case .station(let station):
             page = controller.playIfKnown(station) ? .stations : .shared(station)

@@ -17,7 +17,7 @@ public struct SharedStation: Equatable, Sendable {
 }
 
 /// What a share link holds: a station, or nothing usable ("This link doesn't contain a station.").
-public enum ShareLink: Equatable, Sendable {
+public enum StationLink: Equatable, Sendable {
     case station(SharedStation)
     case invalid
 }
@@ -48,7 +48,7 @@ public func shareAppLink(_ station: Station) -> String {
 
 /// A pasted or opened web link or app link: its station, `.invalid`, or nil when the text isn't a share link at all
 /// (a search, a stream address).
-public func readShareLink(_ text: String) -> ShareLink? {
+public func readShareLink(_ text: String) -> StationLink? {
     let link = text.trimmingCharacters(in: .whitespacesAndNewlines)
     let lowered = link.lowercased()
     let query: Substring

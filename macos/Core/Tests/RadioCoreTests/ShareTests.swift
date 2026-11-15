@@ -30,7 +30,7 @@ private let hard = Station(name: "Antyradio Hard", url: "https://an05.cdn.euroze
 
 @Test func roundTripsBothLinks() {
     let station = Station(name: "Rock & Roll + Jazz Świat", url: "http://x.example/a?b=1&c=2", logo: "https://x.example/l.png")
-    let expected = ShareLink.station(SharedStation(name: station.name, url: station.url, logo: station.logo))
+    let expected = StationLink.station(SharedStation(name: station.name, url: station.url, logo: station.logo))
     #expect(readShareLink(shareLink(station)) == expected)
     #expect(readShareLink(shareAppLink(station)) == expected)
     #expect(readShareLink("  " + shareLink(station) + "\n") == expected)     // pasted with spaces around
@@ -39,7 +39,7 @@ private let hard = Station(name: "Antyradio Hard", url: "https://an05.cdn.euroze
 @Test func plusAndPercentTwentyAreBothSpaces() {
     let plus = readShareLink("minimalistic-radio://add?n=Radio+357&u=https%3A%2F%2Fstream.radio357.pl%2F")
     let twenty = readShareLink("minimalistic-radio://add?n=Radio%20357&u=https://stream.radio357.pl/")
-    let expected = ShareLink.station(SharedStation(name: "Radio 357", url: "https://stream.radio357.pl/", logo: nil))
+    let expected = StationLink.station(SharedStation(name: "Radio 357", url: "https://stream.radio357.pl/", logo: nil))
     #expect(plus == expected)
     #expect(twenty == expected)
 }
@@ -85,7 +85,7 @@ func invalidLinks(link: String) {
 
 @Test func badLogoIsDroppedSilently() {
     let base = "minimalistic-radio://add?n=A&u=http%3A%2F%2Fa.example%2F1&l="
-    let expected = ShareLink.station(SharedStation(name: "A", url: "http://a.example/1", logo: nil))
+    let expected = StationLink.station(SharedStation(name: "A", url: "http://a.example/1", logo: nil))
     #expect(readShareLink(base + "http%3A%2F%2Fa.example%2Flogo.png") == expected)          // not https
     #expect(readShareLink(base + "logo.png") == expected)
     #expect(readShareLink(base + "https%3A%2F%2Fa.example%2F" + String(repeating: "x", count: 2040)) == expected)
@@ -106,7 +106,7 @@ func otherTextIsNotAShareLink(text: String) {
 }
 
 @Test func linksAreRecognisedWhateverTheCase() {
-    let expected = ShareLink.station(SharedStation(name: "A", url: "http://a.example/1", logo: nil))
+    let expected = StationLink.station(SharedStation(name: "A", url: "http://a.example/1", logo: nil))
     #expect(readShareLink("HTTPS://Minimalistic-Radio.GitHub.io/#n=A&u=http%3A%2F%2Fa.example%2F1") == expected)
     #expect(readShareLink("Minimalistic-Radio://ADD?n=A&u=http%3A%2F%2Fa.example%2F1") == expected)
     #expect(readShareLink("https://minimalistic-radio.github.io/index.html#n=A&u=http%3A%2F%2Fa.example%2F1") == expected)
