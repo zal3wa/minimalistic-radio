@@ -221,6 +221,7 @@ internal sealed partial class Radio
         {
             Lang.Verify();   // the catalogs: all there, nothing missing, English for an unknown text
             Statistics.Verify();   // the listening statistics: periods, sessions, top lists, hours, the file
+            ShareLink.Verify();    // links to share a station: building, reading, what makes one invalid
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
