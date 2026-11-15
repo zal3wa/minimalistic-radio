@@ -1,8 +1,11 @@
 """radio-browser station search, mirroring Storage.Search in src/Services/Storage.cs."""
+from __future__ import annotations
 import re
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Mapping
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from .models import Station
 from .net import NetworkError, fetch_json
@@ -23,6 +26,7 @@ class DirectoryStation:
     tags: str
     id: str = ""
     working: bool = True
+    country_code: str = ""
 
 
 class DirectoryUnavailable(Exception):
@@ -39,7 +43,7 @@ def _text(item: dict, key: str) -> str:
     return value if isinstance(value, str) else ""
 
 
-def parse_results(items: Any, limit: int = _LIMIT) -> list[DirectoryStation]:
+def parse_results(items: Any, limit: int = _LIMIT, bans: BanList | None = None) -> list[DirectoryStation]:
     seen: set[str] = set()
     found: list[DirectoryStation] = []
     for item in items if isinstance(items, list) else []:
@@ -50,13 +54,66 @@ def parse_results(items: Any, limit: int = _LIMIT) -> list[DirectoryStation]:
         name = _text(item, "name")
         if not name.strip() or not is_web_url(address) or address in seen:
             continue
-        seen.add(address)
         bitrate = item.get("bitrate")
-        found.append(DirectoryStation(
+        entry = DirectoryStation(
             name, _text(item, "country"), address, _text(item, "favicon") or None,
             _text(item, "codec"), bitrate if isinstance(bitrate, int) and not isinstance(bitrate, bool) else 0,
-            _text(item, "tags"), _text(item, "stationuuid"), item.get("lastcheckok") != 0))
+            _text(item, "tags"), _text(item, "stationuuid"), item.get("lastcheckok") != 0,
+            _text(item, "countrycode").strip().upper())
+        if is_hidden(entry, bans):
+            continue
+        seen.add(address)
+        found.append(entry)
     return found[:limit]
+
+
+@dataclass(frozen=True)
+class BanList:
+    """Stations that are never shown (data/banned-stations.json, shared with the Windows app)."""
+    hosts: frozenset[str] = frozenset()
+    uuids: frozenset[str] = frozenset()
+    names: frozenset[tuple[str, str]] = frozenset()   # (country code, name_key)
+
+
+NO_BANS = BanList()
+_active_bans = NO_BANS
+
+
+def load_banned(path: str | Path) -> BanList:
+    """The ban list in `path`; a missing or malformed file hides nothing."""
+    hosts: set[str] = set()
+    uuids: set[str] = set()
+    names: set[tuple[str, str]] = set()
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+        for station in data["stations"]:
+            hosts.update(h.strip().lower() for h in station.get("hosts", []))
+            uuids.update(u.strip().lower() for u in station.get("uuids", []))
+            country = str(station.get("country", "")).strip().upper()
+            if country:
+                names.update((country, name_key(n)) for n in station.get("names", []))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return NO_BANS
+    return BanList(frozenset(hosts), frozenset(uuids), frozenset(names))
+
+
+def use_bans(bans: BanList) -> None:
+    """The list the search and the suggestions apply when they are not given one."""
+    global _active_bans
+    _active_bans = bans
+
+
+def is_hidden(entry: DirectoryStation, bans: BanList | None = None) -> bool:
+    bans = _active_bans if bans is None else bans
+    if entry.id and entry.id.lower() in bans.uuids:
+        return True
+    try:
+        host = (urlsplit(entry.url).hostname or "").lower().rstrip(".")
+    except ValueError:
+        host = ""
+    if any(host == h or host.endswith("." + h) for h in bans.hosts):
+        return True
+    return (entry.country_code.upper(), name_key(entry.name)) in bans.names
 
 
 def subtitle(entry: DirectoryStation) -> str:
@@ -138,13 +195,13 @@ def name_key(name: str | None) -> str:
 
 
 def clean_popular(items: list[DirectoryStation], recommended: list[DirectoryStation],
-                  limit: int = POPULAR_SHOWN) -> list[DirectoryStation]:
+                  limit: int = POPULAR_SHOWN, bans: BanList | None = None) -> list[DirectoryStation]:
     """Not already recommended, no duplicates by name or stream, no spam, the first `limit`."""
     names = {name_key(entry.name) for entry in recommended}
     streams = {stream_key(entry.url) for entry in recommended}
     kept: list[DirectoryStation] = []
     for entry in items:
-        if looks_like_spam(entry.name):
+        if looks_like_spam(entry.name) or is_hidden(entry, bans):
             continue
         key, stream = name_key(entry.name), stream_key(entry.url)
         # A name that is nothing but "Radio" has an empty key: it is not compared by name.

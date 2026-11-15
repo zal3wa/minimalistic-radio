@@ -48,3 +48,7 @@ src/
 docs/            icon.svg (the icon's source), download button, README screenshots
 tools/IconMaker  draws radio.ico in all sizes: dotnet run --project tools/IconMaker -- <folder>
 ```
+
+## Linux: the banned-stations list
+
+`data/banned-stations.json` is the one list of stations the radio never shows, shared with Windows. Meson cannot read outside `linux/`, so the Linux build installs a copy, `linux/data/banned-stations.json`. After editing the repo-root file, copy it over the Linux copy (`cp data/banned-stations.json linux/data/`); a unit test fails if the two differ.

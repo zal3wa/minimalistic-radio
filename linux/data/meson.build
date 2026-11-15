@@ -33,3 +33,6 @@ test('validate desktop file', desktop_validate, args: [desktop_file])
 
 appstreamcli = find_program('appstreamcli')
 test('validate metainfo', appstreamcli, args: ['validate', '--no-net', metainfo_file])
+
+# The list of stations that are never shown; a copy of ../data/banned-stations.json (see docs/BUILDING.md).
+install_data('banned-stations.json', install_dir: pkgdatadir)

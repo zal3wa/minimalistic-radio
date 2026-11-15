@@ -131,3 +131,47 @@ def test_suggestions_popular_failure_and_total_failure():
     assert len(recommended) == 2 and popular == []
     with pytest.raises(DirectoryUnavailable):
         suggestions(None, _suggest_fetch(popular_ok=False, recommended_ok=False))
+
+
+# ---- Banned stations (data/banned-stations.json, shared with Windows) ----
+
+from pathlib import Path  # noqa: E402
+
+from minimalistic_radio.core.directory import is_hidden, load_banned  # noqa: E402
+
+REPO_LIST = Path(__file__).resolve().parents[3] / "data" / "banned-stations.json"
+BANS = load_banned(REPO_LIST)
+
+
+def _banned(name, code, url, uuid=""):
+    return DirectoryStation(name, "", url, None, "MP3", 128, "", uuid, True, code)
+
+
+def test_banned_station_rules():
+    assert is_hidden(_banned("Radio Republika", "PL", "https://ssl-1.radiotvrepublika.pl:12698/stream"), BANS)
+    assert is_hidden(_banned("Republika", "PL", "http://example.com/live"), BANS)
+    assert is_hidden(_banned("X", "DE", "http://example.com/x", "F837704E-40DF-4302-B546-C8401348E51C"), BANS)
+    assert is_hidden(_banned("X", "", "http://a.b.tvrepublika.pl/x"), BANS)
+    assert not is_hidden(_banned("Dominikánská Republika", "CZ", "http://example.com/a"), BANS)
+    assert not is_hidden(_banned("Republika ni Juan 87.5", "PH", "http://example.com/b"), BANS)
+
+
+def test_banned_station_filtered_from_results_and_popular():
+    item = {"name": "Radio Republika", "countrycode": "PL", "url": "https://ssl-1.radiotvrepublika.pl:12698/stream"}
+    other = {"name": "Dominikánská Republika", "countrycode": "CZ", "url": "http://example.com/a"}
+    assert [e.name for e in parse_results([item, other], bans=BANS)] == ["Dominikánská Republika"]
+    hidden = _banned("Radio Republika", "PL", "https://ssl-1.radiotvrepublika.pl:12698/stream")
+    other_entry = _banned("Other", "PL", "http://o/x")
+    assert clean_popular([hidden, other_entry], [], bans=BANS) == [other_entry]
+
+
+def test_malformed_or_missing_ban_file_hides_nothing(tmp_path):
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    entry = _banned("Radio Republika", "PL", "https://ssl-1.radiotvrepublika.pl/stream")
+    assert not is_hidden(entry, load_banned(bad))
+    assert not is_hidden(entry, load_banned(tmp_path / "missing.json"))
+
+
+def test_packaged_copy_matches_the_repo_list():
+    assert (REPO_LIST.parent.parent / "linux" / "data" / "banned-stations.json").read_bytes() == REPO_LIST.read_bytes()

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from . import APP_NAME
 from .core.storage import default_paths, load_preferences
@@ -23,6 +24,11 @@ def main(argv: list[str]) -> int:
     except OSError:
         language = "auto"
     translate = i18n.install(language, LOCALEDIR)
+    from .core import directory
+    for folder in (Path(PKGDATADIR), Path(__file__).resolve().parents[1] / "data"):   # installed, else the source tree
+        if (folder / "banned-stations.json").is_file():
+            directory.use_bans(directory.load_banned(folder / "banned-stations.json"))
+            break
     return RadioApplication(translate=translate).run(argv)
 
 
