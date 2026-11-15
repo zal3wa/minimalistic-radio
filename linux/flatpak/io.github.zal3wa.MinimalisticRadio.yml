@@ -3,6 +3,8 @@ runtime: org.gnome.Platform
 runtime-version: '51'
 sdk: org.gnome.Sdk
 command: minimalistic-radio
+# The translations stay in the app: a .flatpak bundle has no room for a separate Locale extension.
+separate-locales: false
 finish-args:
   - --share=network
   - --share=ipc
