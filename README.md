@@ -81,6 +81,8 @@ The same radio for Linux, made with GTK and libadwaita: a tray icon (where the d
   </tr>
 </table>
 
+<p align="center"><a href="https://zal3wa.github.io/minimalistic-radio/minimalistic-radio.flatpakref"><img src="docs/download-linux.svg" height="56" alt="Download for Linux"></a></p>
+
 <!-- When Flathub is live, remove these comment marks:
 <a href="https://flathub.org/apps/io.github.zal3wa.minimalistic-radio"><img src="https://flathub.org/api/badge?locale=en" height="56" alt="Get it on Flathub"></a>
 -->
