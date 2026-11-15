@@ -16,12 +16,14 @@ from typing import Callable
 import gi
 
 gi.require_version("Gdk", "4.0")
-from gi.repository import Gdk, GLib  # noqa: E402
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
 from ..core import net  # noqa: E402
 from ..core.streams import is_web_url  # noqa: E402
 from ..pictures import picture  # noqa: E402
 
+FALLBACK_ICON = "audio-x-generic-symbolic"   # a station without a logo, as in the station list
 LOGO_LIMIT = 2_000_000    # bytes downloaded at most
 LOGO_PIXELS = 96          # decoded at most this big: shown at 40 px, sharp at 2× scaling
 RETRY_SECONDS = 300       # a logo that couldn't be downloaded is tried again after this
@@ -124,3 +126,34 @@ class LogoCache:
         for callback in self._waiting.pop(url, []):
             callback(texture)
         return GLib.SOURCE_REMOVE
+
+
+class LogoImage(Gtk.Image):
+    """A station's logo, rounded like in the station list, or the list's placeholder icon when there is none."""
+
+    def __init__(self, cache: LogoCache, size: int) -> None:
+        super().__init__(css_classes=["station-logo"], overflow=Gtk.Overflow.HIDDEN, valign=Gtk.Align.CENTER)
+        self.set_size_request(size, size)
+        self.cache = cache
+        self.size = size
+        self.url: str | None = None
+        self.texture: Texture | None = None
+
+    def show_logo(self, url: str | None) -> None:
+        self.url = url
+        known, texture = self.cache.lookup(url)
+        self._draw(texture)
+        if not known:
+            def arrived(texture: Texture | None, url: str | None = url) -> None:
+                if self.url == url:
+                    self._draw(texture)
+            self.cache.load(url, arrived)
+
+    def _draw(self, texture: Texture | None) -> None:
+        self.texture = texture
+        if texture is not None:
+            self.set_from_paintable(texture)
+            self.set_pixel_size(self.size)
+        else:
+            self.set_from_icon_name(FALLBACK_ICON)
+            self.set_pixel_size(round(self.size * 0.6))

@@ -1,4 +1,6 @@
-"""The settings page: language, start with the session, station changes, station list export/import, about, quit."""
+"""The settings page: language, start with the session, station changes, station list export/import, the
+statistics, about, quit. One card per section, the same order as on Windows and macOS (no updates: Flatpak
+brings them)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,11 +14,13 @@ from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
 from .. import APP_ID, APP_NAME, VERSION  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
+from .bars import subpage_bar  # noqa: E402
 
 if TYPE_CHECKING:
     from .window import RadioWindow
 
 WEBSITE = "https://github.com/zal3wa/minimalistic-radio"
+ICON_SIZE = 32
 
 # The language choices (code, label). A label of None is the translated "Same as system". One line per language.
 LANGUAGE_OPTIONS: list[tuple[str, str | None]] = [
@@ -39,7 +43,6 @@ class SettingsPage(Adw.NavigationPage):
         self.window = window
         self.controller = controller
         self._ = _
-        self.about: Adw.AboutDialog | None = None
 
         # General
         general = Adw.PreferencesGroup(title=_("General"))
@@ -80,31 +83,45 @@ class SettingsPage(Adw.NavigationPage):
         self.buttons_row = Adw.PreferencesRow(child=buttons, activatable=False, focusable=False)
         self.stations_group.add(self.buttons_row)
 
-        # About
+        # Statistics: a card of its own, without a heading
+        statistics_group = Adw.PreferencesGroup()
+        self.statistics_row = Adw.ActionRow(title=_("Statistics"),
+                                            subtitle=_("Collected only on this computer, never sent anywhere"))
+        self.statistics_button = Gtk.Button(label=_("Show"), valign=Gtk.Align.CENTER)
+        self.statistics_button.connect("clicked", lambda _button: window.show_page("statistics"))
+        self.statistics_row.add_suffix(self.statistics_button)
+        self.statistics_row.set_activatable_widget(self.statistics_button)
+        statistics_group.add(self.statistics_row)
+
+        # About: the app's icon, name and version, and its page on GitHub
         about_group = Adw.PreferencesGroup(title=_("About"))
-        self.about_row = Adw.ActionRow(title=APP_NAME, subtitle=f"{_('Version')} {VERSION} · MIT",
-                                       activatable=True)
-        self.about_row.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
-        self.about_row.connect("activated", lambda _row: self.show_about())
+        self.about_row = Adw.ActionRow(title=APP_NAME, subtitle=f"{_('Version')} {VERSION} · MIT")
+        self.about_row.add_prefix(Gtk.Image(icon_name=APP_ID, pixel_size=ICON_SIZE, valign=Gtk.Align.CENTER))
+        self.website_button = Gtk.LinkButton(label="GitHub ↗", uri=WEBSITE, valign=Gtk.Align.CENTER)
+        self.about_row.add_suffix(self.website_button)
         about_group.add(self.about_row)
-        self.quit_row = Adw.ActionRow(title=_("Quit Minimalistic Radio"),
-                                      subtitle=_("Stops the radio and removes it from the tray"))
-        self.quit_button = Gtk.Button(label=_("Quit"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+
+        # Quit: a card with only the button
+        quit_group = Adw.PreferencesGroup()
+        self.quit_button = Gtk.Button(label=_("Quit Minimalistic Radio"), halign=Gtk.Align.START,
+                                      css_classes=["destructive-action"])
         self.quit_button.connect("clicked", lambda _button: window.quit_app())
-        self.quit_row.add_suffix(self.quit_button)
-        about_group.add(self.quit_row)
+        quit_box = Gtk.Box(margin_top=8, margin_bottom=8, margin_start=12, margin_end=12)
+        quit_box.append(self.quit_button)
+        quit_group.add(Adw.PreferencesRow(child=quit_box, activatable=False, focusable=False))
 
         for widget, name in ((self.language_row, "language-row"), (self.autostart_row, "autostart-row"),
                              (self.popup_row, "popup-row"), (self.export_button, "export-button"),
-                             (self.import_button, "import-button"), (self.about_row, "about-row"),
+                             (self.import_button, "import-button"), (self.statistics_button, "statistics-button"),
+                             (self.about_row, "about-row"), (self.website_button, "website-button"),
                              (self.quit_button, "quit-button")):
             widget.set_name(name)   # the ids the tests and the screenshots find them by
 
-        preferences = Adw.PreferencesPage()
-        for group in (general, self.stations_group, about_group):
-            preferences.add(group)
-        toolbar = Adw.ToolbarView(content=preferences)
-        toolbar.add_top_bar(Adw.HeaderBar())
+        self.preferences = Adw.PreferencesPage(css_classes=["panel-preferences"])
+        for group in (general, self.stations_group, statistics_group, about_group, quit_group):
+            self.preferences.add(group)
+        toolbar = Adw.ToolbarView(content=self.preferences)
+        toolbar.add_top_bar(subpage_bar(self.get_title(), _))
         self.set_child(toolbar)
 
     def refresh(self, change: Change) -> None:
@@ -175,12 +192,3 @@ class SettingsPage(Adw.NavigationPage):
                 self.import_from(Path(file.get_path()))
 
         dialog.open(self.window, None, done)
-
-    # ---- About ----
-
-    def show_about(self) -> Adw.AboutDialog:
-        about = Adw.AboutDialog(application_name=APP_NAME, application_icon=APP_ID, version=VERSION,
-                                license_type=Gtk.License.MIT_X11, website=WEBSITE)
-        about.present(self.window)
-        self.about = about
-        return about

@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta, tzinfo
 from enum import Enum
 from typing import Callable
 
-from .models import ListeningSession, SongPlay, Statistics
+from .models import ListeningSession, SongPlay, Station, Statistics
 from .titles import split_track
 
 MERGE_GAP = timedelta(minutes=2)                  # a reconnect within this continues the session
@@ -238,6 +238,15 @@ def count(stats: Statistics, period: Period, now: datetime, tz: tzinfo | None = 
 
     summary.peak_hour = max(range(24), key=lambda hour: (summary.hours[hour], -hour))
     return summary
+
+
+def find_logo(stations: list[Station], url: str | None = None, name: str | None = None) -> str | None:
+    """The logo of a station on the current list, found by its address, then by its name; None if it has none
+    or is no longer on the list (the song history only knows the name)."""
+    match = next((s for s in stations if url is not None and s.url == url), None)
+    if match is None:
+        match = next((s for s in stations if name is not None and s.name == name), None)
+    return match.logo if match is not None else None
 
 
 def enough_titles(summary: Summary) -> bool:

@@ -46,6 +46,7 @@ python.install_sources(
 
 python.install_sources(
   'ui/__init__.py',
+  'ui/bars.py',
   'ui/footer.py',
   'ui/history_page.py',
   'ui/logos.py',
@@ -54,6 +55,7 @@ python.install_sources(
   'ui/settings_page.py',
   'ui/station_dialog.py',
   'ui/stations_page.py',
+  'ui/statistics_page.py',
   'ui/window.py',
   subdir: 'minimalistic_radio/ui',
 )

@@ -3,10 +3,10 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from minimalistic_radio.core.models import ListeningSession, SongPlay, Statistics
+from minimalistic_radio.core.models import ListeningSession, SongPlay, Station, Statistics
 from minimalistic_radio.core.statistics import (
-    Period, Recorder, artist_of, count, enough_titles, format_count, format_duration, format_hours, period_label,
-    plays_text, since_label,
+    Period, Recorder, artist_of, count, enough_titles, find_logo, format_count, format_duration, format_hours,
+    period_label, plays_text, since_label,
 )
 from minimalistic_radio.core.storage import load_statistics, save_statistics
 
@@ -355,6 +355,17 @@ def test_the_peak_is_the_first_busiest_hour():
 def test_a_running_session_in_the_future_is_cut_at_now():
     stats = stats_of(session(at(2026, 11, 15, 20), at(2026, 11, 15, 22)))   # a clock that was ahead
     assert count(stats, Period.MONTH, NOW, UTC).total == 30 * 60
+
+
+def test_logos_come_from_the_station_list_by_address_then_name():
+    stations = [Station("Radio 357", "https://357.example/", "https://357.example/logo.png"),
+                Station("Antyradio Hard", "https://hard.example/new", "https://hard.example/logo.png"),
+                Station("No logo", "http://plain.example/")]
+    assert find_logo(stations, "https://357.example/", "Old name") == "https://357.example/logo.png"
+    assert find_logo(stations, "https://hard.example/old", "Antyradio Hard") == "https://hard.example/logo.png"
+    assert find_logo(stations, name="Antyradio Hard") == "https://hard.example/logo.png"
+    assert find_logo(stations, "http://plain.example/", "No logo") is None
+    assert find_logo(stations, "http://gone.example/", "Gone") is None
 
 
 # ---- Texts ----
