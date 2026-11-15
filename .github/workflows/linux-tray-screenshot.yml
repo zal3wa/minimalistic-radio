@@ -1,0 +1,79 @@
+name: Linux tray screenshot
+
+# Real pictures of the tray icon and its open menu on Ubuntu's desktop (GNOME Shell with Ubuntu's AppIndicator
+# extension and the Yaru theme), for the README: docs/screenshots/linux-tray-menu-<light|dark>.png. The menu is
+# drawn by the desktop, so the app's --screenshot can't take it. How: .github/scripts/linux-tray-screenshot.py.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['linux-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  tray:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      # Ubuntu's shell as it ships: gnome-shell-common has Ubuntu's session mode (ubuntu.json). No recommends: the
+      # desktop's apps aren't needed. (ubuntu-settings isn't installed: it also switches the network to
+      # NetworkManager. The script sets its defaults instead.)
+      - name: Install GNOME Shell, Ubuntu's tray, theme, fonts and wallpaper
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnome-shell gnome-shell-extension-appindicator \
+            yaru-theme-gnome-shell yaru-theme-gtk yaru-theme-icon fonts-ubuntu fonts-cantarell ubuntu-wallpapers \
+            xwayland xvfb dconf-service dconf-cli libglib2.0-bin libgl1-mesa-dri libegl-mesa0
+          gnome-shell --version
+          ls /usr/share/gnome-shell/modes /usr/share/gnome-shell/extensions
+          cat /usr/share/gnome-shell/modes/ubuntu.json || true
+
+      # The integration job's list (.github/workflows/linux.yml).
+      - name: Install the radio's dependencies
+        run: |
+          sudo apt-get install -y python3-gi python3-pytest gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-pulseaudio gstreamer1.0-tools gir1.2-gdkpixbuf-2.0 librsvg2-common xvfb dbus-x11 gettext meson desktop-file-utils appstream
+
+      # Installed in /usr as a package would be, so the shell finds the symbolic icon by name.
+      - name: Build and install the radio
+        run: |
+          meson setup _build linux --prefix /usr
+          meson compile -C _build
+          sudo meson install -C _build --no-rebuild
+          sudo gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || sudo gtk4-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+          command -v minimalistic-radio
+          ls /usr/share/icons/hicolor/symbolic/apps
+
+      # One session bus for the shell, the settings and the radio. The settings service gets these XDG folders.
+      - name: Take the pictures
+        env:
+          XDG_CURRENT_DESKTOP: ubuntu:GNOME
+          XDG_SESSION_DESKTOP: ubuntu
+          GNOME_SHELL_SESSION_MODE: ubuntu
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          NO_AT_BRIDGE: '1'
+        run: |
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/runtime" XDG_CONFIG_HOME="$RUNNER_TEMP/xdg/config"
+          export XDG_DATA_HOME="$RUNNER_TEMP/xdg/data" XDG_CACHE_HOME="$RUNNER_TEMP/xdg/cache"
+          mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          dbus-run-session -- /usr/bin/python3 .github/scripts/linux-tray-screenshot.py tray-screenshots tray-logs
+
+      - name: Upload the pictures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-tray-screenshots
+          path: tray-screenshots/*.png
+          if-no-files-found: ignore
+
+      # The shell's and the radio's output, and the whole screen at each step.
+      - name: Upload the logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-tray-logs
+          path: tray-logs/
+          if-no-files-found: ignore
