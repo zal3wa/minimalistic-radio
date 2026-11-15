@@ -174,4 +174,7 @@ def test_malformed_or_missing_ban_file_hides_nothing(tmp_path):
 
 
 def test_packaged_copy_matches_the_repo_list():
-    assert (REPO_LIST.parent.parent / "linux" / "data" / "banned-stations.json").read_bytes() == REPO_LIST.read_bytes()
+    # Same content; a Windows checkout may give the two copies different line endings.
+    def text(path):
+        return path.read_bytes().replace(b"\r\n", b"\n")
+    assert text(REPO_LIST.parent.parent / "linux" / "data" / "banned-stations.json") == text(REPO_LIST)
