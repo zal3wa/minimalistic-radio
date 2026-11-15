@@ -392,6 +392,32 @@ internal sealed partial class Radio
                     await Task.Delay(1000);
                     await SaveWholePage("statistics-everything");
                 }
+                // ← goes from Statistics back to Settings, and from there to the stations.
+                bool Titled(string title)
+                {
+                    playerPanel.UpdateLayout();   // a part shown for the first time gets its content only now
+                    return Descendants(playerPanel).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == title);
+                }
+                Button Back() => Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back"));
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                bool backToSettings = Titled(L("Settings"));
+                Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                if (!backToSettings || !Titled(L("History")))
+                    throw new InvalidOperationException("Strzałka wstecz nie wraca ze statystyk do ustawień i do stacji.");
+                if (preview)
+                {
+                    // The other pages with a title in the bar: the station form (Edit) and Add a station.
+                    var options = (ContextMenu)Descendants(playerPanel).OfType<ListBox>().First(item => item.IsVisible).Items.OfType<Grid>().Last()
+                        .Children.OfType<Button>().Last().Tag;
+                    ((MenuItem)options.Items[0]).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                    await Task.Delay(500);
+                    await SavePreview(playerPanel, "form");
+                    Back().RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    Descendants(playerPanel).OfType<Button>().First(button => Descendants(button).OfType<TextBlock>().Any(text => text.Text == L("Station")))
+                        .RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                    await Task.Delay(500);
+                    await SavePreview(playerPanel, "search");
+                }
                 playerPanel.Close();
                 ShowStationPopup();
                 if (osd?.IsVisible != true || osdTitle.Text != StationName)
