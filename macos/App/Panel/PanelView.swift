@@ -54,7 +54,7 @@ struct HeaderView: View {
     var body: some View {
         HStack(spacing: 6) {
             if model.page == .stations {
-                Button { model.page = .station(nil) } label: { Label(L("Station"), systemImage: "plus") }
+                Button { model.addStation() } label: { Label(L("Station"), systemImage: "plus") }
                     .help(L("Add a station"))
                     .buttonStyle(.bordered)
                 Button { model.page = .search } label: { Image(systemName: "magnifyingglass") }

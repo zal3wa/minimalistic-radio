@@ -42,6 +42,19 @@ final class PanelModel: ObservableObject {
         revision += 1
     }
 
+    /// + Station: the search page with its suggestions ("Add by address" is a link there), as on Windows.
+    func addStation() {
+        page = .search
+    }
+
+    /// Space plays and stops, except where a text field takes the typing.
+    var spacePlays: Bool {
+        switch page {
+        case .search, .station: return false
+        default: return true
+        }
+    }
+
     /// Esc: back to the stations, or closes the panel there.
     func back() {
         if page == .stations { close() } else { page = .stations }

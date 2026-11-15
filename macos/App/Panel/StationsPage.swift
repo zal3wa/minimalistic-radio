@@ -20,10 +20,8 @@ struct StationsPage: View {
         } else {
             List(selection: $selected) {
                 ForEach(Array(controller.stations.enumerated()), id: \.element.url) { index, station in
-                    StationRow(model: model, station: station, index: index)
+                    StationRow(model: model, station: station, index: index) { play(index) }
                         .tag(station.url)
-                        .contentShape(Rectangle())
-                        .simultaneousGesture(TapGesture().onEnded { play(index) })
                 }
                 .onMove { from, to in
                     if let source = from.first { controller.moveStation(from: source, to: to) }
@@ -60,19 +58,24 @@ struct StationRow: View {
     @ObservedObject var model: PanelModel
     let station: Station
     let index: Int
+    let onPlay: () -> Void
 
     private var playing: Bool { model.controller.current == index && model.controller.active }
 
     var body: some View {
         HStack(spacing: 12) {
-            LogoView(logos: model.logos, url: station.logo, size: 40)
-            Text(station.name)
-                .lineLimit(1)
-                .foregroundStyle(playing ? Color.accentColor : Color.primary)
-            Spacer(minLength: 4)
-            if playing {
-                Image(systemName: "play.fill").foregroundStyle(Color.accentColor)
+            HStack(spacing: 12) {
+                LogoView(logos: model.logos, url: station.logo, size: 40)
+                Text(station.name)
+                    .lineLimit(1)
+                    .foregroundStyle(playing ? Color.accentColor : Color.primary)
+                Spacer(minLength: 4)
+                if playing {
+                    Image(systemName: "play.fill").foregroundStyle(Color.accentColor)
+                }
             }
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onPlay)
             Menu {
                 Button(L("Edit")) { model.page = .station(index) }
                 Button(L("Remove"), role: .destructive) { model.controller.removeStation(index) }

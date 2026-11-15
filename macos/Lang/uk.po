@@ -251,11 +251,11 @@ msgstr "Сервер станції повернув помилку {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Не вдалося підключитися до станції. Перевірте інтернет."
 
-msgid "Download update"
-msgstr "Завантажити оновлення"
-
 msgid "Update"
 msgstr "Оновити"
+
+msgid "Download update"
+msgstr "Завантажити оновлення"
 
 msgid "You have the latest version."
 msgstr "У вас найновіша версія."
@@ -263,11 +263,14 @@ msgstr "У вас найновіша версія."
 msgid "Couldn't check for updates."
 msgstr "Не вдалося перевірити оновлення."
 
+msgid "Update to {0}"
+msgstr "Оновити до {0}"
+
 msgid "macOS may ask once for permission to update the radio."
 msgstr "macOS може один раз попросити дозвіл на оновлення радіо."
 
-msgid "Drag Minimalistic Radio to Applications to finish the update."
-msgstr "Перетягніть Minimalistic Radio в «Програми», щоб завершити оновлення."
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Закрийте радіо, а потім перетягніть Minimalistic Radio в «Програми», щоб завершити оновлення."
 
 msgid "Couldn't save the station list."
 msgstr "Не вдалося зберегти список станцій."
@@ -298,6 +301,21 @@ msgstr "{0} хв"
 
 msgid "Off"
 msgstr "Вимк."
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Не вдалося завантажити оновлення. Радіо спробує пізніше."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "macOS не дозволив радіо замінити себе. Оновлення відкриється як образ диска."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Не вдалося розпакувати оновлення. Воно відкриється як образ диска."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "Оновлення підписане не так, як це радіо, тому його не встановлено. Натомість відкриється його сторінка."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "Файл оновлення не відповідає його версії, тому його не встановлено. Натомість відкриється його сторінка."
 
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio ще не готове. Спробуйте ще раз."

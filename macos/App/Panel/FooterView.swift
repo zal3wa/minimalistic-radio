@@ -185,6 +185,6 @@ struct PlayStopButton: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         .disabled(model.controller.stations.isEmpty)
-        .keyboardShortcut(.space, modifiers: [])
+        .keyboardShortcut(model.spacePlays ? KeyboardShortcut(.space, modifiers: []) : nil)
     }
 }

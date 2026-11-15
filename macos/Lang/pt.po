@@ -251,11 +251,11 @@ msgstr "O servidor da estação devolveu o erro {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Não foi possível ligar à estação. Verifique a ligação à Internet."
 
-msgid "Download update"
-msgstr "Transferir atualização"
-
 msgid "Update"
 msgstr "Atualizar"
+
+msgid "Download update"
+msgstr "Transferir atualização"
 
 msgid "You have the latest version."
 msgstr "Tem a versão mais recente."
@@ -263,11 +263,14 @@ msgstr "Tem a versão mais recente."
 msgid "Couldn't check for updates."
 msgstr "Não foi possível procurar atualizações."
 
+msgid "Update to {0}"
+msgstr "Atualizar para {0}"
+
 msgid "macOS may ask once for permission to update the radio."
 msgstr "O macOS pode pedir uma vez autorização para atualizar o rádio."
 
-msgid "Drag Minimalistic Radio to Applications to finish the update."
-msgstr "Arraste o Minimalistic Radio para Aplicações para concluir a atualização."
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Feche o rádio e arraste o Minimalistic Radio para Aplicações para concluir a atualização."
 
 msgid "Couldn't save the station list."
 msgstr "Não foi possível guardar a lista de estações."
@@ -298,6 +301,21 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Desativado"
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Não foi possível transferir a atualização. O rádio tentará mais tarde."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "O macOS não deixou o rádio substituir-se. A atualização abre como imagem de disco."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Não foi possível descomprimir a atualização. Abre como imagem de disco."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "A atualização não está assinada como este rádio, por isso não foi instalada. Abre-se a sua página."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "O ficheiro da atualização não corresponde à sua versão, por isso não foi instalado. Abre-se a sua página."
 
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "O Minimalistic Radio ainda não está pronto. Tente novamente."

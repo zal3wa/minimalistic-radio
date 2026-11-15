@@ -99,3 +99,54 @@ public func afterCheck(_ result: AvailableUpdate?, fetchFailed: Bool, previous: 
     if fetchFailed { return previous }
     return result.map(UpdateState.available) ?? UpdateState.none
 }
+
+// MARK: - When an update can't be installed
+
+public enum UpdateError: CaseIterable, Equatable, Sendable {
+    /// The download failed: try again at the next check, the arrow stays.
+    case network
+    /// macOS didn't let the app replace itself (App Management, a folder it can't write).
+    case permissionDenied
+    /// The zip didn't unpack into the app.
+    case unpackFailed
+    /// The new app isn't signed with this app's certificate.
+    case signatureMismatch
+    /// The new app's release tag isn't the one the release names.
+    case wrongVersion
+}
+
+public enum UpdateFallback: Equatable, Sendable {
+    case retryLater
+    /// The DMG opens in Finder, for this update only: the next one tries the swap again.
+    case downloadDMG
+    /// The release page opens: a file that failed the checks is never offered as "install this".
+    case openReleasePage
+}
+
+public func updateFallback(for error: UpdateError) -> UpdateFallback {
+    switch error {
+    case .network: return .retryLater
+    case .permissionDenied, .unpackFailed: return .downloadDMG
+    case .signatureMismatch, .wrongVersion: return .openReleasePage
+    }
+}
+
+/// Marks English texts for sync_po.py; the app translates them.
+private func L(_ english: String) -> String { english }
+
+/// The card's words for a failed update (English; the app translates them).
+public func updateFailureReason(_ error: UpdateError) -> String {
+    switch error {
+    case .network: return L("Couldn't download the update. The radio will try again later.")
+    case .permissionDenied: return L("macOS didn't let the radio replace itself. The update opens as a disk image instead.")
+    case .unpackFailed: return L("The update couldn't be unpacked. It opens as a disk image instead.")
+    case .signatureMismatch: return L("The update isn't signed like this radio, so it wasn't installed. Its page opens instead.")
+    case .wrongVersion: return L("The update file doesn't match its version, so it wasn't installed. Its page opens instead.")
+    }
+}
+
+/// The shell command that starts the new version once this process (`processID`) has really quit.
+/// Run as `/bin/sh -c <command> <app path>`.
+public func relaunchCommand(processID: Int32, resume: Bool) -> String {
+    "while /bin/kill -0 \(processID) 2>/dev/null; do sleep 0.1; done; /usr/bin/open \"$0\"" + (resume ? " --args --resume" : "")
+}

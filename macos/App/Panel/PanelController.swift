@@ -27,6 +27,9 @@ final class PanelController: NSObject, NSWindowDelegate {
         didSet { keepOpen = screenshotMode }
     }
 
+    /// The panel's window, for its file dialogs (sheets).
+    var window: NSWindow? { panel }
+
     /// The panel's content, for the README pictures.
     var contentView: NSView? { panel?.contentView }
 

@@ -93,32 +93,37 @@ struct SettingsPage: View {
         let dialog = NSSavePanel()
         dialog.nameFieldStringValue = "stations.json"
         dialog.allowedContentTypes = [.json]
-        guard run(dialog), let url = dialog.url else { return }
-        listMessage = controller.exportStations(url)
-            ? L("Stations saved: {0}.").replacingOccurrences(of: "{0}", with: String(controller.stations.count))
-            : L("Couldn't save the file.")
+        run(dialog) { url in
+            listMessage = controller.exportStations(url)
+                ? L("Stations saved: {0}.").replacingOccurrences(of: "{0}", with: String(controller.stations.count))
+                : L("Couldn't save the file.")
+        }
     }
 
     private func importStations() {
         let dialog = NSOpenPanel()
         dialog.allowedContentTypes = [.json]
-        guard run(dialog), let url = dialog.url else { return }
-        let result = controller.importStations(url)
-        if let error = result.error {
-            listMessage = error
-        } else if result.added == 0 {
-            listMessage = L("All stations from this file are already on the list.")
-        } else {
-            listMessage = L("Stations added: {0}.").replacingOccurrences(of: "{0}", with: String(result.added))
+        run(dialog) { url in
+            let result = controller.importStations(url)
+            if let error = result.error {
+                listMessage = error
+            } else if result.added == 0 {
+                listMessage = L("All stations from this file are already on the list.")
+            } else {
+                listMessage = L("Stations added: {0}.").replacingOccurrences(of: "{0}", with: String(result.added))
+            }
         }
     }
 
-    /// A file dialog: the panel stays open behind it.
-    private func run(_ dialog: NSSavePanel) -> Bool {
-        let panel = AppDelegate.shared?.panel
-        panel?.keepOpen = true
-        defer { panel?.keepOpen = false }
-        return dialog.runModal() == .OK
+    /// A file dialog as a sheet on the panel, so it is never under it, and the panel stays open behind it.
+    private func run(_ dialog: NSSavePanel, _ done: @escaping (URL) -> Void) {
+        guard let window = AppDelegate.shared?.panel?.window else {
+            if dialog.runModal() == .OK, let url = dialog.url { done(url) }
+            return
+        }
+        dialog.beginSheetModal(for: window) { response in
+            if response == .OK, let url = dialog.url { done(url) }
+        }
     }
 
     private func checkNow() {

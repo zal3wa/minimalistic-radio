@@ -251,11 +251,11 @@ msgstr "Server stanice vrátil chybu {code}."
 msgid "Couldn't connect to the station. Check your internet connection."
 msgstr "Ke stanici se nepodařilo připojit. Zkontrolujte internet."
 
-msgid "Download update"
-msgstr "Stáhnout aktualizaci"
-
 msgid "Update"
 msgstr "Aktualizovat"
+
+msgid "Download update"
+msgstr "Stáhnout aktualizaci"
 
 msgid "You have the latest version."
 msgstr "Máte nejnovější verzi."
@@ -263,11 +263,14 @@ msgstr "Máte nejnovější verzi."
 msgid "Couldn't check for updates."
 msgstr "Aktualizace se nepodařilo zkontrolovat."
 
+msgid "Update to {0}"
+msgstr "Aktualizovat na {0}"
+
 msgid "macOS may ask once for permission to update the radio."
 msgstr "macOS se může jednou zeptat na povolení aktualizovat rádio."
 
-msgid "Drag Minimalistic Radio to Applications to finish the update."
-msgstr "Dokončete aktualizaci přetažením Minimalistic Radio do Aplikací."
+msgid "Quit the radio, then drag Minimalistic Radio to Applications to finish the update."
+msgstr "Ukončete rádio a pak přetáhněte Minimalistic Radio do Aplikací, abyste dokončili aktualizaci."
 
 msgid "Couldn't save the station list."
 msgstr "Seznam stanic se nepodařilo uložit."
@@ -298,6 +301,21 @@ msgstr "{0} min"
 
 msgid "Off"
 msgstr "Vypnuto"
+
+msgid "Couldn't download the update. The radio will try again later."
+msgstr "Aktualizaci se nepodařilo stáhnout. Rádio to zkusí později znovu."
+
+msgid "macOS didn't let the radio replace itself. The update opens as a disk image instead."
+msgstr "macOS rádiu nedovolil, aby se samo nahradilo. Aktualizace se místo toho otevře jako obraz disku."
+
+msgid "The update couldn't be unpacked. It opens as a disk image instead."
+msgstr "Aktualizaci se nepodařilo rozbalit. Místo toho se otevře jako obraz disku."
+
+msgid "The update isn't signed like this radio, so it wasn't installed. Its page opens instead."
+msgstr "Aktualizace není podepsaná stejně jako toto rádio, proto nebyla nainstalována. Místo toho se otevře její stránka."
+
+msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
+msgstr "Soubor aktualizace neodpovídá její verzi, proto nebyl nainstalován. Místo toho se otevře její stránka."
 
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio ještě není připravené. Zkuste to znovu."
