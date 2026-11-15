@@ -77,39 +77,45 @@ private func summary(_ sessions: [ListeningSession], songs: [PlayedSong] = [], _
 
 @Test func perDayDividesByTheDaysElapsedInThePeriod() {
     let sessions = [session(localDate(2026, 11, 15, 5, 0), 15 * 60)]      // 15 hours today
-    #expect(summary(sessions, .month).perDay == 60 * 60)                   // 15 November: 15 days
+    #expect(summary(sessions, .month).perDay == 3600)                      // 15 November: 15 days
     let year = summary(sessions, .year)
-    #expect(year.perDay == 15 * 60 * 60 / 319.0)                           // 15 November is day 319 of 2026
+    #expect(year.perDay == 54000 / 319.0)                                  // 15 November is day 319 of 2026
 }
 
 @Test func perDayForAllCountsTheDaysSinceTheFirstSession() {
     let today = session(localDate(2026, 11, 15, 10, 0), 60)
-    #expect(summary([today], .all).perDay == 60 * 60)                      // the first day: at least one day
+    #expect(summary([today], .all).perDay == 3600)                         // the first day: at least one day
     let earlier = session(localDate(2026, 11, 13, 23, 30), 60)             // two days ago, late in the evening
-    #expect(summary([earlier, today], .all).perDay == 2 * 60 * 60 / 3.0)   // the 13th, 14th and 15th
+    #expect(summary([earlier, today], .all).perDay == 2400)                // the 13th, 14th and 15th
 }
 
 // MARK: - Time format
 
-@Test(arguments: [
-    (0.0, "0 min"),
-    (18 * 60.0, "18 min"),
-    (59 * 60.0 + 20, "59 min"),
-    (59 * 60.0 + 40, "1 h 00 min"),                                        // rounded to the nearest minute
-    ((42 * 60 + 18) * 60.0, "42 h 18 min"),
-    ((11 * 60 + 5) * 60.0, "11 h 05 min"),
-    ((99 * 60 + 59) * 60.0, "99 h 59 min"),
-    (100 * 3600.0, "100 h"),
-    ((386 * 60 + 40) * 60.0, "386 h"),
-])
-func durationFormat(seconds: Double, expected: String) {
-    #expect(formatDuration(seconds) == expected)
+/// (hours, minutes, seconds) and the text.
+private let durations: [(Int, Int, Int, String)] = [
+    (0, 0, 0, "0 min"),
+    (0, 18, 0, "18 min"),
+    (0, 59, 20, "59 min"),
+    (0, 59, 40, "1 h 00 min"),                                             // rounded to the nearest minute
+    (42, 18, 0, "42 h 18 min"),
+    (11, 5, 0, "11 h 05 min"),
+    (99, 59, 0, "99 h 59 min"),
+    (100, 0, 0, "100 h"),
+    (386, 40, 0, "386 h"),
+]
+
+@Test func durationFormat() {
+    for (hours, minutes, seconds, expected) in durations {
+        let total = Double(hours * 3600 + minutes * 60 + seconds)
+        #expect(formatDuration(total) == expected)
+    }
 }
 
 @Test func durationFormatIsTranslated() {
-    let polish = ["{0} min": "{0} min", "{0} h {1} min": "{0} godz. {1} min", "{0} h": "{0} godz."]
-    #expect(formatDuration((2 * 60 + 49) * 60) { polish[$0] ?? $0 } == "2 godz. 49 min")
-    #expect(formatDuration(150 * 3600) { polish[$0] ?? $0 } == "150 godz.")
+    let polish: [String: String] = ["{0} min": "{0} min", "{0} h {1} min": "{0} godz. {1} min", "{0} h": "{0} godz."]
+    let translate: (String) -> String = { polish[$0] ?? $0 }
+    #expect(formatDuration(Double(2 * 3600 + 49 * 60), translate) == "2 godz. 49 min")
+    #expect(formatDuration(Double(150 * 3600), translate) == "150 godz.")
 }
 
 // MARK: - Counts and top lists
@@ -132,7 +138,7 @@ func durationFormat(seconds: Double, expected: String) {
     sessions.append(session(localDate(2026, 11, 15, 8, 0), 30, station: "S0 renamed", url: "http://s0.example/live"))
     let top = summary(sessions).topStations
     #expect(top.map(\.name) == ["S1", "S0 renamed", "S2", "S4", "S5"])     // S0: 60 minutes in two sessions; ties by name
-    #expect(top.map(\.time) == [90 * 60, 60 * 60, 60 * 60, 45 * 60, 20 * 60])
+    #expect(top.map(\.time) == [5400, 3600, 3600, 2700, 1200])
     #expect(top[1].url == "http://s0.example/live")
 }
 
@@ -185,7 +191,7 @@ func artistIsThePartBeforeTheFirstDash(title: String, artist: String?) {
 @Test func hoursSplitSessionsByTheHour() {
     let s = summary([session(localDate(2026, 11, 15, 19, 30), 105)])       // 19:30 → 21:15
     #expect(s.hours.count == 24)
-    #expect(s.hours[19] == 30 * 60 && s.hours[20] == 60 * 60 && s.hours[21] == 15 * 60)
+    #expect(Array(s.hours[19...21]) == [1800, 3600, 900])
     #expect(s.hours.reduce(0, +) == 105 * 60)
     #expect(s.peakHour == 20)
 }
@@ -193,13 +199,15 @@ func artistIsThePartBeforeTheFirstDash(title: String, artist: String?) {
 @Test func hoursCrossMidnightAndAddUp() {
     let s = summary([session(localDate(2026, 11, 13, 23, 30), 60),         // 23:30 → 00:30
                      session(localDate(2026, 11, 14, 0, 10), 10)])
-    #expect(s.hours[23] == 30 * 60 && s.hours[0] == 40 * 60)
+    #expect(s.hours[23] == 1800)
+    #expect(s.hours[0] == 2400)
     #expect(s.peakHour == 0)
 }
 
 @Test func hoursCountOnlyThePartInThePeriod() {
     let s = summary([session(localDate(2026, 10, 31, 23, 30), 60)], at: localDate(2026, 11, 15, 12, 0))
-    #expect(s.hours[23] == 0 && s.hours[0] == 30 * 60)
+    #expect(s.hours[23] == 0)
+    #expect(s.hours[0] == 1800)
 }
 
 @Test func peakHourTiesGoToTheEarlierHour() {
