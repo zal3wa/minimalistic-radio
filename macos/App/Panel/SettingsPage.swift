@@ -72,7 +72,8 @@ struct SettingsPage: View {
             }
             Section(L("About")) {
                 HStack(spacing: 10) {
-                    Image(nsImage: NSApp.applicationIconImage)
+                    // The icon itself: the system's application icon is drawn inside a grey tile on macOS 26.
+                    Image(nsImage: NSImage(named: "AppIcon") ?? NSApp.applicationIconImage)
                         .resizable()
                         .interpolation(.high)
                         .frame(width: 38, height: 38)
@@ -94,7 +95,9 @@ struct SettingsPage: View {
             }
             Section {
                 HStack {
-                    Button(L("Quit Minimalistic Radio"), role: .destructive) { NSApp.terminate(nil) }
+                    Button(role: .destructive) { NSApp.terminate(nil) } label: {
+                        Text(L("Quit Minimalistic Radio")).foregroundStyle(.red)
+                    }
                     Spacer()
                 }
             }

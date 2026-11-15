@@ -13,14 +13,8 @@ struct StatisticsPage: View {
         let summary = summarizeStatistics(model.statistics, period: period, now: Date())
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Picker(L("Statistics"), selection: $period) {
-                    Text(L("All")).tag(StatisticsPeriod.all)
-                    Text(L("Year")).tag(StatisticsPeriod.year)
-                    Text(L("Month")).tag(StatisticsPeriod.month)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: .infinity)
+                PeriodSwitch(period: $period, labels: [(.all, L("All")), (.year, L("Year")), (.month, L("Month"))])
+                    .frame(maxWidth: .infinity)
                 if summary.isEmpty {
                     Text(L("Nothing here yet. Listen for a while and come back."))
                         .foregroundStyle(.secondary)
@@ -39,6 +33,7 @@ struct StatisticsPage: View {
             }
             .padding(EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20))
         }
+        .panelScrollBars(model)
     }
 
     // MARK: - Parts
@@ -178,7 +173,7 @@ struct StatisticsPage: View {
                     ForEach(0..<24, id: \.self) { hour in
                         RoundedRectangle(cornerRadius: 2)
                             .fill(Color.accentColor)
-                            .frame(height: 60 * summary.hours[hour] / most)
+                            .frame(height: CGFloat(60 * summary.hours[hour] / most))
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -244,14 +239,13 @@ struct StatisticsPage: View {
         count == 1 ? L("1 play") : L("{0} plays").replacingOccurrences(of: "{0}", with: number(count))
     }
 
-    /// "20:00–21:00" (or "8:00 PM–9:00 PM"), in the UI language's time format.
+    /// "20:00–21:00" (or "8:00 – 9:00 PM"), in the UI language's time format.
     private func hourRange(_ hour: Int) -> String {
-        let formatter = DateFormatter()
+        let formatter = DateIntervalFormatter()
         formatter.locale = locale
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
+        formatter.dateTemplate = "jm"
         let start = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
-        return formatter.string(from: start) + "–" + formatter.string(from: start.addingTimeInterval(3600))
+        return formatter.string(from: start, to: start.addingTimeInterval(3600))
     }
 
     // MARK: - Clearing
@@ -264,7 +258,8 @@ struct StatisticsPage: View {
         alert.alertStyle = .warning
         alert.addButton(withTitle: L("Clear statistics")).hasDestructiveAction = true
         alert.addButton(withTitle: L("Cancel"))
-        let clear = { [model] in
+        let model = self.model
+        let clear = {
             if model.sampleStatistics != nil { model.sampleStatistics = StatisticsLog() } else { model.controller.clearStatistics() }
             model.refresh()
         }
@@ -274,6 +269,45 @@ struct StatisticsPage: View {
             }
         } else if alert.runModal() == .alertFirstButtonReturn {
             clear()
+        }
+    }
+}
+
+/// All / Year / Month: the Mac's segmented control, its three segments equally wide across the page.
+struct PeriodSwitch: NSViewRepresentable {
+    @Binding var period: StatisticsPeriod
+    let labels: [(StatisticsPeriod, String)]
+
+    func makeNSView(context: Context) -> NSSegmentedControl {
+        let control = NSSegmentedControl(labels: labels.map(\.1), trackingMode: .selectOne, target: context.coordinator,
+                                         action: #selector(Coordinator.changed(_:)))
+        control.segmentDistribution = .fillEqually
+        control.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        return control
+    }
+
+    func updateNSView(_ control: NSSegmentedControl, context: Context) {
+        context.coordinator.parent = self
+        for (index, label) in labels.enumerated() where control.label(forSegment: index) != label.1 {
+            control.setLabel(label.1, forSegment: index)
+        }
+        control.selectedSegment = labels.firstIndex { $0.0 == period } ?? 0
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject {
+        var parent: PeriodSwitch
+
+        init(_ parent: PeriodSwitch) {
+            self.parent = parent
+        }
+
+        @objc func changed(_ control: NSSegmentedControl) {
+            guard parent.labels.indices.contains(control.selectedSegment) else { return }
+            parent.period = parent.labels[control.selectedSegment].0
         }
     }
 }

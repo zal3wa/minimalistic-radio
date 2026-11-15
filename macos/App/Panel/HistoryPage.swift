@@ -20,11 +20,11 @@ struct HistoryPage: View {
                     ForEach(Array(history.enumerated()), id: \.offset) { _, entry in
                         // The history keeps the station's name: its logo comes from the list by that name.
                         HistoryRow(entry: entry, logos: model.logos, logo: model.station(name: entry.station)?.logo)
-                            .background(OverlayScroller())
                     }
                 }
                 .listStyle(.inset)
                 .scrollContentBackground(.hidden)
+                .panelScrollBars(model)
                 Button(L("Clear history")) { model.controller.clearHistory() }
                     .buttonStyle(.link)
                     .padding(.horizontal, 16)

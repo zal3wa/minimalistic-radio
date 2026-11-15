@@ -37,11 +37,18 @@ final class PanelModel: ObservableObject {
     var sampleStatistics: StatisticsLog?
     var sampleUpdate: String?
     var showsUpdatesAlways = false
+    /// The Mac shows scroll bars all the time (a mouse, or the setting): see `panelScrollBars`.
+    @Published private(set) var legacyScrollers = NSScroller.preferredScrollerStyle == .legacy
+    private var scrollerObserver: NSObjectProtocol?
 
     init(controller: RadioController, logos: LogoCache) {
         self.controller = controller
         self.logos = logos
         controller.subscribe { [weak self] _ in self?.revision += 1 }
+        scrollerObserver = NotificationCenter.default.addObserver(
+            forName: NSScroller.preferredScrollerStyleDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.legacyScrollers = NSScroller.preferredScrollerStyle == .legacy }
+        }
     }
 
     /// Redraws everything (a language change, the update arrow).
@@ -90,5 +97,14 @@ final class PanelModel: ObservableObject {
     func station(url: String? = nil, name: String) -> Station? {
         if let url, let byAddress = controller.stations.first(where: { sameStream($0.url, url) }) { return byAddress }
         return controller.stations.first { $0.name == name }
+    }
+}
+
+extension View {
+    /// The panel's lists and pages scroll without a scroll bar where the Mac shows them all the time: such a bar
+    /// takes 17 pt on the right, and the content would end further from the right edge than from the left one.
+    /// With a trackpad the usual scroll bar shows over the content while scrolling.
+    func panelScrollBars(_ model: PanelModel) -> some View {
+        scrollIndicators(model.legacyScrollers ? .never : .automatic)
     }
 }

@@ -8,7 +8,7 @@ import Testing
     loadStatistics(r.paths.statisticsFile)
 }
 
-private func at(_ r: Rig, _ seconds: Double) -> Date {
+@MainActor private func at(_ r: Rig, _ seconds: Double) -> Date {
     r.scheduler.start.addingTimeInterval(seconds)
 }
 

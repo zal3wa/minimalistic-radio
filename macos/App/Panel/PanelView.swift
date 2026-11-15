@@ -75,9 +75,12 @@ struct HeaderView: View {
                     .help(L("Add a station"))
                     .buttonStyle(.bordered)
                     .keyboardShortcut("f", modifiers: .command)
-                Button { model.page = .history } label: { Label(L("History"), systemImage: "clock.arrow.circlepath") }
-                    .help(L("Song history"))
-                    .buttonStyle(.bordered)
+                Button { model.page = .history } label: {
+                    // The clock is taller than the plus: a size smaller keeps both buttons 24 pt high.
+                    Label { Text(L("History")) } icon: { Image(systemName: "clock.arrow.circlepath").imageScale(.medium) }
+                }
+                .help(L("Song history"))
+                .buttonStyle(.bordered)
                 Spacer()
                 if let update = model.updateLabel {
                     iconButton(help: update, action: { AppDelegate.shared?.updater?.install() }) {
