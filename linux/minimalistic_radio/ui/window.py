@@ -62,7 +62,7 @@ class RadioWindow(Adw.ApplicationWindow):
         self.add_button = Gtk.Button(icon_name="list-add-symbolic", tooltip_text=_("Add a station"))
         self.add_button.connect("clicked", lambda _button: self.show_page("search"))
         header.pack_start(self.add_button)
-        self.settings_button = Gtk.Button(icon_name="preferences-system-symbolic", tooltip_text=_("Settings"))
+        self.settings_button = Gtk.Button(icon_name="emblem-system-symbolic", tooltip_text=_("Settings"))
         self.settings_button.connect("clicked", lambda _button: self.show_page("settings"))
         header.pack_end(self.settings_button)
         self.history_button = Gtk.Button(icon_name="document-open-recent-symbolic", tooltip_text=_("Song history"))
