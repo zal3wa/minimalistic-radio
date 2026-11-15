@@ -289,9 +289,14 @@ def _render(window: Gtk.Window, path: Path, popover: Gtk.Popover | None = None) 
     snapshot.scale(scale, scale)
     Gtk.WidgetPaintable.new(window).snapshot(snapshot, window.get_width(), window.get_height())
     if popover is not None and popover.get_mapped():
+        # Through the same mapping as the window (_to_picture), at the popover's own bounds (its arrow included).
+        x, y = _popover_origin(window, popover)
+        ok, bounds = popover.compute_bounds(popover)
+        _left, _top, scale_x, scale_y = _frame(window)
         snapshot.save()
-        snapshot.translate(Graphene.Point().init(*_popover_origin(window, popover)))
-        Gtk.WidgetPaintable.new(popover).snapshot(snapshot, popover.get_width(), popover.get_height())
+        snapshot.translate(Graphene.Point().init(*_to_picture(window, x + bounds.get_x(), y + bounds.get_y())))
+        snapshot.scale(scale_x, scale_y)
+        Gtk.WidgetPaintable.new(popover).snapshot(snapshot, bounds.get_width(), bounds.get_height())
         snapshot.restore()
     area = Graphene.Rect().init(0, 0, window.get_width() * scale, window.get_height() * scale)   # the window only
     texture = window.get_renderer().render_texture(snapshot.to_node(), area)
@@ -308,17 +313,32 @@ def _popover_origin(window: Gtk.Window, popover: Gtk.Popover) -> tuple[float, fl
     return surface.get_position_x() + own_x - window_x, surface.get_position_y() + own_y - window_y
 
 
+def _frame(window: Gtk.Window) -> tuple[float, float, float, float]:
+    """How a picture of the window maps the window's coordinates: (left, top, x scale, y scale). WidgetPaintable
+    draws the window's bounds, its frame included (left and top are negative), into the window's own size."""
+    ok, bounds = window.compute_bounds(window)
+    return (bounds.get_x(), bounds.get_y(), window.get_width() / bounds.get_width(),
+            window.get_height() / bounds.get_height())
+
+
+def _to_picture(window: Gtk.Window, x: float, y: float) -> tuple[float, float]:
+    """A point of the window in a picture of it (before the display's scale)."""
+    left, top, scale_x, scale_y = _frame(window)
+    return (x - left) * scale_x, (y - top) * scale_y
+
+
 def _centre(window: Gtk.Window, widget: Gtk.Widget, popover: Gtk.Popover | None = None) -> list[int]:
     """The middle of `widget` in a picture of the window (_render's pixels), from its allocation; `popover`: the
     open popover it is in."""
-    scale = window.get_scale_factor()
     origin = popover if popover is not None else window
     ok, bounds = widget.compute_bounds(origin)
     if not ok:
         raise AssertionError(f"no place for {widget!r}")
     x, y = _popover_origin(window, popover) if popover is not None else (0.0, 0.0)
-    return [round((x + bounds.get_x() + bounds.get_width() / 2) * scale),
-            round((y + bounds.get_y() + bounds.get_height() / 2) * scale)]
+    px, py = _to_picture(window, x + bounds.get_x() + bounds.get_width() / 2,
+                         y + bounds.get_y() + bounds.get_height() / 2)
+    scale = window.get_scale_factor()
+    return [round(px * scale), round(py * scale)]
 
 
 def _menu_item(popover: Gtk.Popover, text: str) -> Gtk.Widget:
