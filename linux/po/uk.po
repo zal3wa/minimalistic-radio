@@ -10,15 +10,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+#: data/io.github.zal3wa.minimalistic_radio.desktop.in
 msgid "Internet radio that lives next to the clock"
 msgstr "Інтернет-радіо, що живе біля годинника"
 
-#: data/io.github.zal3wa.MinimalisticRadio.desktop.in
+#: data/io.github.zal3wa.minimalistic_radio.desktop.in
 msgid "radio;internet radio;stream;station;"
 msgstr "радіо;інтернет-радіо;потік;станція;"
 
-#: data/io.github.zal3wa.MinimalisticRadio.metainfo.xml.in
+#: data/io.github.zal3wa.minimalistic_radio.metainfo.xml.in
 msgid "A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry."
 msgstr "Крихітне інтернет-радіо з відкритим кодом, що живе в системному лотку. Натисніть значок, виберіть станцію та слухайте. Панель показує, що грає, з обкладинкою, гучність, таймер сну й історію пісень. Станції можна шукати в каталозі radio-browser.info, додавати вручну, експортувати та імпортувати. Мультимедійні клавіші й керування медіа на стільниці працюють, а телеметрії немає."
 

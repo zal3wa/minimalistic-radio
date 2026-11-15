@@ -170,7 +170,7 @@ def test_item_properties(make, watcher):
     assert item.get("Id") == APP_ID
     assert item.get("Category") == "ApplicationStatus"
     assert item.get("Status") == "Active"
-    assert item.get("IconName") == "io.github.zal3wa.MinimalisticRadio-symbolic"
+    assert item.get("IconName") == "io.github.zal3wa.minimalistic_radio-symbolic"
     pixmaps = item.get("IconPixmap")
     assert [(w, h) for w, h, _ in pixmaps] == [(16, 16), (22, 22), (32, 32), (48, 48)]
     for w, h, data in pixmaps:
