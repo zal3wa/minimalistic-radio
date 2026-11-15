@@ -34,7 +34,7 @@ def volume_icon(volume: int) -> str:
 class Footer(Gtk.Box):
     def __init__(self, window: RadioWindow, controller: RadioController, _: Callable[[str], str]) -> None:
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10,
-                         margin_start=12, margin_end=12, margin_top=6, margin_bottom=12)
+                         margin_start=12, margin_end=12, margin_top=12, margin_bottom=12)
         self.window = window
         self.controller = controller
         self._ = _

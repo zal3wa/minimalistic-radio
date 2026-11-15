@@ -20,6 +20,7 @@ from ..core import directory  # noqa: E402
 from ..core.directory import DirectoryStation, DirectoryUnavailable  # noqa: E402
 from ..core.streams import same_stream  # noqa: E402
 from ..i18n import languages_for, system_languages  # noqa: E402
+from .bars import subpage_bar  # noqa: E402
 from .logos import LogoCache, Texture  # noqa: E402
 
 if TYPE_CHECKING:
@@ -76,7 +77,7 @@ class SearchPage(Adw.NavigationPage):
         self.entry.connect("stop-search", lambda _entry: window.navigation.pop())   # Escape in the box goes back
         self.search_button = Gtk.Button(label=_("Search"))
         self.search_button.connect("clicked", lambda _button: self.search())
-        bar = Gtk.Box(spacing=6, margin_start=12, margin_end=12, margin_top=6)
+        bar = Gtk.Box(spacing=6, margin_start=12, margin_end=12, margin_top=12)
         bar.append(self.entry)
         bar.append(self.search_button)
         self.address_button = Gtk.Button(label=_("Add by address"), halign=Gtk.Align.START, css_classes=["link"],
@@ -92,7 +93,7 @@ class SearchPage(Adw.NavigationPage):
         for widget in (bar, self.address_button, self.status, scrolled):
             body.append(widget)
         toolbar = Adw.ToolbarView(content=body)
-        toolbar.add_top_bar(Adw.HeaderBar())
+        toolbar.add_top_bar(subpage_bar(self.get_title(), _))
         self.set_child(toolbar)
         self.connect("showing", self._showing)
 

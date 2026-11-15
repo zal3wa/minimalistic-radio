@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<!-- The "chart-column" icon of Lucide (https://lucide.dev, ISC License, Copyright (c) Lucide Contributors),
+     redrawn as filled outlines on a 16 px grid: GTK recolours symbolic icons by their fill. -->
+<path fill="#222" d="M2 1L2 13L0 13L0 1ZM0 1A1 1 0 0 1 2 1A1 1 0 0 1 0 1ZM0 13A1 1 0 0 1 2 13A1 1 0 0 1 0 13ZM3 16A3 3 0 0 1 0 13L2 13A1 1 0 0 0 3 14ZM2 15A1 1 0 0 1 4 15A1 1 0 0 1 2 15ZM3 14L15 14L15 16L3 16ZM14 15A1 1 0 0 1 16 15A1 1 0 0 1 14 15ZM4 12L4 10L6 10L6 12ZM4 12A1 1 0 0 1 6 12A1 1 0 0 1 4 12ZM4 10A1 1 0 0 1 6 10A1 1 0 0 1 4 10ZM8 12L8 3L10 3L10 12ZM8 12A1 1 0 0 1 10 12A1 1 0 0 1 8 12ZM8 3A1 1 0 0 1 10 3A1 1 0 0 1 8 3ZM12 12L12 6L14 6L14 12ZM12 12A1 1 0 0 1 14 12A1 1 0 0 1 12 12ZM12 6A1 1 0 0 1 14 6A1 1 0 0 1 12 6Z"/>
+</svg>

@@ -21,6 +21,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Graphene, Gtk  # noqa: E402
 from .. import APP_NAME  # noqa: E402
 from ..controller import Change, RadioController  # noqa: E402
 from ..core.models import Station  # noqa: E402
+from .bars import page_bar  # noqa: E402
 from .logos import LogoCache, Texture  # noqa: E402
 from .reorder import HOLD_MS, SLIDE_MS, drop_index, gap_offsets, scroll_step  # noqa: E402
 
@@ -146,12 +147,12 @@ class StationsPage(Adw.NavigationPage):
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), self._slots_css,
                                                   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-        self.header = Adw.HeaderBar()
+        self.header = page_bar(_)   # the window packs its buttons
         self.listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, valign=Gtk.Align.START,
                                    css_classes=["boxed-list"])
         self._float = Gtk.Fixed(can_target=False)
         self.overlay = Gtk.Overlay(child=self.listbox, valign=Gtk.Align.START,
-                                   margin_start=12, margin_end=12, margin_top=6, margin_bottom=12)
+                                   margin_start=12, margin_end=12, margin_top=12, margin_bottom=12)
         self.overlay.add_overlay(self._float)
         self.scrolled = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER, vexpand=True, child=self.overlay)
 

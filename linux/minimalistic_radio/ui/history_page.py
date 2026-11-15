@@ -1,4 +1,5 @@
-"""The history page: the songs the radio played, newest first, with a menu per song (copy, search)."""
+"""The history page: the songs the radio played, newest first, each with its station's logo and a menu (copy,
+search)."""
 from __future__ import annotations
 
 from datetime import date
@@ -13,9 +14,15 @@ from gi.repository import Adw, Gdk, Gio, Gtk  # noqa: E402
 
 from ..controller import Change, RadioController  # noqa: E402
 from ..core.models import HistoryEntry  # noqa: E402
+from ..core.statistics import find_logo  # noqa: E402
+from .bars import subpage_bar  # noqa: E402
+from .logos import LogoCache, LogoImage  # noqa: E402
 
 if TYPE_CHECKING:
     from .window import RadioWindow
+
+LOGO_SIZE = 40
+STATISTICS_ICON = "io.github.zal3wa.minimalistic-radio-statistics-symbolic"   # in the app's icons (window.py)
 
 
 def search_query(title: str) -> str:
@@ -42,6 +49,10 @@ class HistoryRow(Adw.ActionRow):
         super().__init__(title=entry.title, subtitle=f"{entry.station} · {time_text(entry)}",
                          use_markup=False, title_lines=0, subtitle_lines=1)
         self.entry = entry
+        # The station's logo, by its name (all the history knows); the placeholder if it is gone from the list.
+        self.logo = LogoImage(page.logos, LOGO_SIZE)
+        self.logo.show_logo(find_logo(page.controller.stations, name=entry.station))
+        self.add_prefix(self.logo)
         menu = Gio.Menu()
         menu.append(_("Copy"), "row.copy")
         menu.append(_("Search on Spotify"), "row.spotify")
@@ -60,10 +71,12 @@ class HistoryRow(Adw.ActionRow):
 
 
 class HistoryPage(Adw.NavigationPage):
-    def __init__(self, window: RadioWindow, controller: RadioController, _: Callable[[str], str]) -> None:
+    def __init__(self, window: RadioWindow, controller: RadioController, logos: LogoCache,
+                 _: Callable[[str], str]) -> None:
         super().__init__(tag="history", title=_("Song history"))
         self.window = window
         self.controller = controller
+        self.logos = logos
         self._ = _
         self.rows: list[HistoryRow] = []
 
@@ -83,8 +96,14 @@ class HistoryPage(Adw.NavigationPage):
         self.stack.add_named(self.empty, "empty")
         self.stack.add_named(self.scroller, "list")
 
+        # [Statistics] left of the ✕, labelled like the stations page's buttons.
+        bar = subpage_bar(self.get_title(), _)
+        self.statistics_button = Gtk.Button(child=Adw.ButtonContent(icon_name=STATISTICS_ICON, label=_("Statistics")),
+                                            css_classes=["raised"])
+        self.statistics_button.connect("clicked", lambda _button: window.show_page("statistics"))
+        bar.pack_end(self.statistics_button)
         toolbar = Adw.ToolbarView(content=self.stack)
-        toolbar.add_top_bar(Adw.HeaderBar())
+        toolbar.add_top_bar(bar)
         self.set_child(toolbar)
         self._fill()
 
@@ -99,6 +118,11 @@ class HistoryPage(Adw.NavigationPage):
     def refresh(self, change: Change) -> None:
         if change & Change.HISTORY:
             self._fill()
+        elif change & Change.STATIONS:   # a station added, renamed or given another logo
+            for row in self.rows:
+                logo = find_logo(self.controller.stations, name=row.entry.station)
+                if logo != row.logo.url:
+                    row.logo.show_logo(logo)
 
     def copy(self, entry: HistoryEntry) -> None:
         self.get_clipboard().set_content(Gdk.ContentProvider.new_for_value(entry.title))

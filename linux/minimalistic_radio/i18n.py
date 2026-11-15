@@ -55,3 +55,9 @@ def install(setting: str, localedir: str) -> Callable[[str], str]:
 def N_(singular: str, plural: str, n: int) -> str:
     """ngettext for the installed language."""
     return _translation.ngettext(singular, plural, n)
+
+
+def C_(context: str, message: str) -> str:
+    """pgettext for the installed language: the same English word can need two translations ("March" on its
+    own and in a date)."""
+    return _translation.pgettext(context, message)

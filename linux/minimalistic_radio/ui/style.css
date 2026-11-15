@@ -1,6 +1,53 @@
 /* What libadwaita's style classes don't cover. Colours are libadwaita's named colours, so light and
    dark and the accent colour follow the system. */
 
+/* The bar on top of every page (ui/bars.py): as much space above, below and left of the first button (9 px),
+   and a thin line under it in the text colour at 10 %. A subpage's ‹ keeps libadwaita's own inset.
+   (10 px on the left: libadwaita moves the header bar's content 1 px out.) */
+headerbar.panel-bar {
+  min-height: 53px;
+  box-shadow: inset 0 -1px alpha(@window_fg_color, 0.1);
+}
+
+headerbar.panel-bar > windowhandle > box {
+  padding: 9px 7px 10px 10px;
+}
+
+headerbar.subpage-bar > windowhandle > box {
+  padding-left: 7px;
+}
+
+/* Settings: 12 px around the cards, as on the other pages. */
+preferencespage.panel-preferences > scrolledwindow > viewport > clamp > box {
+  margin: 12px 12px 16px;
+  border-spacing: 24px;
+}
+
+/* Statistics: each top station's time as a thin bar, the hours of the day as columns. */
+progressbar.stat-bar > trough,
+progressbar.stat-bar > trough > progress {
+  min-height: 6px;
+  border-radius: 3px;
+}
+
+progressbar.stat-bar > trough {
+  background: none;
+}
+
+progressbar.stat-bar > trough > progress {
+  background-color: @accent_bg_color;
+}
+
+.stat-chart {
+  border-bottom: 1px solid alpha(@window_fg_color, 0.1);
+}
+
+.stat-hour {
+  min-height: 0;
+  border-radius: 2px 2px 0 0;
+  background-color: @accent_bg_color;
+}
+
 /* Station logos and the cover: rounded like GNOME's app icons in lists. */
 .station-logo,
 .now-cover {
