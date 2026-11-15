@@ -102,6 +102,7 @@ class RadioWindow(Adw.ApplicationWindow):
         self.stations_page.refresh(change)
         self.search_page.refresh(change)
         self.history_page.refresh(change)
+        self.settings_page.refresh(change)
         self.footer.refresh(change)
         if change & Change.MESSAGE and self.controller.notice:
             self.toast(self.controller.notice)   # the station list couldn't be saved

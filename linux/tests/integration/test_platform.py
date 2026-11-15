@@ -8,13 +8,14 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gio, GLib  # noqa: E402
+from gi.repository import Gio, GLib, GObject  # noqa: E402
 
 from minimalistic_radio.app import RadioApplication  # noqa: E402
-from minimalistic_radio.controller import RadioController  # noqa: E402
+from minimalistic_radio.controller import RadioController, Status  # noqa: E402
 from minimalistic_radio.core.models import Preferences, Station  # noqa: E402
 from minimalistic_radio.core.storage import Paths, save_preferences, save_stations  # noqa: E402
 from minimalistic_radio.glib_scheduler import GLibScheduler  # noqa: E402
+from minimalistic_radio.platform import background, session  # noqa: E402
 from minimalistic_radio.platform.background import Autostart  # noqa: E402
 from minimalistic_radio.platform.notifications import StationNotifier  # noqa: E402
 from minimalistic_radio.platform.session import SessionWatcher  # noqa: E402
@@ -155,20 +156,117 @@ def test_inhibit_without_portal_is_quiet(setup):
     settle(300)
 
 
+class FakeMonitor(GObject.Object):
+    """Stands in for Gio.NetworkMonitor: the test says when the network changes."""
+    __gsignals__ = {"network-changed": (GObject.SignalFlags.RUN_LAST, None, (bool,))}
+
+    def __init__(self):
+        super().__init__()
+        self.available = True
+
+    def get_network_available(self):
+        return self.available
+
+
 def test_network_return_calls_controller(setup):
     _, controller = setup()
     calls = []
-    controller.network_available = lambda: calls.append(1)
-    watcher = SessionWatcher(controller)
+    controller.network_available = lambda was_down: calls.append(was_down)
+    watcher = SessionWatcher(controller, FakeMonitor())
     try:
         monitor = watcher._monitor
         monitor.emit("network-changed", True)
         monitor.emit("network-changed", True)
         assert pump(lambda: calls, 5)
         settle(2500)
-        assert calls == [1]
+        assert calls == [False]
     finally:
         watcher.close()
+
+
+def test_playing_station_restarts_only_if_the_network_was_down(setup, monkeypatch):
+    monkeypatch.setattr(session, "DEBOUNCE_MS", 100)
+    _, controller = setup()
+    plays = []
+    controller.player.play = plays.append
+    monitor = FakeMonitor()
+    watcher = SessionWatcher(controller, monitor)
+    try:
+        controller.select(0)
+        controller.play()
+        controller.on_player_started()
+        assert controller.status is Status.PLAYING and len(plays) == 1
+        monitor.emit("network-changed", True)    # a VPN or a new interface: the connection is still good
+        settle(500)
+        assert controller.status is Status.PLAYING and len(plays) == 1
+        monitor.emit("network-changed", False)   # down, then back
+        monitor.emit("network-changed", True)
+        assert pump(lambda: len(plays) == 2, 5)
+        assert controller.status is Status.CONNECTING
+    finally:
+        watcher.close()
+
+
+BACKGROUND_XML = """
+<node>
+  <interface name="org.freedesktop.portal.Background">
+    <method name="RequestBackground">
+      <arg type="s" direction="in"/><arg type="a{sv}" direction="in"/><arg type="o" direction="out"/>
+    </method>
+  </interface>
+</node>"""
+
+
+class FakeBackgroundPortal:
+    """Answers every request "no", a moment later, as a user who denies it would."""
+
+    def __init__(self):
+        self.requests = []
+        self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        self.owned = False
+        self.id = self.bus.register_object(
+            "/org/freedesktop/portal/desktop", Gio.DBusNodeInfo.new_for_xml(BACKGROUND_XML).interfaces[0],
+            self._request, None, None)
+        self.name = Gio.bus_own_name_on_connection(self.bus, "org.freedesktop.portal.Desktop",
+                                                   Gio.BusNameOwnerFlags.NONE,
+                                                   lambda *_a: setattr(self, "owned", True), None)
+
+    def _request(self, connection, sender, _p, _i, _m, params, invocation):
+        _window, options = params.unpack()
+        self.requests.append(options)
+        handle = ("/org/freedesktop/portal/desktop/request/" + sender[1:].replace(".", "_") + "/"
+                  + options["handle_token"])
+        invocation.return_value(GLib.Variant("(o)", (handle,)))
+
+        def deny():
+            connection.emit_signal(None, handle, "org.freedesktop.portal.Request", "Response",
+                                   GLib.Variant("(ua{sv})", (1, {})))
+            return GLib.SOURCE_REMOVE
+        GLib.timeout_add(100, deny)
+
+    def stop(self):
+        Gio.bus_unown_name(self.name)
+        self.bus.unregister_object(self.id)
+
+
+def test_background_portal_denial_turns_the_switch_off(setup, tmp_path, monkeypatch):
+    flatpak_info = tmp_path / "flatpak-info"
+    flatpak_info.write_text("")
+    monkeypatch.setattr(background, "FLATPAK_INFO", str(flatpak_info))
+    app, controller = setup()
+    portal = FakeBackgroundPortal()
+    try:
+        assert pump(lambda: portal.owned)
+        app.show_window()
+        row = app.window.settings_page.autostart_row
+        row.set_active(True)
+        assert pump(lambda: portal.requests)
+        assert portal.requests[0]["autostart"] is True and portal.requests[0]["handle_token"]
+        assert portal.requests[0]["reason"] == "Start the radio with the system"
+        assert pump(lambda: not row.get_active(), 5)
+        assert controller.prefs.autostart is False and len(portal.requests) == 1   # turning it off asked nothing
+    finally:
+        portal.stop()
 
 
 def test_switch_notification(setup, monkeypatch):

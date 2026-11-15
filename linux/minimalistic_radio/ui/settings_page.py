@@ -11,7 +11,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk  # noqa: E402
 
 from .. import APP_ID, APP_NAME, VERSION  # noqa: E402
-from ..controller import RadioController  # noqa: E402
+from ..controller import Change, RadioController  # noqa: E402
 
 if TYPE_CHECKING:
     from .window import RadioWindow
@@ -54,7 +54,8 @@ class SettingsPage(Adw.NavigationPage):
         self.autostart_row = Adw.SwitchRow(title=_("Start with the system"),
                                            subtitle=_("Waits in the tray, doesn't play by itself"),
                                            active=window.autostart_enabled())
-        self.autostart_row.connect("notify::active", lambda row, _p: window.set_autostart(row.get_active()))
+        self._autostart_handler = self.autostart_row.connect(
+            "notify::active", lambda row, _p: window.set_autostart(row.get_active()))
         general.add(self.autostart_row)
 
         self.popup_row = Adw.SwitchRow(title=_("Show station changes"),
@@ -105,6 +106,14 @@ class SettingsPage(Adw.NavigationPage):
         toolbar = Adw.ToolbarView(content=preferences)
         toolbar.add_top_bar(Adw.HeaderBar())
         self.set_child(toolbar)
+
+    def refresh(self, change: Change) -> None:
+        """The switch follows the saved choice: the Background portal may have said no."""
+        if change & Change.PREFERENCES:
+            on = self.window.autostart_enabled()
+            if self.autostart_row.get_active() != on:
+                with self.autostart_row.handler_block(self._autostart_handler):
+                    self.autostart_row.set_active(on)
 
     # ---- Language ----
 

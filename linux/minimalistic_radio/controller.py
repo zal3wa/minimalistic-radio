@@ -335,9 +335,12 @@ class RadioController:
         self._retry_timer = self.scheduler.call_later(delay, lambda: self._retry(session))
         self._emit(Change.STATE | Change.TRACK | Change.COVER)
 
-    def network_available(self) -> None:
-        """The network is back: connect now instead of waiting out a retry, or start again
-        if the retries ran out because the connection was lost less than 10 minutes ago."""
+    def network_available(self, was_down: bool = True) -> None:
+        """The network settled: connect now instead of waiting out a retry, or start again
+        if the retries ran out because the connection was lost less than 10 minutes ago.
+        A playing station kept its connection (a VPN, a new interface), unless the network was down in between."""
+        if self.status is Status.PLAYING and not was_down:
+            return
         self._come_back()
 
     def resumed(self) -> None:
@@ -689,7 +692,9 @@ class RadioController:
             self._save_preferences()
 
     def set_autostart_preference(self, on: bool) -> None:
-        """Remembers the "Start with the system" choice (the application makes it happen)."""
+        """Remembers the "Start with the system" choice (the application makes it happen). Always announced:
+        when the Background portal says no, the switch goes back off even though nothing changed here."""
         if on != self.prefs.autostart:
             self.prefs.autostart = on
             self._save_preferences()
+        self._emit(Change.PREFERENCES)
