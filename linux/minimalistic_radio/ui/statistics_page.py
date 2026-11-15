@@ -167,14 +167,13 @@ class StatisticsPage(Adw.NavigationPage):
         self.data.append(self._section(_("When you listen"), _card(hours)))
         self.data.append(self.clear_button)
 
-        self.stack = Gtk.Stack(vhomogeneous=False)
-        self.stack.add_named(self.empty, "empty")
-        self.stack.add_named(self.data, "data")
+        # The empty line or the numbers. Not a Gtk.Stack: one that isn't homogeneous both ways measures a wrapping
+        # label at one line, so a long translation of the empty line would widen the window.
+        self.data.set_visible(False)
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12, margin_bottom=16,
                        margin_start=12, margin_end=12)
-        body.append(self.switch)
-        body.append(self.off)
-        body.append(self.stack)
+        for widget in (self.switch, self.off, self.empty, self.data):
+            body.append(widget)
         self.scroller = Gtk.ScrolledWindow(child=Adw.Clamp(child=body, maximum_size=600), vexpand=True,
                                            hscrollbar_policy=Gtk.PolicyType.NEVER)
         toolbar = Adw.ToolbarView(content=self.scroller)
@@ -230,6 +229,11 @@ class StatisticsPage(Adw.NavigationPage):
 
     # ---- Showing the numbers ----
 
+    @property
+    def shown(self) -> str:
+        """"empty" (nothing in the period) or "data"."""
+        return "data" if self.data.get_visible() else "empty"
+
     def update(self, now: datetime | None = None) -> None:
         """Counts the chosen period again, as of `now` (the tests and the screenshots pass a time)."""
         _ = self._
@@ -238,10 +242,10 @@ class StatisticsPage(Adw.NavigationPage):
             now = datetime.now(timezone.utc)
         summary = count(self.controller.statistics, self.period, now)
         self.summary = summary
+        self.empty.set_visible(summary.empty)
+        self.data.set_visible(not summary.empty)
         if summary.empty:
-            self.stack.set_visible_child_name("empty")
             return
-        self.stack.set_visible_child_name("data")
         today = now.astimezone().date()
         if self.period is Period.ALL:
             first: date = summary.since.astimezone().date()

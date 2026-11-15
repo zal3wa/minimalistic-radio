@@ -104,12 +104,12 @@ def test_statistics_page(make, monkeypatch):
     page = window.statistics_page
     window.show_page("statistics")
     assert wait_for(lambda: page.get_mapped())
-    assert page.stack.get_visible_child_name() == "empty"
+    assert page.shown == "empty"
     assert "Nothing here yet. Listen for a while and come back." in texts(page)
 
     _listened(controller)
     page.update(NOW)
-    assert page.stack.get_visible_child_name() == "data" and page.period is Period.MONTH
+    assert page.shown == "data" and page.period is Period.MONTH
     assert page.period_label.get_text() == "March 2026"
     assert page.total_label.get_text() == "2 h 35 min"
     assert [label.get_text() for label in page.tile_values] == ["3", "2", "2 h 05 min"]

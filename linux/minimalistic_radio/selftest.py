@@ -163,7 +163,7 @@ def _check_statistics(window: RadioWindow) -> None:
         page.switch.select(period)
         page._period_chosen(period)
         pump(20)
-        _check(page.stack.get_visible_child_name() == "data" and page.stations_list.get_row_at_index(0) is not None,
+        _check(page.shown == "data" and page.stations_list.get_row_at_index(0) is not None,
                f"the Statistics page shows nothing for {period.value}")
     window.settings_page.statistics_row.set_active(False)
     pump(20)
@@ -172,7 +172,7 @@ def _check_statistics(window: RadioWindow) -> None:
     window.settings_page.statistics_row.set_active(True)
     controller.clear_statistics()
     pump(20)
-    _check(page.stack.get_visible_child_name() == "empty", "the Statistics page isn't empty after clearing")
+    _check(page.shown == "empty", "the Statistics page isn't empty after clearing")
     theme = Gtk.IconTheme.get_for_display(window.get_display())
     _check(theme.has_icon(HISTORY_ICON), "the History button's icon is missing")
 
