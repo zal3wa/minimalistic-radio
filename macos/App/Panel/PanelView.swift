@@ -41,6 +41,8 @@ struct PanelView: View {
             }
         }
         .frame(width: PanelController.size.width, height: PanelController.size.height)
+        .coordinateSpace(name: Hotspots.space)
+        .onPreferenceChange(Hotspots.self) { model.hotspots = $0 }
         .background {
             // The radio has no menu bar of its own: ⌘Q quits it, ⌘W hides the panel, and Space plays and stops on
             // every page without a text field (the Play/Stop button is only on the stations page).
@@ -59,6 +61,25 @@ struct PanelView: View {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return (path.hasPrefix("/Applications/") || path.hasPrefix(home + "/Applications/")) && !path.contains("/AppTranslocation/")
             || Bundle.main.object(forInfoDictionaryKey: "MRReleaseTag") as? String == "dev"
+    }
+}
+
+/// The frames of the views marked with `hotspot(_:)`, in the panel's coordinates (points from its top left).
+struct Hotspots: PreferenceKey {
+    static let space = "panel"
+    static var defaultValue: [String: CGRect] { [:] }
+
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+extension View {
+    /// Reports this view's frame as `name` (the demo pictures' cursor goes there).
+    func hotspot(_ name: String) -> some View {
+        background(GeometryReader { space in
+            Color.clear.preference(key: Hotspots.self, value: [name: space.frame(in: .named(Hotspots.space))])
+        })
     }
 }
 
@@ -88,6 +109,7 @@ struct HeaderView: View {
                 }
                 .help(L("Song history"))
                 .buttonStyle(.bordered)
+                .hotspot("history")
                 Spacer()
                 if let update = model.updateLabel {
                     iconButton(help: update, action: { AppDelegate.shared?.updater?.install() }) {
@@ -104,6 +126,7 @@ struct HeaderView: View {
                 iconButton(help: L("Back"), action: { model.back() }) {
                     Image(systemName: "chevron.left")
                 }
+                .hotspot("back")
                 .padding(.trailing, -2)
                 Text(title)
                     .font(.system(size: 13, weight: .bold))
@@ -114,6 +137,7 @@ struct HeaderView: View {
                         Label { Text(L("Statistics")) } icon: { Image(systemName: "chart.bar").imageScale(.medium) }
                     }
                     .buttonStyle(.bordered)
+                    .hotspot("statistics")
                 }
             }
         }

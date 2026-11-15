@@ -83,6 +83,8 @@ extension AppDelegate {
         let model = panel.model
         var written = 0
         var menus = 0
+        var demos = 0
+        var hotspots: [String: [String: [Int]]] = [:]
         for (appearance, look) in [(NSAppearance.Name.aqua, "light"), (.darkAqua, "dark")] {
             NSApp.appearance = NSAppearance(named: appearance)
             for shot in Self.shots {
@@ -128,12 +130,199 @@ extension AppDelegate {
             if await takeShareMenuPicture(output.appendingPathComponent("macos-share-menu-\(look).png"), dark: look == "dark") {
                 menus += 1
             }
+            let demo = await takeDemoPictures(into: output, look: look)
+            demos += demo.written
+            if look == "light" { hotspots = demo.hotspots }
         }
         model.sampleUpdate = nil
         panel.close()
-        // The menu is a screen capture (it is a window of its own): reported, but not required.
-        print("wrote \(written) screenshots and \(menus) share menu pictures to \(output.path)")
+        writeHotspots(hotspots, to: output.appendingPathComponent("macos-demo-hotspots.json"))
+        // The menus are screen captures (each is a window of its own): reported, but not required.
+        print("wrote \(written) screenshots, \(menus) share menu pictures and \(demos) demo pictures to \(output.path)")
         return written == Self.shots.count * 2 ? 0 : 1
+    }
+
+    // MARK: - The landing page's demo
+
+    /// The landing page's demo, as the README pictures: the stations (the cursor goes to [History]), Song history (the
+    /// first song's ⋯, [Statistics], ‹), the song's menu with Search on Spotify under the pointer, and Statistics (Month)
+    /// opened from Song history (‹). With the pixel centres of those buttons, from the views' own frames.
+    private func takeDemoPictures(into output: URL, look: String) async -> (written: Int, hotspots: [String: [String: [Int]]]) {
+        let model = panel.model
+        var written = 0
+        var spots: [String: [String: [Int]]] = [:]
+        func file(_ name: String) -> URL { output.appendingPathComponent("macos-demo-\(name)-\(look).png") }
+        func show(_ page: PanelModel.Page) async {
+            if page != .statistics { panel.show(page: page, anchor: nil) }
+            model.refresh()
+            try? await Task.sleep(nanoseconds: 900_000_000)
+        }
+        model.hideLinkCopied()
+        model.sampleUpdate = nil
+        controller.setCollectStatistics(true)
+
+        await show(.stations)
+        if let view = panel.contentView, render(view, to: file("stations")) { written += 1 }
+        spots["macos-demo-stations"] = ["history": model.hotspots["history"].map(pixel)].compactMapValues { $0 }
+
+        await show(.history)
+        if let view = panel.contentView, render(view, to: file("history")) { written += 1 }
+        let dots = firstRowMenuButton()
+        spots["macos-demo-history"] = ["song-menu": dots.map(pixel), "statistics": model.hotspots["statistics"].map(pixel),
+                                       "back": model.hotspots["back"].map(pixel)].compactMapValues { $0 }
+
+        if let dots, let spotify = await takeSongMenuPicture(below: dots, file: file("history-menu"), dark: look == "dark") {
+            written += 1
+            spots["macos-demo-history-menu"] = ["search-on-spotify": spotify]
+        }
+
+        model.openStatistics()   // from Song history, as the demo's cursor does
+        await show(.statistics)
+        if let view = panel.contentView, render(view, to: file("statistics")) { written += 1 }
+        spots["macos-demo-statistics"] = ["back": model.hotspots["back"].map(pixel)].compactMapValues { $0 }
+        print("demo \(look): \(written) of 4 pictures, hotspots \(spots)")
+        return (written, spots)
+    }
+
+    /// A frame in points from the panel's top left → the centre in the pictures' pixels (2×).
+    private func pixel(_ rect: CGRect) -> [Int] {
+        [Int((rect.midX * 2).rounded()), Int((rect.midY * 2).rounded())]
+    }
+
+    /// The first list row's ⋯ (SwiftUI's menu button is an AppKit pop-up button), in points from the panel's top left.
+    private func firstRowMenuButton() -> CGRect? {
+        guard let content = panel.contentView,
+              let table = subviews(of: content).compactMap({ $0 as? NSTableView }).first, table.numberOfRows > 0 else { return nil }
+        let row = content.convert(table.rect(ofRow: 0), from: table)
+        let buttons = subviews(of: table)
+            .filter { $0 is NSPopUpButton || String(describing: type(of: $0)).contains("Popup") }
+            .map { content.convert($0.bounds, from: $0) }
+            .filter { $0.intersects(row) }
+        guard let button = buttons.max(by: { $0.midX < $1.midX }) else { return nil }
+        return topLeft(button, in: content)
+    }
+
+    private func topLeft(_ rect: CGRect, in content: NSView) -> CGRect {
+        content.isFlipped ? rect : CGRect(x: rect.minX, y: content.bounds.height - rect.maxY, width: rect.width, height: rect.height)
+    }
+
+    private func subviews(of view: NSView) -> [NSView] {
+        view.subviews + view.subviews.flatMap { subviews(of: $0) }
+    }
+
+    /// Song history with the first song's ⋯ menu open (Copy, Search on Spotify, Search on YouTube, as HistoryRow's
+    /// menu) and Search on Spotify under the pointer: the panel drawn as the other pictures (2×), and the menu, a
+    /// window of its own, captured from the screen and laid on at its place. Returns Search on Spotify's pixel centre.
+    private func takeSongMenuPicture(below dots: CGRect, file: URL, dark: Bool) async -> [Int]? {
+        guard let window = panel.window, let content = panel.contentView else { return nil }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        menu.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        menu.addItem(withTitle: L("Copy"), action: nil, keyEquivalent: "")
+        let spotify = menu.addItem(withTitle: L("Search on Spotify"), action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: L("Search on YouTube"), action: nil, keyEquivalent: "")
+        // Just under the ⋯, and inside the panel.
+        let left = min(dots.midX - 12, content.bounds.width - 8 - menu.size.width)
+        let place = NSPoint(x: left, y: content.isFlipped ? dots.maxY + 2 : content.bounds.height - dots.maxY - 2)
+        let screenTop = NSScreen.screens.first?.frame.maxY ?? 0
+        let capture = FileManager.default.temporaryDirectory.appendingPathComponent("radio-menu-\(UUID().uuidString).png")
+        defer { try? FileManager.default.removeItem(at: capture) }
+        var menuFrame: CGRect?
+        var itemCentre: CGPoint?
+        var captured = false
+        let point = Timer(timeInterval: 0.5, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                guard let menuWindow = NSApp.windows.first(where: {
+                    $0.isVisible && $0 !== window && String(describing: type(of: $0)).contains("Menu")
+                }) else { return }
+                menuFrame = menuWindow.frame
+                let centre = self.menuItemCentre(spotify.title, in: menuWindow) ?? {
+                    // Not found by its text: three equal rows inside 5 pt of padding.
+                    print("demo: \(spotify.title) found by position, not by its view")
+                    let frame = menuWindow.frame, height = (frame.height - 10) / 3
+                    return CGPoint(x: frame.midX, y: frame.maxY - 5 - height * 1.5)
+                }()
+                itemCentre = centre
+                CGWarpMouseCursorPosition(CGPoint(x: centre.x, y: screenTop - centre.y))   // highlights it
+            }
+        }
+        let shot = Timer(timeInterval: 1.4, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                if let number = NSApp.windows.first(where: {
+                    $0.isVisible && $0 !== window && String(describing: type(of: $0)).contains("Menu")
+                })?.windowNumber {
+                    let run = Process()
+                    run.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                    run.arguments = ["-x", "-o", "-l\(number)", capture.path]
+                    try? run.run()
+                    run.waitUntilExit()
+                    captured = run.terminationStatus == 0
+                }
+                menu.cancelTracking()
+            }
+        }
+        RunLoop.main.add(point, forMode: .common)
+        RunLoop.main.add(shot, forMode: .common)
+        _ = menu.popUp(positioning: nil, at: place, in: content)   // returns when the menu closes
+        try? await Task.sleep(nanoseconds: 300_000_000)
+
+        guard captured, let menuFrame, let itemCentre,
+              let menuImage = NSImage(contentsOf: capture)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let panelImage = renderImage(content) else {
+            print("demo: the song menu picture wasn't taken")
+            return nil
+        }
+        let panelFrame = window.frame
+        let scale = CGFloat(panelImage.width) / content.bounds.width
+        guard let context = CGContext(data: nil, width: panelImage.width, height: panelImage.height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.interpolationQuality = .high
+        context.draw(panelImage, in: CGRect(x: 0, y: 0, width: panelImage.width, height: panelImage.height))
+        // Bottom-left origin: the menu's place in the panel, in pixels.
+        context.draw(menuImage, in: CGRect(x: (menuFrame.minX - panelFrame.minX) * scale, y: (menuFrame.minY - panelFrame.minY) * scale,
+                                           width: menuFrame.width * scale, height: menuFrame.height * scale))
+        guard let composed = context.makeImage(),
+              let png = NSBitmapImageRep(cgImage: composed).representation(using: .png, properties: [:]),
+              (try? png.write(to: file)) != nil else { return nil }
+        return [Int(((itemCentre.x - panelFrame.minX) * scale).rounded()), Int(((panelFrame.maxY - itemCentre.y) * scale).rounded())]
+    }
+
+    /// A menu item's row in an open menu's window, found by its title, as a screen point (its centre).
+    private func menuItemCentre(_ title: String, in menuWindow: NSWindow) -> CGPoint? {
+        guard let root = menuWindow.contentView?.superview ?? menuWindow.contentView else { return nil }
+        for view in subviews(of: root) {
+            let text = (view as? NSTextField)?.stringValue ?? view.accessibilityTitle() ?? view.accessibilityLabel()
+            guard text == title else { continue }
+            var row = view   // the row: the outermost view around the text that is still one item high
+            while let parent = row.superview, parent !== root, parent.frame.height <= 32 { row = parent }
+            let rect = row.convert(row.bounds, to: nil)
+            return menuWindow.convertPoint(toScreen: CGPoint(x: rect.midX, y: rect.midY))
+        }
+        return nil
+    }
+
+    /// The same 2× picture as `render`, as an image.
+    private func renderImage(_ view: NSView) -> CGImage? {
+        let size = view.bounds.size
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * 2), pixelsHigh: Int(size.height * 2),
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        rep.size = size
+        view.cacheDisplay(in: view.bounds, to: rep)
+        return rep.cgImage
+    }
+
+    /// macos-demo-hotspots.json: per picture, the pixel centre of each place the demo's cursor clicks.
+    private func writeHotspots(_ spots: [String: [String: [Int]]], to file: URL) {
+        let document: [String: Any] = [
+            "about": "Pixel centres (x, y from the top left) in the macos-demo-<name>-<light|dark>.png pictures, 2x.",
+            "size": [Int(PanelController.size.width * 2), Int(PanelController.size.height * 2)],
+            "frames": spots,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: document, options: [.prettyPrinted, .sortedKeys]) else { return }
+        try? data.write(to: file)
+        print(String(decoding: data, as: UTF8.self))
     }
 
     /// The playing station's ⋯ menu (Edit, Share, a line, Remove) open over the panel with Share under the pointer,
