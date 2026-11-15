@@ -1,0 +1,9 @@
+# Czech translation of Minimalistic Radio for macOS.
+# The English text is the msgid. Corrections by native speakers are welcome.
+msgid ""
+msgstr ""
+"Language: cs\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Quit"
+msgstr "Ukončit"

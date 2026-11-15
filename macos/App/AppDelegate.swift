@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.image = image
         item.button?.toolTip = "Minimalistic Radio"
         let menu = NSMenu()
-        menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: L("Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
         statusItem = item
 
@@ -35,6 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func selfTest(_ item: NSStatusItem) {
         var failures: [String] = []
         if item.button?.image == nil { failures.append("no menu bar icon") }
+        let saved = localizer.setting
+        localizer.setting = "pl"
+        if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
+        localizer.setting = saved
         for failure in failures { FileHandle.standardError.write(Data("self-test failed: \(failure)\n".utf8)) }
         exit(failures.isEmpty ? 0 : 1)
     }

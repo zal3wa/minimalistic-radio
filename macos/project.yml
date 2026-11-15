@@ -28,6 +28,9 @@ targets:
           - "Resources/AppIcon.svg"
       - path: ../data/banned-stations.json
         buildPhase: resources
+      - path: Lang
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: RadioCore
     settings:
