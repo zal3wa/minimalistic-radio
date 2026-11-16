@@ -504,11 +504,14 @@ msgstr "Odkaz zkopírován"
 msgid "Shared station"
 msgstr "Sdílená stanice"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Přidat ji k vašim stanicím a hned ji pustit?"
+msgid "Add it to your stations?"
+msgstr "Přidat ji mezi vaše stanice?"
 
-msgid "Add and play"
-msgstr "Přidat a přehrát"
+msgid "Add"
+msgstr "Přidat"
+
+msgid "Play automatically"
+msgstr "Přehrávat automaticky"
 
 msgid "This link doesn't contain a station."
 msgstr "Tento odkaz neobsahuje žádnou stanici."

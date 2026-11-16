@@ -507,11 +507,14 @@ msgstr "Link kopiert"
 msgid "Shared station"
 msgstr "Geteilter Sender"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Zu den Sendern hinzufügen und gleich abspielen?"
+msgid "Add it to your stations?"
+msgstr "Zu deinen Sendern hinzufügen?"
 
-msgid "Add and play"
-msgstr "Hinzufügen und abspielen"
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "Play automatically"
+msgstr "Automatisch abspielen"
 
 msgid "This link doesn't contain a station."
 msgstr "Dieser Link enthält keinen Sender."

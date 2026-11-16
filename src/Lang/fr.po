@@ -506,11 +506,14 @@ msgstr "Lien copié"
 msgid "Shared station"
 msgstr "Station partagée"
 
-msgid "Add it to your stations and play it now?"
-msgstr "L'ajouter à vos stations et l'écouter maintenant ?"
+msgid "Add it to your stations?"
+msgstr "L’ajouter à vos stations ?"
 
-msgid "Add and play"
-msgstr "Ajouter et écouter"
+msgid "Add"
+msgstr "Ajouter"
+
+msgid "Play automatically"
+msgstr "Lire automatiquement"
 
 msgid "This link doesn't contain a station."
 msgstr "Ce lien ne contient pas de station."

@@ -503,11 +503,14 @@ msgstr "Ligação copiada"
 msgid "Shared station"
 msgstr "Estação partilhada"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Adicioná-la às suas estações e ouvi-la agora?"
+msgid "Add it to your stations?"
+msgstr "Adicioná-la às suas estações?"
 
-msgid "Add and play"
-msgstr "Adicionar e ouvir"
+msgid "Add"
+msgstr "Adicionar"
+
+msgid "Play automatically"
+msgstr "Reproduzir automaticamente"
 
 msgid "This link doesn't contain a station."
 msgstr "Esta ligação não contém nenhuma estação."

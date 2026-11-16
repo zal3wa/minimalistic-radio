@@ -29,6 +29,7 @@ public sealed class Preferences
     public DateTime? LastUpdateCheck { get; set; }
     public bool? ShowStationPopup { get; set; }
     public bool? CollectStatistics { get; set; }   // Settings › Statistics; on unless switched off
+    public bool? PlaySharedStations { get; set; }   // the Shared station page's "Play automatically" as last chosen with Add; on until then
 }
 
 public sealed class HistoryEntry

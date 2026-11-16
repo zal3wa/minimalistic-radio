@@ -105,6 +105,7 @@ internal sealed partial class Radio
     // Shared stations' links: the window that takes them from a second start, and the one this start was given.
     private readonly string linkWindow, startLink;
     private LinkChannel links;
+    private bool playShared = true;   // the Shared station page's "Play automatically", as last chosen with Add
 
     internal Radio(Application app, EventWaitHandle panelRequest, bool autostart, bool updated, string linkWindow, string startLink)
     {
@@ -181,20 +182,21 @@ internal sealed partial class Radio
     }
 
     // A shared station's link (from --open, a second start, or pasted into + Station). A station already on the list
-    // just plays, on the stations page; any other opens the Shared station page, which asks first (or says the link
-    // carries no station). Nothing is added or played from a link without that click.
+    // just plays, on the stations page, when "Play automatically" was last left checked; otherwise the stations page only
+    // shows it ("Already on your list") and playback stays as it is. Any other link opens the Shared station page, which
+    // asks first (or says the link carries no station). Nothing is added or played from a link without that click.
     private void OpenShared(string link)
     {
         ShareLink.TryParse(link, out SharedStation shared);
         int known = shared == null ? -1 : Stations.FindIndex(item => Storage.SameStream(item.Url, shared.Url));
-        if (known >= 0)
+        if (known >= 0 && playShared)
         {
             SelectStation(known);
             if (session == null) StartPlayback();
         }
         if (playerPanel == null) OpenPlayer();
         else playerPanel.Activate();
-        showInPanel?.Invoke(known >= 0 ? "stations" : "shared", shared);
+        showInPanel?.Invoke(known < 0 ? "shared" : playShared ? "stations" : "known", shared);
     }
 
     // After sleep or hibernation the old connection is dead: start the station again.
@@ -1420,6 +1422,7 @@ internal sealed partial class Radio
         checkUpdates = saved.CheckUpdates ?? true;
         lastUpdateCheck = saved.LastUpdateCheck;
         showStationPopup = saved.ShowStationPopup ?? true;
+        playShared = saved.PlaySharedStations ?? true;
         statistics.SetCollecting(saved.CollectStatistics ?? true, DateTime.UtcNow);
         station = Stations.FindIndex(item => item.Url == lastPlayed);
         if (station >= 0) SetTrayText(AppName + " · " + Stations[station].Name);
@@ -1436,7 +1439,7 @@ internal sealed partial class Radio
             {
                 Volume = volume, LastPlayed = lastPlayed, Language = Lang.Setting,
                 CheckUpdates = checkUpdates, LastUpdateCheck = lastUpdateCheck, ShowStationPopup = showStationPopup,
-                CollectStatistics = statistics.Collecting
+                CollectStatistics = statistics.Collecting, PlaySharedStations = playShared
             });
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)

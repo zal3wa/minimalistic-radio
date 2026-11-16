@@ -504,11 +504,14 @@ msgstr "Skopiowano link"
 msgid "Shared station"
 msgstr "Udostępniona stacja"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Dodać ją do twoich stacji i od razu włączyć?"
+msgid "Add it to your stations?"
+msgstr "Dodać tę stację do listy?"
 
-msgid "Add and play"
-msgstr "Dodaj i włącz"
+msgid "Add"
+msgstr "Dodaj"
+
+msgid "Play automatically"
+msgstr "Odtwarzaj automatycznie"
 
 msgid "This link doesn't contain a station."
 msgstr "Ten link nie zawiera stacji."
