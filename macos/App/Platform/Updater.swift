@@ -161,18 +161,27 @@ final class Updater {
 
     /// The new app meets this app's designated requirement: signed with the same project certificate.
     nonisolated private static func signedLikeThisApp(_ app: URL) -> Bool {
+        signatureStatus(app) == errSecSuccess
+    }
+
+    /// errSecSuccess when `app` meets this app's designated requirement, else the first error on the way.
+    nonisolated private static func signatureStatus(_ app: URL) -> OSStatus {
         var running: SecCode?
         var runningStatic: SecStaticCode?
         var requirement: SecRequirement?
         var candidate: SecStaticCode?
-        guard SecCodeCopySelf([], &running) == errSecSuccess, let running,
-              SecCodeCopyStaticCode(running, [], &runningStatic) == errSecSuccess, let runningStatic,
-              SecCodeCopyDesignatedRequirement(runningStatic, [], &requirement) == errSecSuccess, let requirement,
-              SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) == errSecSuccess, let candidate else { return false }
+        var status = SecCodeCopySelf([], &running)
+        if status == errSecSuccess, let running { status = SecCodeCopyStaticCode(running, [], &runningStatic) }
+        if status == errSecSuccess, let runningStatic { status = SecCodeCopyDesignatedRequirement(runningStatic, [], &requirement) }
+        if status == errSecSuccess { status = SecStaticCodeCreateWithPath(app as CFURL, [], &candidate) }
+        guard status == errSecSuccess, let requirement, let candidate else {
+            log.error("the update's signature couldn't be checked: \(status)")
+            return status == errSecSuccess ? errSecInternalComponent : status
+        }
         let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSStrictValidate)
-        let status = SecStaticCodeCheckValidity(candidate, flags, requirement)
+        status = SecStaticCodeCheckValidity(candidate, flags, requirement)
         if status != errSecSuccess { log.error("the update's signature check returned \(status)") }
-        return status == errSecSuccess
+        return status
     }
 
     /// Starts the new version once this process has quit, playing the same station if it was playing.
@@ -229,26 +238,35 @@ final class Updater {
 
     /// Mounts the DMG read-only and hidden at a private mount point, and checks the app inside as a zip update is
     /// checked: signed like this app, with the release's tag. Returns the mount point when it passes. Otherwise
-    /// the DMG is detached and deleted, and nil comes back.
-    nonisolated static func mountVerifiedDMG(_ dmg: URL, tag: String) -> URL? {
+    /// the DMG is detached and deleted, `report` gets the reason, and nil comes back.
+    nonisolated static func mountVerifiedDMG(_ dmg: URL, tag: String, report: (String) -> Void = { _ in }) -> URL? {
         let folder = newFolder()
         let volume = folder.appendingPathComponent("volume")
+        let reason: String
+        let attach: (ok: Bool, output: String)
         do {
             try FileManager.default.createDirectory(at: volume, withIntermediateDirectories: true)
+            attach = run("/usr/bin/hdiutil", ["attach", "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", volume.path,
+                                              dmg.path])
         } catch {
-            try? FileManager.default.removeItem(at: dmg)
-            return nil
+            attach = (false, String(describing: error))
         }
-        let mounted = run("/usr/bin/hdiutil", ["attach", "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", volume.path,
-                                               dmg.path])
         let app = volume.appendingPathComponent("Minimalistic Radio.app")
         let values = try? app.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-        if mounted && values?.isDirectory == true && values?.isSymbolicLink != true && signedLikeThisApp(app)
-            && Bundle(url: app)?.object(forInfoDictionaryKey: "MRReleaseTag") as? String == tag {
+        if !attach.ok {
+            reason = "the disk image didn't mount: \(attach.output)"
+        } else if values?.isDirectory != true || values?.isSymbolicLink == true {
+            reason = "the disk image has no Minimalistic Radio.app"
+        } else if case let status = signatureStatus(app), status != errSecSuccess {
+            reason = "the app isn't signed like this one (\(status))"
+        } else if case let found = Bundle(url: app)?.object(forInfoDictionaryKey: "MRReleaseTag") as? String, found != tag {
+            reason = "the app's release tag is \(found ?? "missing"), not \(tag)"
+        } else {
             return volume
         }
-        log.error("the update's disk image failed its check (mounted: \(mounted, privacy: .public))")
-        if mounted { detach(volume) }
+        log.error("the update's disk image failed its check: \(reason, privacy: .public)")
+        report(reason)
+        if attach.ok { detach(volume) }
         try? FileManager.default.removeItem(at: dmg)
         if !isMountPoint(volume) { try? FileManager.default.removeItem(at: folder) }
         return nil
@@ -256,14 +274,15 @@ final class Updater {
 
     /// Unmounts a checked disk image (forcibly if it is busy) and removes its mount point.
     nonisolated static func detach(_ volume: URL) {
-        if !run("/usr/bin/hdiutil", ["detach", volume.path]) { _ = run("/usr/bin/hdiutil", ["detach", "-force", volume.path]) }
+        if !run("/usr/bin/hdiutil", ["detach", volume.path]).ok { _ = run("/usr/bin/hdiutil", ["detach", "-force", volume.path]) }
         if !isMountPoint(volume) { try? FileManager.default.removeItem(at: volume.deletingLastPathComponent()) }
     }
 
     /// `--check-update-dmg <dmg> <tag>` (CI): the disk-image check alone. Exit code 0 when the DMG passes (it is
-    /// detached again), 1 when it fails (it is detached and deleted).
+    /// detached again), 1 when it fails (it is detached and deleted, and the reason goes to standard error).
     nonisolated static func checkDMG(_ dmg: URL, tag: String) -> Int32 {
-        guard let volume = mountVerifiedDMG(dmg, tag: tag) else { return 1 }
+        let report = { (reason: String) in FileHandle.standardError.write(Data("update DMG check: \(reason)\n".utf8)) }
+        guard let volume = mountVerifiedDMG(dmg, tag: tag, report: report) else { return 1 }
         detach(volume)
         return 0
     }
@@ -279,7 +298,7 @@ final class Updater {
             let created = (try? folder.resourceValues(forKeys: [.creationDateKey]))?.creationDate ?? .distantFuture
             if created >= date || running.hasPrefix(folder.resolvingSymlinksInPath().path + "/") { continue }
             let volume = folder.appendingPathComponent("volume")
-            if isMountPoint(volume) && !run("/usr/bin/hdiutil", ["detach", volume.path]) { continue }
+            if isMountPoint(volume) && !run("/usr/bin/hdiutil", ["detach", volume.path]).ok { continue }
             try? files.removeItem(at: folder)
         }
     }
@@ -291,19 +310,22 @@ final class Updater {
         return inner.st_dev != outer.st_dev
     }
 
-    nonisolated private static func run(_ tool: String, _ arguments: [String]) -> Bool {
+    /// Runs a tool with no input; whether it worked, and what it wrote.
+    nonisolated private static func run(_ tool: String, _ arguments: [String]) -> (ok: Bool, output: String) {
         let process = Process()
+        let output = Pipe()
         process.executableURL = URL(fileURLWithPath: tool)
         process.arguments = arguments
         process.standardInput = FileHandle.nullDevice
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
+        process.standardOutput = output
+        process.standardError = output
         do {
             try process.run()
         } catch {
-            return false
+            return (false, String(describing: error))
         }
+        let written = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        return process.terminationStatus == 0
+        return (process.terminationStatus == 0, String(decoding: written, as: UTF8.self))
     }
 }
