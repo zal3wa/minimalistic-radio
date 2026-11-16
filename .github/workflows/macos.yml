@@ -68,6 +68,16 @@ jobs:
           size=$(du -sk "$APP" | cut -f1); echo "app size: ${size} KB"; test "$size" -lt 10240
           "$binary" --self-test
 
+      # The runner's display is 1×: the pictures taken from the screen (the menus) need a 2× one. A virtual HiDPI
+      # display becomes the main display for the pictures (macos/tools/hidpi_display.m, CI only). Without it they are 1×.
+      - name: 2× screen for the pictures
+        continue-on-error: true
+        run: |
+          clang -fobjc-arc -framework Foundation -framework CoreGraphics macos/tools/hidpi_display.m -o "$RUNNER_TEMP/hidpi_display"
+          nohup "$RUNNER_TEMP/hidpi_display" > "$RUNNER_TEMP/hidpi_display.log" 2>&1 &
+          sleep 8
+          cat "$RUNNER_TEMP/hidpi_display.log"
+
       # The README's panel pictures (macos-<page>-<light|dark>.png at 2×), for review. Never fails the build.
       - name: Screenshots
         continue-on-error: true
