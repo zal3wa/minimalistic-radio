@@ -213,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                       bytesPerRow: 0, bitsPerPixel: 0)
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
+        failures += PictureSelfTest.run()
 
         showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)
