@@ -199,6 +199,38 @@
     </Setter>
   </Style>
 
+  <!-- Check box, Windows 11 look: a rounded box, filled with the accent and ticked when checked; the label (the content)
+       on its right. The whole of it takes the click. -->
+  <Style TargetType="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource Fg}"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <StackPanel Orientation="Horizontal" Background="Transparent" SnapsToDevicePixels="True">
+            <Grid Width="20" Height="20" VerticalAlignment="Center">
+              <Border x:Name="Box" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Subtle}" Background="{DynamicResource Card}"/>
+              <Border x:Name="Over" CornerRadius="4" Background="{DynamicResource Fg}" Opacity="0"/>
+              <Path x:Name="Tick" Data="M5.5,10.5 L8.5,13.5 L14.5,7.5" Stroke="{DynamicResource AccentFg}" StrokeThickness="1.5"
+                    StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Visibility="Collapsed"/>
+            </Grid>
+            <ContentPresenter VerticalAlignment="Center" Margin="8,0,0,1" RecognizesAccessKey="False"/>
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Box" Property="Background" Value="{DynamicResource Accent}"/>
+              <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+              <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Over" Property="Opacity" Value="0.06"/></Trigger>
+            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Over" Property="Opacity" Value="0.11"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- Slider: thin track, accent fill, round thumb. -->
   <Style x:Key="SliderPart" TargetType="RepeatButton">
     <Setter Property="Focusable" Value="False"/>

@@ -159,9 +159,9 @@ internal sealed partial class Radio
     }
 
     // The Play/Stop button's content: a filled triangle or square, then the word.
-    private static FrameworkElement PlayLabel(bool play, string text, double size = 0)
+    private static FrameworkElement PlayLabel(bool play, string text)
     {
-        FrameworkElement glyph = Theme.Solid(play ? Theme.PlayIcon : Theme.StopIcon, size > 0 ? size : play ? 16 : 18, "AccentFg");
+        FrameworkElement glyph = Theme.Solid(play ? Theme.PlayIcon : Theme.StopIcon, play ? 16 : 18, "AccentFg");
         glyph.VerticalAlignment = VerticalAlignment.Center;
         // Segoe UI sits low in its line: a pixel up puts the word level with the glyph.
         var label = new StackPanel { Orientation = Orientation.Horizontal };
@@ -450,23 +450,28 @@ internal sealed partial class Radio
             noticeTimer.Start();
         }
 
-        // "Link copied" after Share: a card centred above the player for two seconds (added over the pages below).
-        Grid linkCopied = NewToast(out TextBlock linkCopiedText, out FrameworkElement linkCopiedTick);
-        var linkCopiedTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        linkCopiedTimer.Tick += (_, _) =>
+        // A short message on a card centred above the player for two seconds (added over the pages below): "Link copied"
+        // after Share, "Already on your list" for a shared station the list has.
+        Grid toast = NewToast(out TextBlock toastText, out FrameworkElement toastTick);
+        var toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        toastTimer.Tick += (_, _) =>
         {
-            linkCopiedTimer.Stop();
-            linkCopied.Visibility = Visibility.Collapsed;
+            toastTimer.Stop();
+            toast.Visibility = Visibility.Collapsed;
         };
-        panel.Closed += (_, _) => linkCopiedTimer.Stop();
+        panel.Closed += (_, _) => toastTimer.Stop();
+        void ShowToast(string text, bool tick)
+        {
+            toastText.Text = text;
+            toastTick.Visibility = tick ? Visibility.Visible : Visibility.Collapsed;
+            toast.Visibility = Visibility.Visible;
+            toastTimer.Stop();
+            toastTimer.Start();
+        }
         void ShareStation(SavedStation item)
         {
             bool copied = CopyText(ShareLink.Web(item.Name, item.Url, item.Logo));
-            linkCopiedText.Text = copied ? L("Link copied") : L("The clipboard is busy.");
-            linkCopiedTick.Visibility = copied ? Visibility.Visible : Visibility.Collapsed;
-            linkCopied.Visibility = Visibility.Visible;
-            linkCopiedTimer.Stop();
-            linkCopiedTimer.Start();
+            ShowToast(copied ? L("Link copied") : L("The clipboard is busy."), copied);
         }
 
         // The station form (Add by address, Edit) is a page of its own.
@@ -523,7 +528,11 @@ internal sealed partial class Radio
         updateButton.Visibility = Visibility.Collapsed;
         updateButton.Click += (_, _) => InstallUpdate();
         var backButton = NewButton("GhostButton", Theme.Glyph(Theme.BackIcon), L("Back"));
-        foreach (Button button in new[] { updateButton, settingsButton, backButton })
+        // Statistics' ⋯ at the right end of its bar, with the page's rare commands (Clear statistics…, see further down).
+        var statisticsMore = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("More"));
+        AutomationProperties.SetName(statisticsMore, L("More"));
+        statisticsMore.Margin = new Thickness(4, 0, 0, 0);
+        foreach (Button button in new[] { updateButton, settingsButton, backButton, statisticsMore })
         {
             button.Width = button.Height = 32;
             button.Padding = new Thickness(0);
@@ -535,7 +544,7 @@ internal sealed partial class Radio
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 2)
         };
         var stationsBar = Columns((add, Auto), (historyButton, Auto), (new Border(), Star), (updateButton, Auto), (settingsButton, Auto));
-        var pageBar = Columns((backButton, Auto), (pageTitle, Star), (statisticsButton, Auto));
+        var pageBar = Columns((backButton, Auto), (pageTitle, Star), (statisticsButton, Auto), (statisticsMore, Auto));
         var bar = new Grid { Margin = new Thickness(Gutter) };
         bar.Children.Add(stationsBar);
         bar.Children.Add(pageBar);
@@ -549,18 +558,104 @@ internal sealed partial class Radio
         var footer = new Border { Margin = new Thickness(Gutter, 10, Gutter, Gutter) };
         ScrollViewer settingsPane = Pane(), historyPane = Pane(), statisticsPane = Pane(), sharedPane = Pane();
         SharedStation shownShared = null;   // the Shared station page's station (none: the link carried none)
+        Button sharedAdd = null;   // the Shared station page's Add (none for a link without a station)
         Action refreshCollected = null;   // Settings › Statistics' "Collected since", again after a clear
         string statisticsFrom = "settings";   // where ← goes back to from Statistics: Settings or Song history
+        StatisticsPeriod statisticsPeriod = StatisticsPeriod.Month;   // the period Statistics shows
+
+        // A question over the whole panel, like Windows 11's ContentDialog: the panel dimmed, and in the middle a card
+        // with the title, the text (the note on a line of its own), and [confirm] [Cancel] under a line. Cancel is the
+        // accent button and the default: the keyboard starts on it, and Enter (on no other button) and Esc answer it.
+        // The keyboard stays in the card (Tab goes round it) and goes back to `back` after.
+        var dialogLayer = new Grid { Visibility = Visibility.Collapsed };
+        Action cancelDialog = null;   // while a question is open: answers it with Cancel
+        void Ask(string title, string text, string note, string confirm, Action confirmed, IInputElement back)
+        {
+            cancelDialog?.Invoke();
+            var dim = new Border { CornerRadius = new CornerRadius(8), Background = new SolidColorBrush(Color.FromArgb(0x4D, 0, 0, 0)) };
+            var words = new StackPanel { Margin = new Thickness(24, 22, 24, 24) };
+            words.Children.Add(new TextBlock { Text = title, FontSize = 20, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+            foreach (string paragraph in new[] { text, note })
+                words.Children.Add(new TextBlock { Text = paragraph, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) });
+            var top = new Border { CornerRadius = new CornerRadius(7, 7, 0, 0), Child = words };
+            top.SetResourceReference(Border.BackgroundProperty, "Card");
+            Button yes = NewButton(null, confirm), no = NewButton("AccentButton", L("Cancel"));
+            yes.SetResourceReference(Control.ForegroundProperty, "Danger");   // red text: it deletes
+            foreach (Button button in new[] { yes, no }) button.Height = 32;
+            var answers = new Grid();
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+            Grid.SetColumn(no, 2);
+            answers.Children.Add(yes);
+            answers.Children.Add(no);
+            var bottom = new Border
+            {
+                CornerRadius = new CornerRadius(0, 0, 7, 7), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(24), Child = answers
+            };
+            bottom.SetResourceReference(Border.BackgroundProperty, "Bg");
+            bottom.SetResourceReference(Border.BorderBrushProperty, "Line");
+            var face = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Child = Spaced(Orientation.Vertical, 0, top, bottom) };
+            face.SetResourceReference(Border.BackgroundProperty, "Bg");
+            face.SetResourceReference(Border.BorderBrushProperty, "Line");
+            // The shadow on a layer of its own, so the text keeps sharp ClearType rendering.
+            var card = new Grid { Margin = new Thickness(24, 0, 24, 0), VerticalAlignment = VerticalAlignment.Center, Tag = "dialog" };
+            card.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(8), Background = Brushes.Black,
+                Effect = new DropShadowEffect { BlurRadius = 32, ShadowDepth = 8, Opacity = 0.28, Direction = 270 }
+            });
+            card.Children.Add(face);
+            AutomationProperties.SetName(card, title);
+            KeyboardNavigation.SetTabNavigation(card, KeyboardNavigationMode.Cycle);
+            KeyboardNavigation.SetDirectionalNavigation(card, KeyboardNavigationMode.Cycle);
+            KeyboardNavigation.SetControlTabNavigation(card, KeyboardNavigationMode.Cycle);
+            void Answer(bool confirmedNow)
+            {
+                cancelDialog = null;
+                dialogLayer.Visibility = Visibility.Collapsed;
+                dialogLayer.Children.Clear();
+                if (confirmedNow) confirmed();
+                back?.Focus();
+            }
+            yes.Click += (_, _) => Answer(true);
+            no.Click += (_, _) => Answer(false);
+            cancelDialog = () => Answer(false);
+            dialogLayer.Children.Add(dim);
+            dialogLayer.Children.Add(card);
+            dialogLayer.Visibility = Visibility.Visible;
+            // Once it is laid out (and after the menu it came from has given the keyboard back to its button).
+            app.Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => { if (no.IsVisible) no.Focus(); }));
+        }
+
+        // Statistics' ⋯ menu: one item, Clear statistics…, which asks first (the song history stays).
+        ContextMenu statisticsMenu = RowMenu(statisticsMore);
+        statisticsMenu.Items.Add(Item(L("Clear statistics…"), null, () => Ask(L("Clear statistics?"),
+            L("Your listening statistics will be permanently deleted. Your song history will remain."), L("This can't be undone."), L("Clear"),
+            () =>
+            {
+                ClearStatistics();
+                FillStatistics(statisticsPeriod);
+            }, statisticsMore)));
+        Hold(statisticsMenu);
+        statisticsMore.Click += (_, _) => statisticsMenu.IsOpen = true;
+#if SELFTEST
+        statisticsMore.Tag = statisticsMenu;   // the self-test reads the menu from here
+#endif
 
         int shownStation = station;
+        // A station brought into view instead of the current one (ShowOnList: a shared link's station, just added or
+        // already on the list), until another page or another current station.
+        SavedStation revealed = null;
         void ShowActiveStation(bool centre)
         {
-            if (station < 0 || station >= list.Items.Count || list.Visibility != Visibility.Visible) return;
-            list.ScrollIntoView(list.Items[station]);
+            int index = revealed != null && Stations.Contains(revealed) ? Stations.IndexOf(revealed) : station;
+            if (index < 0 || index >= list.Items.Count || list.Visibility != Visibility.Visible) return;
+            list.ScrollIntoView(list.Items[index]);
             ScrollViewer viewer = Descendants(list).OfType<ScrollViewer>().FirstOrDefault();
             // The list scrolls by whole stations, so offsets and the viewport are counted in stations.
             if (centre && viewer != null && viewer.CanContentScroll && viewer.ViewportHeight > 0)
-                viewer.ScrollToVerticalOffset(Math.Max(0, station - (viewer.ViewportHeight - 1) / 2));
+                viewer.ScrollToVerticalOffset(Math.Max(0, index - (viewer.ViewportHeight - 1) / 2));
         }
         void ShowActiveStationAfterLayout(bool centre) =>
             app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => ShowActiveStation(centre)));
@@ -728,6 +823,8 @@ internal sealed partial class Radio
         // "shared" (Shared station).
         void SetPage(string target)
         {
+            cancelDialog?.Invoke();   // a shared station's link that comes in meanwhile answers a question with Cancel
+            revealed = null;
             if (target != "form") editing = null;
             if (page == "search" && target != "search") ResetSearch();
             string from = page;
@@ -737,6 +834,7 @@ internal sealed partial class Radio
             list.Visibility = footer.Visibility = stationsBar.Visibility = Shown(stations);
             pageBar.Visibility = Shown(!stations);
             statisticsButton.Visibility = Shown(target == "history");
+            statisticsMore.Visibility = Shown(target == "statistics");
             if (target == "statistics" && from != "statistics") statisticsFrom = from == "history" ? "history" : "settings";
             searchPane.Visibility = Shown(target == "search");
             fields.Visibility = Shown(target == "form");
@@ -774,6 +872,8 @@ internal sealed partial class Radio
             {
                 FillShared();
                 sharedPane.ScrollToTop();
+                // The keyboard on Add, so Enter adds (Tab goes on to "Play automatically" and Cancel).
+                app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => { if (page == "shared") sharedAdd?.Focus(); }));
             }
             if (stations) ShowActiveStationAfterLayout(false);
         }
@@ -1071,10 +1171,12 @@ internal sealed partial class Radio
             historyPane.Content = content;
         }
 
-        // Shared station page (a shared station's link): the station, the question, Add and play / Cancel. Nothing is
-        // added or played before the click; Cancel, ← and Esc change nothing.
+        // Shared station page (a shared station's link): the station, the question, + Add with "Play automatically" under
+        // it, and Cancel. The box is checked the first time, then as last chosen with Add (saved with the preferences).
+        // Nothing is added or played before the click; Cancel, ← and Esc change nothing, also not the saved choice.
         void FillShared()
         {
+            sharedAdd = null;
             var content = new StackPanel { Margin = new Thickness(Gutter) };
             sharedPane.Content = content;
             SharedStation shared = shownShared;
@@ -1104,37 +1206,69 @@ internal sealed partial class Radio
             address.TextAlignment = TextAlignment.Center;
             address.Margin = new Thickness(0, 4, 0, 0);
             card.Children.Add(address);
-            TextBlock question = Centred(L("Add it to your stations and play it now?"), 14);
+            TextBlock question = Centred(L("Add it to your stations?"), 14);
             question.Margin = new Thickness(0, 16, 0, 0);
             card.Children.Add(question);
-            var addAndPlay = NewButton("AccentButton", PlayLabel(true, L("Add and play"), 12));
-            addAndPlay.Height = 38;
-            addAndPlay.Margin = new Thickness(0, 20, 0, 0);
+            Button addShared = NewButton("AccentButton", IconText(Theme.PlusIcon, L("Add"), "AccentFg"));
+            addShared.Height = 38;
+            addShared.Margin = new Thickness(0, 20, 0, 0);
+            var autoplay = new CheckBox
+            {
+                Content = L("Play automatically"), IsChecked = playShared, HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 14, 0, 0)
+            };
             var cancel = NewButton(null, L("Cancel"));
             cancel.Height = 32;
             cancel.Padding = new Thickness(12, 0, 12, 0);
-            cancel.Margin = new Thickness(0, 8, 0, 0);
-            card.Children.Add(addAndPlay);
+            cancel.Margin = new Thickness(0, 14, 0, 0);
+            card.Children.Add(addShared);
+            card.Children.Add(autoplay);
             card.Children.Add(cancel);
             Border frame = CardFrame(card, new Thickness(20, 28, 20, 20));
             frame.Margin = new Thickness(0);
             content.Children.Add(frame);
             cancel.Click += (_, _) => SetPage("stations");
-            // At the end of the list, then it plays (a station that got onto the list meanwhile just plays).
-            addAndPlay.Click += (_, _) =>
+            // At the end of the list. Checked, it plays, as the station does if it got onto the list meanwhile; unchecked,
+            // playback stays as it is and the list shows the station.
+            addShared.Click += (_, _) =>
             {
+                bool play = autoplay.IsChecked == true;
+                if (playShared != play)
+                {
+                    playShared = play;
+                    SavePreferences();
+                }
                 int index = Stations.FindIndex(item => Storage.SameStream(item.Url, shared.Url));
-                if (index < 0)
+                bool known = index >= 0;
+                if (!known)
                 {
                     var added = new SavedStation { Name = shared.Name, Url = shared.Url, Logo = shared.Logo };
                     if (!ApplyStations(Stations.Concat(new[] { added }).ToList())) return;
                     index = Stations.IndexOf(added);
                 }
-                SelectStation(index);
-                if (session == null) StartPlayback();
-                SetPage("stations");
-                list.SelectedIndex = station;
+                if (play)
+                {
+                    SelectStation(index);
+                    if (session == null) StartPlayback();
+                    SetPage("stations");
+                    list.SelectedIndex = station;
+                    return;
+                }
+                if (station < 0) SelectStation(index);   // like a station added from the search: the current one, not playing
+                ShowOnList(Stations[index], known);
             };
+            sharedAdd = addShared;
+        }
+
+        // The stations page with this station brought into view (a shared link's, just added or already on the list), and
+        // "Already on your list" when it was there before. The current station and playback stay as they are.
+        void ShowOnList(SavedStation item, bool known)
+        {
+            SetPage("stations");
+            list.SelectedIndex = station;
+            revealed = item;
+            ShowActiveStationAfterLayout(true);
+            if (known) ShowToast(L("Already on your list"), true);
         }
 
         // Statistics page (Settings › Statistics › Show): the period switch, then that period's numbers. The counting is
@@ -1143,6 +1277,7 @@ internal sealed partial class Radio
         {
             statistics.Tick(DateTime.UtcNow);   // the station playing now counts up to now
             StatisticsSummary summary = statistics.Summarize(period, DateTime.UtcNow, TimeZoneInfo.Local);
+            statisticsPeriod = period;
             CultureInfo culture = Culture;
             var content = new StackPanel { Margin = new Thickness(Gutter) };
 
@@ -1324,38 +1459,6 @@ internal sealed partial class Radio
             content.Children.Add(Box(Spaced(Orientation.Vertical, 6,
                 Note(L("Most often {0}", Hour(summary.BusiestHour) + "–" + Hour(summary.BusiestHour + 1))), axis, marks),
                 new Thickness(16, 14, 16, 10), 0));
-
-            // Clear statistics, after a question (the history stays).
-            var clear = SmallButton("LinkButton", L("Clear statistics"));
-            clear.HorizontalAlignment = HorizontalAlignment.Left;
-            clear.Margin = new Thickness(-4, 10, 0, 0);
-            var confirmClear = RowButton(L("Clear statistics"));
-            confirmClear.SetResourceReference(Control.ForegroundProperty, "Danger");
-            var keep = RowButton(L("Cancel"));
-            keep.Margin = new Thickness(8, 0, 0, 0);
-            TextBlock question = Note(L("Clear all statistics? This can't be undone."));
-            question.Margin = new Thickness(0, 0, 0, 8);
-            var confirmation = new StackPanel { Margin = new Thickness(2, Gutter, 0, 0), Visibility = Visibility.Collapsed };
-            confirmation.Children.Add(question);
-            confirmation.Children.Add(Columns((confirmClear, Auto), (keep, Auto), (new Border(), Star)));
-            clear.Click += (_, _) =>
-            {
-                clear.Visibility = Visibility.Collapsed;
-                confirmation.Visibility = Visibility.Visible;
-                confirmation.BringIntoView();
-            };
-            keep.Click += (_, _) =>
-            {
-                confirmation.Visibility = Visibility.Collapsed;
-                clear.Visibility = Visibility.Visible;
-            };
-            confirmClear.Click += (_, _) =>
-            {
-                ClearStatistics();
-                FillStatistics(period);
-            };
-            content.Children.Add(clear);
-            content.Children.Add(confirmation);
         }
 
         // Settings page, laid out like the Windows 11 Settings app (and like the Linux and Mac apps): General, Stations,
@@ -1686,12 +1789,17 @@ internal sealed partial class Radio
         footer.Child = Spaced(Orientation.Vertical, 10, trackCard, volumeRow, sleepRow, play);
 
         var middle = new Grid();
-        foreach (FrameworkElement part in new FrameworkElement[] { list, searchPane, fields, settingsPane, historyPane, statisticsPane, sharedPane, linkCopied })
+        foreach (FrameworkElement part in new FrameworkElement[] { list, searchPane, fields, settingsPane, historyPane, statisticsPane, sharedPane, toast })
             middle.Children.Add(part);
         // A shared station's link while the panel is open (or right after it opened): this page, or the stations page.
         showInPanel = (target, shared) =>
         {
             shownShared = shared;
+            if (target == "known")   // on the list already, and not to be played: only shown there
+            {
+                ShowOnList(Stations.FirstOrDefault(item => Storage.SameStream(item.Url, shared.Url)), true);
+                return;
+            }
             SetPage(target);
             if (target == "stations")
             {
@@ -1723,6 +1831,7 @@ internal sealed partial class Radio
         var root = new Grid { Margin = new Thickness(ShadowMargin) };
         root.Children.Add(shadow);
         root.Children.Add(frame);
+        root.Children.Add(dialogLayer);
         root.Children.Add(noticeLayer);
         panel.Content = root;
         FillList();
@@ -1737,6 +1846,21 @@ internal sealed partial class Radio
 
         panel.KeyDown += (_, e) =>
         {
+            // A question open: Esc, and Enter on no other button, answer it with Cancel; nothing else happens behind it.
+            if (cancelDialog != null)
+            {
+                if (e.Key != Key.Escape && e.Key != Key.Enter) return;
+                cancelDialog();
+                e.Handled = true;
+                return;
+            }
+            // On the Shared station page, Enter is Add (also with the keyboard on "Play automatically").
+            if (e.Key == Key.Enter && page == "shared" && sharedAdd != null)
+            {
+                sharedAdd.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                e.Handled = true;
+                return;
+            }
             if (e.Key != Key.Escape) return;
             if (page != "stations") GoBack();
             else panel.Close();
@@ -1769,6 +1893,7 @@ internal sealed partial class Radio
                 // The station changed (media keys, tray menu, taskbar players…): bring it into view, but leave
                 // the list alone otherwise, so scrolling through it by hand isn't undone.
                 shownStation = station;
+                revealed = null;
                 ShowActiveStation(false);
             }
             string playText = session == null ? L("Play") : L("Stop");
@@ -1997,16 +2122,20 @@ internal sealed partial class Radio
         }
     }
 
-    // Self-test of shared stations' links (--test-menu): a link opens the Shared station page, Cancel changes nothing,
-    // Add and play adds the station at the end and plays it, a known station just plays, a link without a station says
-    // so, a link pasted into + Station's box opens its page, a second start hands its link over, and Share copies the
-    // link and shows "Link copied". Nothing is saved; the stream never answers, so playing it stops at once.
+    // Self-test of shared stations' links (--test-menu): a link opens the Shared station page, Cancel changes nothing
+    // (also not "Play automatically"), Add with the box checked (as it is the first time) adds the station at the end and
+    // plays it, Add unchecked adds it and leaves playback alone with the new station in view, and the box then stays as
+    // last chosen with Add; Enter is Add. A known station just plays with the saved choice checked, and is only shown
+    // ("Already on your list") with it unchecked. A link without a station says so, a link pasted into + Station's box
+    // opens its page, a second start hands its link over, and Share copies the link and shows "Link copied". Nothing is
+    // saved; the stream never answers, so playing it stops at once.
     // With --preview: the Shared station page (shared, shared-invalid), the ⋯ menu (share-menu) and the card (link-copied).
     private async Task VerifyShare(bool preview)
     {
         playerPanel?.Close();
         if (Stations.Count == 0) Stations.Add(new SavedStation { Name = "Stacja testowa", Url = "https://example.com/radio" });
         int count = Stations.Count;
+        bool savedChoice = playShared;
         const string url = "https://example.invalid/shared-test";
         string link = ShareLink.Web("Antyradio Hard", url, ShotStations[2].Logo);
         void Fail(string what) => throw new InvalidOperationException("Udostępnianie stacji: " + what);
@@ -2022,38 +2151,105 @@ internal sealed partial class Radio
                 (button.Content as string == text || Descendants(button).OfType<TextBlock>().Any(block => block.Text == text)))
                 ?? throw new InvalidOperationException("Udostępnianie stacji: brak przycisku " + text);
         }
+        CheckBox Autoplay()
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<CheckBox>().FirstOrDefault(box => box.IsVisible && box.Content as string == L("Play automatically"))
+                ?? throw new InvalidOperationException("Udostępnianie stacji: brak pola " + L("Play automatically"));
+        }
         void Click(Button button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         Grid RowOf(int index) => Descendants(playerPanel).OfType<ListBox>().First(box => box.IsVisible).Items.OfType<Grid>().ElementAt(index);
+        // The station list shows this row whole.
+        bool InView(int index)
+        {
+            playerPanel.UpdateLayout();
+            ListBox stationList = Descendants(playerPanel).OfType<ListBox>().First(box => box.IsVisible);
+            var row = (FrameworkElement)stationList.ItemContainerGenerator.ContainerFromIndex(index);
+            ScrollViewer viewer = Descendants(stationList).OfType<ScrollViewer>().First();
+            double top = row?.TranslatePoint(new Point(0, 0), viewer).Y ?? -1;
+            return row != null && top >= 0 && top + row.ActualHeight <= viewer.ActualHeight + 0.5;
+        }
+        // The list scrolls once it is laid out, which can take a while with many logos coming in.
+        async Task<bool> ComesIntoView(int index)
+        {
+            for (int wait = 0; wait < 30 && !InView(index); wait++) await Task.Delay(100);
+            return InView(index);
+        }
         try
         {
             StopPlayback();
-            // The page, and Cancel.
+            // A preferences file from before 2.8.0 has no choice yet: the box starts checked. The choice is saved with the rest.
+            var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+            if (serializer.Deserialize<Preferences>("{\"Volume\":30}").PlaySharedStations != null ||
+                serializer.Deserialize<Preferences>(serializer.Serialize(new Preferences { PlaySharedStations = false })).PlaySharedStations != false)
+                Fail("wybór Odtwarzaj automatycznie nie zapisuje się w preferencjach.");
+            playShared = true;   // as on a first start
+            // The page, and Cancel (which keeps the saved choice even after the box was changed).
             OpenShared(link);
-            if (!Shows(L("Shared station")) || !Shows("Antyradio Hard") || !Shows(L("Add it to your stations and play it now?")) || session != null)
+            if (!Shows(L("Shared station")) || !Shows("Antyradio Hard") || !Shows(L("Add it to your stations?")) || session != null)
                 Fail("nie widać strony udostępnionej stacji.");
+            if (Autoplay().IsChecked != true) Fail("pole Odtwarzaj automatycznie nie jest za pierwszym razem zaznaczone.");
             if (preview)
             {
                 await Task.Delay(1500);   // the logo comes over the network
                 await SavePreview(playerPanel, "shared");
             }
+            Autoplay().IsChecked = false;
             Click(ButtonWith(L("Cancel")));
-            if (Stations.Count != count || session != null || !Shows(L("History"))) Fail("Anuluj coś zmieniło albo nie wrócił do stacji.");
-            // Add and play: at the end of the list, and it plays.
+            if (Stations.Count != count || session != null || !Shows(L("History")) || !playShared) Fail("Anuluj coś zmieniło albo nie wrócił do stacji.");
+            // Add, checked: at the end of the list, and it plays.
             OpenShared(link);
-            Click(ButtonWith(L("Add and play")));
+            if (Autoplay().IsChecked != true) Fail("Anuluj zapamiętało odznaczone pole.");
+            Click(ButtonWith(L("Add")));
             bool added = Stations.Count == count + 1 && Stations[count].Url == url && Stations[count].Name == "Antyradio Hard" &&
-                Stations[count].Logo == ShotStations[2].Logo && station == count && session != null && Shows(L("History"));
+                Stations[count].Logo == ShotStations[2].Logo && station == count && session != null && Shows(L("History")) && playShared;
             StopPlayback();
-            if (!added) Fail("Dodaj i odtwórz nie dodało stacji na końcu albo jej nie włączyło.");
+            if (!added) Fail("Dodaj z zaznaczonym polem nie dodało stacji na końcu albo jej nie włączyło.");
             // The same stream again (another name, the radio's own link, a trailing /): already on the list, so it just plays.
             SelectStation(0);
             OpenShared(ShareLink.App("Inna nazwa", url + "/", null));
             bool known = Stations.Count == count + 1 && station == count && session != null && !Shows(L("Shared station"));
             StopPlayback();
             if (!known) Fail("znana stacja nie zagrała od razu.");
+            // A long list (in memory only), so that showing a station far down means scrolling to it.
+            playerPanel?.Close();
+            for (int n = 1; n <= 30; n++) Stations.Add(new SavedStation { Name = "Wypełniacz " + n, Url = "https://example.invalid/filler/" + n });
+            SelectStation(0);
+            // Add, unchecked, with nothing playing: added at the end and shown, nothing starts, and the choice is kept.
+            const string quiet = "https://example.invalid/shared-quiet";
+            OpenShared(ShareLink.Web("Cicha stacja", quiet, null));
+            Autoplay().IsChecked = false;
+            Click(ButtonWith(L("Add")));
+            int quietAt = Stations.Count - 1;
+            bool quietly = Stations[quietAt].Url == quiet && station == 0 && session == null && Shows(L("History")) && !playShared;
+            if (!quietly || !await ComesIntoView(quietAt)) Fail("Dodaj bez zaznaczenia coś włączyło albo nie pokazało nowej stacji.");
+            // Add, unchecked (as last chosen), while a station plays (as far as the radio can tell): it keeps playing.
+            // Enter in the box is Add.
+            var playingNow = new CancellationTokenSource();
+            session = playingNow;
+            const string another = "https://example.invalid/shared-another";
+            OpenShared(ShareLink.Web("Inna stacja", another, null));
+            CheckBox remembered = Autoplay();
+            if (remembered.IsChecked != false) Fail("pole nie pamięta ostatniego wyboru.");
+            remembered.Focus();
+            remembered.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(remembered), Environment.TickCount, Key.Enter)
+                { RoutedEvent = Keyboard.KeyDownEvent });
+            bool kept = Stations.Last().Url == another && station == 0 && session == playingNow && Shows(L("History"));
+            if (!kept) Fail("Dodaj bez zaznaczenia (Enter) przerwało to, co gra, albo nie dodało stacji.");
+            // A known station with the saved choice unchecked: shown on the list with "Already on your list"; playback stays.
+            playerPanel.Close();
+            OpenPlayer();
+            await Task.Delay(500);
+            if (InView(quietAt)) Fail("lista jest za krótka, żeby sprawdzić przewijanie.");
+            OpenShared(ShareLink.App("Cicha jeszcze raz", quiet, null));
+            bool shown = station == 0 && session == playingNow && Stations.Count(item => item.Url == quiet) == 1 &&
+                !Shows(L("Shared station")) && Shows(L("Already on your list"));
+            if (!shown || !await ComesIntoView(quietAt)) Fail("znana stacja przy odznaczonym polu nie pokazała się na liście albo coś zmieniła w odtwarzaniu.");
+            StopPlayback();
+            playShared = true;
             // A link without a station.
             OpenShared(ShareLink.Page + "#n=Bez+adresu");
-            if (!Shows(L("This link doesn't contain a station.")) || Shows(L("Add and play"))) Fail("brak komunikatu o złym linku.");
+            if (!Shows(L("This link doesn't contain a station.")) || Shows(L("Add"))) Fail("brak komunikatu o złym linku.");
             if (preview) await SavePreview(playerPanel, "shared-invalid");
             // Pasted into the search box of + Station (when the clipboard is free).
             Click(Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back")));
@@ -2111,6 +2307,96 @@ internal sealed partial class Radio
             playerPanel?.Close();
             Stations.RemoveRange(count, Stations.Count - count);   // only in memory: the self-test saves nothing
             station = Math.Min(station, Stations.Count - 1);
+            playShared = savedChoice;
+        }
+    }
+
+    // Self-test of clearing the statistics (--test-menu): no link at the bottom of the page any more; the page's ⋯ has one
+    // item, "Clear statistics…", which asks in a dialog over the panel: the title, the text and the line after it, and
+    // [Clear] [Cancel], the keyboard on Cancel. Enter, Esc and Cancel change nothing and give the keyboard back to ⋯;
+    // Clear deletes the statistics and the song history stays. With --preview: statistics-menu and statistics-clear.
+    private async Task VerifyClearStatistics(bool preview)
+    {
+        void Fail(string what) => throw new InvalidOperationException("Czyszczenie statystyk: " + what);
+        void Click(UIElement element) => element.RaiseEvent(new RoutedEventArgs(element is MenuItem ? MenuItem.ClickEvent : ButtonBase.ClickEvent));
+        void Press(UIElement element, Key key) => element.RaiseEvent(
+            new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(element), Environment.TickCount, key) { RoutedEvent = Keyboard.KeyDownEvent });
+        bool Shows(string text)
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<TextBlock>().Any(block => block.IsVisible && block.Text == text);
+        }
+        Button ButtonWith(string text)
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<Button>().FirstOrDefault(button => button.IsVisible && button.Content as string == text)
+                ?? throw new InvalidOperationException("Czyszczenie statystyk: brak przycisku " + text);
+        }
+        FrameworkElement Dialog()
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<FrameworkElement>().FirstOrDefault(element => element.IsVisible && element.Tag as string == "dialog");
+        }
+        bool Collected() => !statistics.Summarize(StatisticsPeriod.All, DateTime.UtcNow, TimeZoneInfo.Local).Empty;
+        // Without the activation (a test started in the background) the keyboard can't be anywhere in the panel.
+        bool FocusedOn(IInputElement element) => !playerPanel.IsActive || Keyboard.FocusedElement == element;
+
+        playerPanel?.Close();
+        if (Stations.Count == 0) Stations.Add(new SavedStation { Name = "Stacja testowa", Url = "https://example.com/radio" });
+        FillSampleStatistics();   // in memory only
+        AddToHistory("Historia - Zostaje");
+        int songs = history.Count;
+        try
+        {
+            OpenPlayer("statistics");
+            await Task.Delay(500);
+            var page = (StackPanel)Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel).Content;
+            if (!Collected() || page.Children.OfType<Button>().Any()) Fail("pod statystykami nadal jest przycisk albo brak danych do testu.");
+            Button more = Descendants(playerPanel).OfType<Button>().FirstOrDefault(button => button.IsVisible && button.ToolTip as string == L("More"))
+                ?? throw new InvalidOperationException("Czyszczenie statystyk: brak ⋯ na pasku.");
+            if (AutomationProperties.GetName(more) != L("More")) Fail("⋯ nie ma nazwy dla czytników ekranu.");
+            var menu = (ContextMenu)more.Tag;
+            Click(more);
+            await Task.Delay(300);
+            if (!menu.IsOpen || menu.Items.Count != 1 || !(menu.Items[0] is MenuItem item) || item.Header as string != L("Clear statistics…"))
+                throw new InvalidOperationException("Czyszczenie statystyk: menu ⋯ ma mieć jedną pozycję " + L("Clear statistics…"));
+            if (preview) await SaveWithMenu(playerPanel, menu, "statistics-menu");
+            menu.IsOpen = false;
+            async Task Ask()
+            {
+                Click(item);
+                await Task.Delay(300);   // the keyboard goes into the dialog once it is laid out
+                if (Dialog() == null || !Shows(L("Clear statistics?")) ||
+                    !Shows(L("Your listening statistics will be permanently deleted. Your song history will remain.")) || !Shows(L("This can't be undone.")))
+                    Fail("pytanie nie pokazało się albo ma złe teksty.");
+            }
+            await Ask();
+            Button cancel = ButtonWith(L("Cancel")), clear = ButtonWith(L("Clear"));
+            if (!FocusedOn(cancel)) Fail("klawiatura nie jest na Anuluj.");
+            if (clear.TranslatePoint(new Point(), cancel).X >= 0 || cancel.Background != app.Resources["Accent"] || clear.Foreground != app.Resources["Danger"])
+                Fail("przyciski nie są w kolejności [Wyczyść] [Anuluj] albo mają zły wygląd.");
+            if (preview) await SavePreview(playerPanel, "statistics-clear");
+            // Enter (with the keyboard on no button), Esc and Cancel: nothing is deleted, the page stays, the keyboard is on ⋯.
+            foreach (Action answer in new Action[] { () => Press(Dialog(), Key.Enter), () => Press(Dialog(), Key.Escape), () => Click(ButtonWith(L("Cancel"))) })
+            {
+                if (Dialog() == null) await Ask();
+                answer();
+                await Task.Delay(200);
+                if (Dialog() != null || !Collected() || !Shows(L("Statistics")) || !FocusedOn(more))
+                    Fail("Enter, Esc albo Anuluj nie zamknęły pytania bez zmian albo nie oddały klawiatury.");
+            }
+            // Clear: the statistics are gone, the song history stays.
+            await Ask();
+            Click(ButtonWith(L("Clear")));
+            await Task.Delay(200);
+            if (Dialog() != null || Collected() || statistics.Songs.Count > 0 || history.Count != songs ||
+                !Shows(L("Nothing here yet. Listen for a while and come back.")))
+                Fail("Wyczyść nie usunęło statystyk albo usunęło historię.");
+        }
+        finally
+        {
+            playerPanel?.Close();
+            statistics.Clear(DateTime.UtcNow);   // only in memory
         }
     }
 

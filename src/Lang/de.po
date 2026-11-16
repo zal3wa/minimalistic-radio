@@ -474,11 +474,20 @@ msgstr "Nach Tageszeit"
 msgid "Most often {0}"
 msgstr "Am häufigsten {0}"
 
-msgid "Clear statistics"
-msgstr "Statistik löschen"
+msgid "Clear statistics…"
+msgstr "Statistiken löschen…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Die ganze Statistik löschen? Das lässt sich nicht rückgängig machen."
+msgid "Clear statistics?"
+msgstr "Statistiken löschen?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Deine Hörstatistiken werden dauerhaft gelöscht. Dein Titelverlauf bleibt erhalten."
+
+msgid "This can't be undone."
+msgstr "Das lässt sich nicht rückgängig machen."
+
+msgid "Clear"
+msgstr "Löschen"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Noch nichts da. Nach einer Weile Radiohören gibt es hier mehr zu sehen."
@@ -507,11 +516,14 @@ msgstr "Link kopiert"
 msgid "Shared station"
 msgstr "Geteilter Sender"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Zu den Sendern hinzufügen und gleich abspielen?"
+msgid "Add it to your stations?"
+msgstr "Zu deinen Sendern hinzufügen?"
 
-msgid "Add and play"
-msgstr "Hinzufügen und abspielen"
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "Play automatically"
+msgstr "Automatisch abspielen"
 
 msgid "This link doesn't contain a station."
 msgstr "Dieser Link enthält keinen Sender."

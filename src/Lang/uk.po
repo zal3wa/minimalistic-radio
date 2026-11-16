@@ -470,11 +470,20 @@ msgstr "Коли ви слухаєте"
 msgid "Most often {0}"
 msgstr "Найчастіше {0}"
 
-msgid "Clear statistics"
-msgstr "Очистити статистику"
+msgid "Clear statistics…"
+msgstr "Очистити статистику…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Очистити всю статистику? Цю дію не можна скасувати."
+msgid "Clear statistics?"
+msgstr "Очистити статистику?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Вашу статистику прослуховування буде остаточно видалено. Історія композицій залишиться без змін."
+
+msgid "This can't be undone."
+msgstr "Цю дію неможливо скасувати."
+
+msgid "Clear"
+msgstr "Очистити"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Тут поки нічого немає. Послухайте радіо трохи й поверніться."
@@ -503,11 +512,14 @@ msgstr "Посилання скопійовано"
 msgid "Shared station"
 msgstr "Станція, якою поділилися"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Додати її до ваших станцій і ввімкнути зараз?"
+msgid "Add it to your stations?"
+msgstr "Додати її до ваших станцій?"
 
-msgid "Add and play"
-msgstr "Додати й увімкнути"
+msgid "Add"
+msgstr "Додати"
+
+msgid "Play automatically"
+msgstr "Відтворювати автоматично"
 
 msgid "This link doesn't contain a station."
 msgstr "Це посилання не містить станції."

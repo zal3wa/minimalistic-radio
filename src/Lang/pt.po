@@ -470,11 +470,20 @@ msgstr "Quando ouve"
 msgid "Most often {0}"
 msgstr "Mais frequente: {0}"
 
-msgid "Clear statistics"
-msgstr "Limpar estatísticas"
+msgid "Clear statistics…"
+msgstr "Limpar as estatísticas…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Limpar todas as estatísticas? Não é possível anular."
+msgid "Clear statistics?"
+msgstr "Limpar as estatísticas?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "As suas estatísticas de audição serão eliminadas permanentemente. O histórico de músicas será mantido."
+
+msgid "This can't be undone."
+msgstr "Esta ação não pode ser anulada."
+
+msgid "Clear"
+msgstr "Limpar"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Ainda não há nada aqui. Ouça durante algum tempo e volte depois."
@@ -503,11 +512,14 @@ msgstr "Ligação copiada"
 msgid "Shared station"
 msgstr "Estação partilhada"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Adicioná-la às suas estações e ouvi-la agora?"
+msgid "Add it to your stations?"
+msgstr "Adicioná-la às suas estações?"
 
-msgid "Add and play"
-msgstr "Adicionar e ouvir"
+msgid "Add"
+msgstr "Adicionar"
+
+msgid "Play automatically"
+msgstr "Reproduzir automaticamente"
 
 msgid "This link doesn't contain a station."
 msgstr "Esta ligação não contém nenhuma estação."

@@ -471,11 +471,20 @@ msgstr "Kdy posloucháte"
 msgid "Most often {0}"
 msgstr "Nejčastěji {0}"
 
-msgid "Clear statistics"
-msgstr "Vymazat statistiky"
+msgid "Clear statistics…"
+msgstr "Smazat statistiky…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Vymazat všechny statistiky? Tuto akci nelze vrátit."
+msgid "Clear statistics?"
+msgstr "Smazat statistiky?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Vaše statistiky poslechu budou trvale smazány. Historie skladeb zůstane zachována."
+
+msgid "This can't be undone."
+msgstr "Tuto akci nelze vrátit zpět."
+
+msgid "Clear"
+msgstr "Smazat"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
@@ -504,11 +513,14 @@ msgstr "Odkaz zkopírován"
 msgid "Shared station"
 msgstr "Sdílená stanice"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Přidat ji k vašim stanicím a hned ji pustit?"
+msgid "Add it to your stations?"
+msgstr "Přidat ji mezi vaše stanice?"
 
-msgid "Add and play"
-msgstr "Přidat a přehrát"
+msgid "Add"
+msgstr "Přidat"
+
+msgid "Play automatically"
+msgstr "Přehrávat automaticky"
 
 msgid "This link doesn't contain a station."
 msgstr "Tento odkaz neobsahuje žádnou stanici."
