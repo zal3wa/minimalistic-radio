@@ -8,8 +8,8 @@ import RadioCore
 @MainActor
 final class LogoCache {
     static let logoLimit = 2_000_000      // bytes downloaded at most
-    static let logoPixels = 144           // decoded at most this big: shown up to 72 pt (a shared station), sharp at 2×
-    static let coverPixels = 600          // covers too: iTunes's are 600 × 600, Control Center shows them largest
+    nonisolated static let logoPixels = 144   // decoded at most this big: shown up to 72 pt (a shared station), sharp at 2×
+    nonisolated static let coverPixels = 600  // covers too: iTunes's are 600 × 600, Control Center shows them largest
     static let retrySeconds: TimeInterval = 300
     static let maxDownloads = 4
 

@@ -60,8 +60,7 @@ struct NowPlayingCard: View {
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.06)))
         .task(id: controller.coverPath) {
-            let file = controller.coverPath
-            cover = await Task.detached(priority: .utility) { LogoCache.cover(file) }.value
+            cover = LogoCache.cover(controller.coverPath)
         }
     }
 
