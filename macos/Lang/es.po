@@ -242,11 +242,14 @@ msgstr "Emisoras añadidas: {0}."
 msgid "Checking…"
 msgstr "Comprobando…"
 
-msgid "Add it to your stations and play it now?"
-msgstr "¿Añadirla a tus emisoras y ponerla ahora?"
+msgid "Add it to your stations?"
+msgstr "¿Añadirla a tus emisoras?"
 
-msgid "Add and play"
-msgstr "Añadir y reproducir"
+msgid "Add"
+msgstr "Añadir"
+
+msgid "Play automatically"
+msgstr "Reproducir automáticamente"
 
 msgid "Cancel"
 msgstr "Cancelar"

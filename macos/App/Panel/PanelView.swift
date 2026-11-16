@@ -30,11 +30,13 @@ struct PanelView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottom) {
-                if model.linkCopied && model.page == .stations {
-                    LinkCopiedPill().padding(.bottom, 12).transition(.opacity)
+                if let pill = model.pill, model.page == .stations {
+                    MessagePill(text: pill == .linkCopied ? L("Link copied") : L("Already on your list"))
+                        .padding(.bottom, 12)
+                        .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: model.linkCopied)
+            .animation(.easeInOut(duration: 0.2), value: model.pill)
             if model.page == .stations {
                 PanelDivider()
                 FooterView(model: model)
@@ -174,15 +176,18 @@ struct HeaderView: View {
     }
 }
 
-/// "Link copied" after ⋯ › Share: a pill in the menus' colours over the bottom of the list, just above the player.
-struct LinkCopiedPill: View {
+/// "Link copied" after ⋯ › Share, or "Already on your list" after a link to a station on it: a pill in the menus'
+/// colours over the bottom of the list, just above the player.
+struct MessagePill: View {
+    let text: String
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(.white, .green)
                 .font(.system(size: 18))
-            Text(L("Link copied"))
+            Text(text)
         }
         .padding(.leading, 10)
         .padding(.trailing, 16)

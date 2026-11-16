@@ -242,11 +242,14 @@ msgstr "Додано станцій: {0}."
 msgid "Checking…"
 msgstr "Перевірка…"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Додати її до ваших станцій і ввімкнути зараз?"
+msgid "Add it to your stations?"
+msgstr "Додати її до ваших станцій?"
 
-msgid "Add and play"
-msgstr "Додати й увімкнути"
+msgid "Add"
+msgstr "Додати"
+
+msgid "Play automatically"
+msgstr "Відтворювати автоматично"
 
 msgid "Cancel"
 msgstr "Скасувати"

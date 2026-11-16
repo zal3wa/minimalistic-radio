@@ -202,7 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
-        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min", "Share", "Add and play"]
+        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min", "Share",
+                     "Add it to your stations?", "Add", "Play automatically"]
             where L(text) == text {
             failures.append("\"\(text)\" isn't translated into Polish")
         }
@@ -308,9 +309,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Share a station, through the app's own doors: a minimalistic-radio:// link opened into the running radio
-    /// (the Shared station page; Cancel changes nothing; Add and play adds and plays; a station already on the list
-    /// just plays; a link without a station says so), a web link pasted into + Station's field, and Share copying
-    /// the link with "Link copied". Starts with the self-test's two stations, nothing playing.
+    /// (the Shared station page; Cancel changes nothing; Add with Play automatically unchecked only adds, and the
+    /// list shows it; a station already on the list is then only shown, with "Already on your list"; Add checked
+    /// adds and plays, and a station already on the list then just plays; a link without a station says so), a web
+    /// link pasted into + Station's field, and Share copying the link with "Link copied". Starts with the
+    /// self-test's two stations, nothing playing.
     private func checkSharing() -> [String] {
         var failures: [String] = []
         let model = panel.model
@@ -325,22 +328,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         open(shareAppLink(hard))
         if model.page != .shared(shared) || !panel.isVisible { failures.append("a share link doesn't open the Shared station page") }
         model.back()
-        if model.page != .stations || controller.stations.count != count || controller.active {
+        if model.page != .stations || controller.stations.count != count || controller.active
+            || !controller.prefs.playSharedStations {
             failures.append("Cancel on a shared station changed something")
         }
 
         open(shareAppLink(hard))
-        if case .shared(let station?) = model.page { model.addShared(station) }
-        if controller.stations.count != count + 1 || controller.stations.last?.url != hard.url
-            || controller.current != count || !controller.active || model.page != .stations {
-            failures.append("Add and play didn't add and play the shared station")
+        if case .shared(let station?) = model.page { model.addShared(station, play: false) }
+        if controller.stations.count != count + 1 || controller.stations.last?.url != hard.url || controller.active
+            || model.page != .stations || model.scrollTarget != hard.url || controller.prefs.playSharedStations
+            || loadPreferences(controller.paths.preferencesFile).playSharedStations {
+            failures.append("Add without Play automatically didn't only add the shared station and save the choice")
+        }
+
+        let known = controller.stations[1]
+        let knownLink = shareAppLink(Station(name: "Another name",
+                                             url: known.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/"))
+        open(knownLink)
+        if model.page != .stations || controller.active || model.pill != .alreadyOnTheList || model.scrollTarget != known.url
+            || controller.stations.count != count + 1 {
+            failures.append("a shared station already on the list isn't only shown with \"Already on your list\" (unchecked)")
+        }
+
+        let classic = Station(name: "RMF Classic", url: "http://31.192.216.8/RMFCLASSIC48")
+        open(shareAppLink(classic))
+        if case .shared(let station?) = model.page { model.addShared(station, play: true) }
+        if controller.stations.count != count + 2 || controller.stations.last?.url != classic.url
+            || controller.current != count + 1 || !controller.active || model.page != .stations
+            || !controller.prefs.playSharedStations {
+            failures.append("Add with Play automatically didn't add and play the shared station")
         }
         controller.stop()
 
-        let known = controller.stations[1]
-        open(shareAppLink(Station(name: "Another name", url: known.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/")))
-        if model.page != .stations || controller.current != 1 || !controller.active || controller.stations.count != count + 1 {
-            failures.append("a shared station already on the list doesn't just play")
+        open(knownLink)
+        if model.page != .stations || controller.current != 1 || !controller.active || controller.stations.count != count + 2 {
+            failures.append("a shared station already on the list doesn't just play (checked)")
         }
         controller.stop()
 

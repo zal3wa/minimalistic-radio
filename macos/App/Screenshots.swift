@@ -90,21 +90,22 @@ extension AppDelegate {
         var toEnd = false
         var update = false
         var statisticsOff = false
-        var linkCopied = false
+        var pill: PanelModel.Pill?
     }
 
     /// The station of the Shared station picture, as in the approved pictures.
     static let shotShared = SharedStation(name: shotStations[2].name, url: shotStations[2].url, logo: shotStations[2].logo)
 
     /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update,
-    /// Statistics switched off, "Link copied" and a Shared station.
+    /// Statistics switched off, "Link copied", "Already on your list" and a Shared station.
     private static let shots = [
         Shot(page: .stations, name: "stations"), Shot(page: .search, name: "search"), Shot(page: .history, name: "history"),
         Shot(page: .settings, name: "settings"), Shot(page: .settings, name: "settings-end", toEnd: true),
         Shot(page: .statistics, name: "statistics"), Shot(page: .statistics, name: "statistics-end", toEnd: true),
         Shot(page: .stations, name: "stations-update", update: true),
         Shot(page: .statistics, name: "statistics-off", statisticsOff: true),
-        Shot(page: .stations, name: "stations-copied", linkCopied: true),
+        Shot(page: .stations, name: "stations-copied", pill: .linkCopied),
+        Shot(page: .stations, name: "stations-already", pill: .alreadyOnTheList),
         Shot(page: .shared(shotShared), name: "shared"),
     ]
 
@@ -124,7 +125,7 @@ extension AppDelegate {
                 }
                 model.sampleUpdate = shot.update ? L("Update") : nil
                 controller.setCollectStatistics(!shot.statisticsOff)   // temporary files: nothing of the user's
-                if shot.linkCopied { model.showLinkCopied(for: nil) } else { model.hideLinkCopied() }
+                if let pill = shot.pill { model.showPill(pill, for: nil) } else { model.hidePill() }
                 model.refresh()
                 panel.show(page: page, anchor: nil)
                 await wait(seconds: 20) {
@@ -155,7 +156,7 @@ extension AppDelegate {
                     written += 1
                 }
             }
-            model.hideLinkCopied()
+            model.hidePill()
             if await takeShareMenuPicture(output.appendingPathComponent("macos-share-menu-\(look).png"), dark: look == "dark") {
                 menus += 1
             }
@@ -186,7 +187,7 @@ extension AppDelegate {
             model.refresh()
             try? await Task.sleep(nanoseconds: 900_000_000)
         }
-        model.hideLinkCopied()
+        model.hidePill()
         model.sampleUpdate = nil
         controller.setCollectStatistics(true)
 

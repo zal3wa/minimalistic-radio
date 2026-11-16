@@ -51,6 +51,31 @@ public enum AddResult: Sendable {
     case added, duplicate, invalid
 }
 
+/// A share link to a station, opened (`RadioController.openShared`).
+public enum SharedLinkResult: Equatable, Sendable {
+    /// On the list at this index, and the saved choice is to play: playing now.
+    case playing(Int)
+    /// On the list at this index, and the saved choice isn't to play: nothing changed ("Already on your list").
+    case onTheList(Int)
+    /// Not on the list: the Shared station page asks.
+    case ask
+}
+
+/// Shared station › Add (`RadioController.addShared`): the station's index on the list.
+public enum SharedAddResult: Equatable, Sendable {
+    case added(Int)
+    /// The list already had the stream under a slightly different address: nothing was added.
+    case alreadyOnTheList(Int)
+    case invalid
+
+    public var index: Int? {
+        switch self {
+        case .added(let index), .alreadyOnTheList(let index): return index
+        case .invalid: return nil
+        }
+    }
+}
+
 public struct ImportResult: Equatable, Sendable {
     public let added: Int
     public let error: String?
@@ -751,31 +776,43 @@ public final class RadioController {
 
     // MARK: - Shared stations
 
-    /// A share link for a station already on the list (the link's matching): plays it, true. Otherwise false, and
-    /// the panel asks first.
-    public func playIfKnown(_ shared: SharedStation) -> Bool {
-        guard let index = stations.firstIndex(where: { sameStationAddress($0.url, shared.url) }) else { return false }
+    /// A share link opened. A station already on the list (the link's matching) follows the choice saved with the
+    /// last Add: it plays at once (`.playing`), or nothing changes and the panel shows it on the list
+    /// (`.onTheList`). Any other station is for the Shared station page to ask about (`.ask`).
+    public func openShared(_ shared: SharedStation) -> SharedLinkResult {
+        guard let index = stations.firstIndex(where: { sameStationAddress($0.url, shared.url) }) else { return .ask }
+        guard prefs.playSharedStations else { return .onTheList(index) }
         select(index)
         play()
-        return true
+        return .playing(index)
     }
 
-    /// Shared station › Add and play: the station at the end of the list, playing. If the list already has the
-    /// stream under a slightly different address (http instead of https), that one plays.
+    /// Shared station › Add: the station at the end of the list, and `play` ("Play automatically") saved for the
+    /// next time. Checked, it plays; unchecked, playback stays as it was. If the list already has the stream under
+    /// a slightly different address (http instead of https), nothing is added and that one is the station.
     @discardableResult
-    public func addAndPlay(_ shared: SharedStation) -> Bool {
+    public func addShared(_ shared: SharedStation, play: Bool) -> SharedAddResult {
+        if prefs.playSharedStations != play {
+            prefs.playSharedStations = play
+            savePrefs()
+            emit(.preferences)
+        }
         let station = Station(name: shared.name, url: shared.url, logo: shared.logo)
+        let result: SharedAddResult
         switch addStation(station) {
         case .added:
-            select(stations.count - 1)
+            result = .added(stations.count - 1)
         case .duplicate:
-            guard let index = stations.firstIndex(where: { sameStream($0.url, station.url) }) else { return false }
-            select(index)
+            guard let index = stations.firstIndex(where: { sameStream($0.url, station.url) }) else { return .invalid }
+            result = .alreadyOnTheList(index)
         case .invalid:
-            return false
+            return .invalid
         }
-        play()
-        return true
+        if play, let index = result.index {
+            select(index)
+            self.play()
+        }
+        return result
     }
 
     /// Adds the stations from a list exported here, on Windows or on Linux, skipping the ones already here.

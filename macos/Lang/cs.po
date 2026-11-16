@@ -242,11 +242,14 @@ msgstr "Přidáno stanic: {0}."
 msgid "Checking…"
 msgstr "Kontrola…"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Přidat ji mezi vaše stanice a hned pustit?"
+msgid "Add it to your stations?"
+msgstr "Přidat ji mezi vaše stanice?"
 
-msgid "Add and play"
-msgstr "Přidat a pustit"
+msgid "Add"
+msgstr "Přidat"
+
+msgid "Play automatically"
+msgstr "Přehrávat automaticky"
 
 msgid "Cancel"
 msgstr "Zrušit"
