@@ -178,3 +178,10 @@ def test_packaged_copy_matches_the_repo_list():
     def text(path):
         return path.read_bytes().replace(b"\r\n", b"\n")
     assert text(REPO_LIST.parent.parent / "linux" / "data" / "banned-stations.json") == text(REPO_LIST)
+
+
+def test_radio_browser_names_are_cleaned():
+    items = [{"name": "‮Jazz\x00 FM ", "url": "http://a/stream"}, {"name": "‏", "url": "http://b/stream"},
+             {"name": "y" * 120, "url": "http://c/stream"}]
+    assert [s.name for s in parse_results(items)] == ["Jazz FM", "y" * 100]
+    assert to_station(DirectoryStation("⁦Jazz⁩", "", "http://a/s", None, "MP3", 0, "")).name == "Jazz"

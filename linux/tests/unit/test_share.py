@@ -115,3 +115,8 @@ def test_matching_a_shared_station_with_the_list():
     assert same_stream("https://357.example/live", "https://357.example/live/")   # one trailing slash
     assert not same_stream(url, "https://an05.cdn.eurozet.pl/anthar.mp3")       # the path exactly
     assert not same_stream("https://357.example/live?a=1", "https://357.example/live?a=2")
+
+
+def test_the_name_loses_bidirectional_characters():
+    shared = read_link(WEB_LINK + "n=Radio%E2%80%AE%20357%E2%81%A6&u=https://357.example/")
+    assert shared.name == "Radio 357"

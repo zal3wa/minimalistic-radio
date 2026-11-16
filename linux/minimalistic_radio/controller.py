@@ -25,6 +25,7 @@ from .core.storage import (
     save_history, save_preferences, save_statistics, save_stations,
 )
 from .core.streams import is_web_url, same_stream, stream_key
+from .core.text import clean_name
 from .core.titles import (
     RADIO357_NOW_URL, artwork_from_raw, parse_title, radio357_title, split_track, station_kind,
 )
@@ -700,7 +701,8 @@ class RadioController:
 
     @staticmethod
     def _cleaned(s: Station) -> Station | None:
-        name, url, logo = (s.name or "").strip(), (s.url or "").strip(), (s.logo or "").strip()
+        """The station form, radio-browser and share links all add through here."""
+        name, url, logo = clean_name(s.name), (s.url or "").strip(), (s.logo or "").strip()
         if not name or not is_web_url(url) or (logo and not is_web_url(logo)):
             return None
         return Station(name, url, logo or None)
@@ -799,13 +801,14 @@ class RadioController:
             if not isinstance(item, dict):
                 continue
             name, url, logo = item.get("Name"), item.get("Url"), item.get("Logo")
-            if not isinstance(name, str) or not name.strip() or not isinstance(url, str) or not is_web_url(url):
+            name = clean_name(name) if isinstance(name, str) else ""
+            if not name or not isinstance(url, str) or not is_web_url(url):
                 continue
             key = stream_key(url)
             if key in known:
                 continue
             known.add(key)
-            fresh.append(Station(name.strip(), url, logo if isinstance(logo, str) and is_web_url(logo) else None))
+            fresh.append(Station(name, url, logo if isinstance(logo, str) and is_web_url(logo) else None))
         if fresh:
             self.stations.extend(fresh)
             self._stations_changed()

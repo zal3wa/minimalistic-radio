@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .models import HistoryEntry, ListeningSession, Preferences, SongPlay, Station, Statistics
 from .streams import is_web_url
+from .text import clean_name
 
 _DIR = "minimalistic-radio"
 _LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
@@ -77,7 +78,8 @@ def load_stations(path: Path) -> tuple[list[Station], bool]:
         if not isinstance(item, dict):
             continue
         name, url, logo = item.get("Name"), item.get("Url"), item.get("Logo")
-        if not isinstance(name, str) or not name.strip() or not isinstance(url, str) or not is_web_url(url):
+        name = clean_name(name) if isinstance(name, str) else ""
+        if not name or not isinstance(url, str) or not is_web_url(url):
             continue
         stations.append(Station(name, url, logo if isinstance(logo, str) else None))
     return stations, False

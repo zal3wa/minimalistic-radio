@@ -250,6 +250,12 @@ def test_add_station_rejects_invalid_and_duplicates(ctl):
     assert ctl.add_station(Station(" New ", "http://new/s")) is AddResult.ADDED and ctl.stations[-1].name == "New"
     assert ctl.add_station(Station("Logo", "http://logo/s", "javascript:alert(1)")) is AddResult.INVALID
     assert saved_names(ctl) == ["Alpha", "Beta", "Gamma", "New"]
+def test_added_and_edited_names_are_cleaned(ctl):
+    # The manual form, radio-browser and share links all add through add_station.
+    assert ctl.add_station(Station("‮New\x00 FM⁩", "http://new/s")) is AddResult.ADDED
+    assert ctl.stations[-1].name == "New FM"
+    assert ctl.add_station(Station("‎‏", "http://other/s")) is AddResult.INVALID
+    assert ctl.update_station(0, Station("z" * 130, A.url)) is AddResult.ADDED and ctl.stations[0].name == "z" * 100
 def test_update_station_follows_the_playing_station(ctl):
     playing(ctl, 1)
     assert ctl.update_station(1, Station("Beta FM", B.url, B.logo)) is AddResult.ADDED          # renamed only
@@ -298,6 +304,11 @@ def test_import_merges_like_windows(ctl, tmp_path):
     assert f.exists()                                                        # never moved aside
     assert ctl.import_stations(tmp_path / "missing.json") == ImportResult(0, NOT_A_LIST)
     assert len(ctl.stations) == 5
+def test_imported_names_are_cleaned(ctl, tmp_path):
+    f = tmp_path / "list.json"
+    f.write_text(json.dumps([{"Name": "‮Delta\x07", "Url": "http://d.example/live", "Logo": None},
+                             {"Name": "⁦⁩", "Url": "http://e.example/live", "Logo": None}]), "utf-8")
+    assert ctl.import_stations(f) == ImportResult(1, None) and ctl.stations[-1].name == "Delta"
 def test_export_writes_windows_list_and_reports_failure(ctl, tmp_path):
     out = tmp_path / "export.json"
     assert ctl.export_stations(out) is True

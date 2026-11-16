@@ -7,6 +7,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from .streams import is_web_url
+from .text import clean_chars
 
 RADIO357_NOW_URL = "https://stream.radio357.pl/now/playing.json"
 
@@ -32,9 +33,10 @@ def _has(text: str, part: str) -> bool:
 
 
 def parse_title(raw: str | None, kind: str) -> str | None:
+    """The song title to show, at most 240 characters (and …), cleaned like a station name (core/text.py)."""
     if raw is None or not raw.strip():
         return None
-    value = html.unescape(raw).strip()
+    value = clean_chars(html.unescape(raw)).strip()
     if kind == "iheart":
         rich = _RICH.match(value)
         if rich:

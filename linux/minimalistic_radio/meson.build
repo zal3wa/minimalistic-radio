@@ -27,6 +27,7 @@ python.install_sources(
   'core/statistics.py',
   'core/storage.py',
   'core/streams.py',
+  'core/text.py',
   'core/titles.py',
   subdir: 'minimalistic_radio/core',
 )

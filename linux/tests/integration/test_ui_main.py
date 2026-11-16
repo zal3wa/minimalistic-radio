@@ -376,7 +376,7 @@ def test_copy_button(make):
 
 
 def test_long_names_ellipsize(make):
-    long_name = "Radio" + "x" * 295
+    long_name = "Radio" + "x" * 95   # 100 characters, the longest a name can be
     window, _ = make(names=(long_name, "Beta"), current=0, playing=True)
     labels = [w for w in descendants(window.stations_page.rows[0])
               if isinstance(w, Gtk.Label) and w.get_text() == long_name]

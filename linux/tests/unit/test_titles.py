@@ -29,3 +29,8 @@ def test_artwork_from_raw():
     assert artwork_from_raw('x amgArtworkURL="https://i.iheart.com/a.jpg" y') == "https://i.iheart.com/a.jpg"
     assert artwork_from_raw('amgArtworkURL="javascript:x"') is None
 def test_radio357_title(): assert radio357_title({"s": "Kult - Arahja"}) == "Kult - Arahja" and radio357_title([]) is None
+def test_titles_lose_control_and_bidirectional_characters():
+    assert parse_title("Kult‮ - Arahja\x00⁦", "generic") == "Kult - Arahja"
+    assert parse_title("Kult ❤️‍ - Arahja", "generic") == "Kult ❤️‍ - Arahja"
+    assert parse_title("‏" + "A" * 300, "generic") == "A" * 240 + "…"   # the 240 limit stays
+    assert parse_title("‮\x07", "generic") is None
