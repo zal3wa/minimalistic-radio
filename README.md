@@ -207,7 +207,7 @@ The radio collects no personal data: no accounts, no telemetry, no ads. It only 
 
 Nothing else is sent. Like any internet connection, these servers see your IP address.
 
-The Linux version contacts the same servers, except GitHub: the radio itself never checks for updates. Flatpak and your software center get them from the radio's Flatpak repository at `zal3wa.github.io` (hosted by GitHub Pages), or from the Snap Store (the Flatpak also shows an update arrow, asked of Flatpak itself).
+The Linux version contacts the same servers, except GitHub: the radio itself never checks for updates. Flatpak and your software center get them from the radio's Flatpak repository at `zal3wa.github.io` (hosted by GitHub Pages), and the radio's update arrow comes from asking Flatpak. The `.snap` on the releases page is for testing and does not update itself.
 
 The macOS version contacts the same servers as the Windows one, the update check included (Settings → Updates). When you use Siri, Apple processes what you say, as for any app.
 
