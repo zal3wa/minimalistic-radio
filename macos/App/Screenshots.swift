@@ -160,6 +160,9 @@ extension AppDelegate {
             if await takeShareMenuPicture(output.appendingPathComponent("macos-share-menu-\(look).png"), dark: look == "dark") {
                 menus += 1
             }
+            if await takeClearStatisticsPicture(output.appendingPathComponent("macos-clear-statistics-\(look).png")) {
+                menus += 1
+            }
             let demo = await takeDemoPictures(into: output, look: look)
             demos += demo.written
             if look == "light" { hotspots = demo.hotspots }
@@ -167,8 +170,8 @@ extension AppDelegate {
         model.sampleUpdate = nil
         panel.close()
         writeHotspots(hotspots, to: output.appendingPathComponent("macos-demo-hotspots.json"))
-        // The menus are screen captures (each is a window of its own): reported, but not required.
-        print("wrote \(written) screenshots, \(menus) share menu pictures and \(demos) demo pictures to \(output.path)")
+        // The menus and the question are screen captures (each is a window of its own): reported, but not required.
+        print("wrote \(written) screenshots, \(menus) share menu and Clear statistics? pictures and \(demos) demo pictures to \(output.path)")
         return written == Self.shots.count * 2 ? 0 : 1
     }
 
@@ -462,6 +465,30 @@ extension AppDelegate {
         RunLoop.main.add(capture, forMode: .common)
         _ = menu.popUp(positioning: share, at: place, in: content)   // returns when the menu closes
         print("share menu \(dark ? "dark" : "light"): \(written ? "written" : "not written")")
+        return written
+    }
+
+    /// For review: Statistics with its question, Clear statistics?, open over it (Statistics › ⋯ › Clear
+    /// statistics…), taken with screencapture: the sheet is a window of its own, which the panel's picture doesn't
+    /// include. Nothing is cleared.
+    private func takeClearStatisticsPicture(_ file: URL) async -> Bool {
+        panel.show(page: .statistics, anchor: nil)
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        guard let window = panel.window, let screen = window.screen ?? NSScreen.main else { return false }
+        let alert = PanelModel.clearStatisticsAlert()
+        alert.beginSheetModal(for: window) { _ in }
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        let region = window.frame.union(alert.window.frame)
+        let top = screen.frame.maxY
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", "-R", "\(Int(region.minX)),\(Int(top - region.maxY)),\(Int(region.width)),\(Int(region.height))", file.path]
+        try? shot.run()
+        shot.waitUntilExit()
+        window.endSheet(alert.window)
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        let written = shot.terminationStatus == 0 && FileManager.default.fileExists(atPath: file.path)
+        print("clear statistics \(NSApp.appearance?.name.rawValue ?? ""): \(written ? "written" : "not written")")
         return written
     }
 

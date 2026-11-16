@@ -202,8 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
-        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min", "Share",
-                     "Add it to your stations?", "Add", "Play automatically"]
+        for text in ["History", "Statistics", "Clear statistics…", "Clear statistics?", "This can't be undone.", "Clear",
+                     "Top artists", "{0} h {1} min", "Share", "Add it to your stations?", "Add", "Play automatically"]
             where L(text) == text {
             failures.append("\"\(text)\" isn't translated into Polish")
         }
@@ -240,6 +240,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.model.page != .search { failures.append("+ Station doesn't open the search") }
         failures += checkPanelLayout()
         panel.model.page = .stations
+
+        // Statistics › ⋯ › Clear statistics…: the question in two paragraphs, Cancel the default (Return) and Clear
+        // the destructive button.
+        let alert = PanelModel.clearStatisticsAlert()
+        if alert.messageText != L("Clear statistics?") || alert.informativeText.components(separatedBy: "\n\n").count != 2
+            || alert.buttons.map(\.title) != [L("Cancel"), L("Clear")] || alert.buttons.first?.keyEquivalent != "\r"
+            || alert.buttons.last?.hasDestructiveAction != true || alert.buttons.last?.keyEquivalent == "\r" {
+            failures.append("Clear statistics? isn't asked with Cancel as the default and Clear as the destructive button")
+        }
 
         // Statistics: a session from the start of audio, its song, saved on quitting; the page draws them.
         controller.select(0)
@@ -283,7 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// The panel's pages as drawn, as far as AppKit shows them (SwiftUI draws the rest itself): the player only on
-    /// the stations page, and the Statistics page's All / Year / Month switch.
+    /// the stations page, and the Statistics page's All / Year / Month switch and its ⋯ in the top bar.
     private func checkPanelLayout() -> [String] {
         var failures: [String] = []
         for page in [PanelModel.Page.stations, .history, .settings, .statistics] {
@@ -302,6 +311,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 } else if control?.selectedSegment != 2 {
                     failures.append("Statistics doesn't open on Month")
                 }
+                // SwiftUI's menu button is an AppKit pop-up button: the ⋯ is one, in the 44 pt top bar.
+                let menus = allViews(in: view)
+                    .filter { $0 is NSPopUpButton || String(describing: type(of: $0)).contains("Popup") }
+                    .map { view.convert($0.bounds, from: $0) }
+                    .filter { (view.isFlipped ? $0.midY : view.bounds.height - $0.midY) < 44 }
+                if menus.isEmpty { failures.append("Statistics has no ⋯ in the top bar") }
             }
         }
         panel.close()
@@ -388,5 +403,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func views<T: NSView>(of type: T.Type, in view: NSView) -> [T] {
         ((view as? T).map { [$0] } ?? []) + view.subviews.flatMap { views(of: type, in: $0) }
+    }
+
+    private func allViews(in view: NSView) -> [NSView] {
+        view.subviews + view.subviews.flatMap { allViews(in: $0) }
     }
 }

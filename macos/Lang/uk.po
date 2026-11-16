@@ -11,6 +11,15 @@ msgstr "Скопійовано в буфер обміну"
 msgid "Quit"
 msgstr "Вийти"
 
+msgid "Clear statistics?"
+msgstr "Очистити статистику?"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+msgid "Clear"
+msgstr "Очистити"
+
 msgid "Add a station first."
 msgstr "Спершу додайте станцію."
 
@@ -83,8 +92,20 @@ msgstr "Шукати на YouTube"
 msgid "More"
 msgstr "Більше"
 
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Вашу статистику прослуховування буде остаточно видалено. Історія композицій залишиться без змін."
+
+msgid "This can't be undone."
+msgstr "Цю дію неможливо скасувати."
+
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Перемістіть Minimalistic Radio в «Програми», щоб отримувати оновлення."
+
+msgid "Link copied"
+msgstr "Посилання скопійовано"
+
+msgid "Already on your list"
+msgstr "Уже у вашому списку"
 
 msgid "Station"
 msgstr "Станція"
@@ -104,6 +125,9 @@ msgstr "Назад"
 msgid "Statistics"
 msgstr "Статистика"
 
+msgid "Clear statistics…"
+msgstr "Очистити статистику…"
+
 msgid "Stations"
 msgstr "Станції"
 
@@ -115,9 +139,6 @@ msgstr "Додати за адресою"
 
 msgid "Edit"
 msgstr "Редагувати"
-
-msgid "Link copied"
-msgstr "Посилання скопійовано"
 
 msgid "Type a station name"
 msgstr "Введіть назву станції"
@@ -145,9 +166,6 @@ msgstr "Каталог тимчасово недоступний. Спробуй
 
 msgid "Loading suggestions…"
 msgstr "Завантаження пропозицій…"
-
-msgid "Already on your list"
-msgstr "Уже у вашому списку"
 
 msgid "This station is already on the list."
 msgstr "Ця станція вже є у списку."
@@ -251,9 +269,6 @@ msgstr "Додати"
 msgid "Play automatically"
 msgstr "Відтворювати автоматично"
 
-msgid "Cancel"
-msgstr "Скасувати"
-
 msgid "This link doesn't contain a station."
 msgstr "Це посилання не містить станції."
 
@@ -289,9 +304,6 @@ msgstr "Статистику вимкнено. Нічого нового не з
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Тут поки нічого немає. Послухайте радіо деякий час і поверніться."
-
-msgid "Clear statistics"
-msgstr "Очистити статистику"
 
 msgid "Listening time"
 msgstr "Час прослуховування"
@@ -331,12 +343,6 @@ msgstr "1 відтворення"
 
 msgid "{0} plays"
 msgstr "відтворень: {0}"
-
-msgid "Clear statistics?"
-msgstr "Очистити статистику?"
-
-msgid "All listening statistics on this computer will be deleted. The song history stays."
-msgstr "Усю статистику прослуховування на цьому комп’ютері буде видалено. Історія пісень залишиться."
 
 msgid "This station uses a format that can't be played."
 msgstr "Ця станція мовить у форматі, який не вдається відтворити."

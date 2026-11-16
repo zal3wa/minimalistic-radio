@@ -93,7 +93,8 @@ struct PanelDivider: View {
 }
 
 /// The panel's top bar. On the stations page: [+ Station] [History], then the green update button while an update
-/// is ready, and Settings. On the other pages: ‹ and the page's title, and on Song history [Statistics] on the right.
+/// is ready, and Settings. On the other pages: ‹ and the page's title, and on the right [Statistics] on Song history
+/// and ⋯ (Clear statistics…) on Statistics.
 /// The panel hides with a click elsewhere, Esc, ⌘W or the menu bar icon, so there is no close button.
 struct HeaderView: View {
     @ObservedObject var model: PanelModel
@@ -140,6 +141,21 @@ struct HeaderView: View {
                     }
                     .buttonStyle(.bordered)
                     .hotspot("statistics")
+                }
+                if model.page == .statistics {
+                    // The same ⋯ as the station rows' and the songs' menus.
+                    Menu {
+                        Button(L("Clear statistics…")) { model.confirmClearStatistics() }
+                            .disabled(model.statistics.sessions.isEmpty && model.statistics.songs.isEmpty)
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .frame(width: 26, height: 26)
+                    .help(L("More"))
+                    .accessibilityLabel(L("More"))
                 }
             }
         }

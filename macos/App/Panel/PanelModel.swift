@@ -182,4 +182,52 @@ final class PanelModel: ObservableObject {
     var statistics: StatisticsLog {
         sampleStatistics ?? controller.statisticsNow
     }
+
+    // MARK: - Clearing the statistics
+
+    /// Statistics › ⋯ › Clear statistics…: the question. Cancel comes first and is the default button (Return, and
+    /// blue); Clear is the destructive one.
+    static func clearStatisticsAlert() -> NSAlert {
+        let alert = NSAlert()
+        alert.messageText = L("Clear statistics?")
+        alert.informativeText = L("Your listening statistics will be permanently deleted. Your song history will remain.")
+            + "\n\n" + L("This can't be undone.")
+        // Set here, not left to NSAlert, which also hands Esc to a button titled "Cancel" in English (Esc is
+        // handled in confirmClearStatistics, whatever the language).
+        alert.addButton(withTitle: L("Cancel")).keyEquivalent = "\r"
+        let clear = alert.addButton(withTitle: L("Clear"))
+        clear.keyEquivalent = ""
+        clear.hasDestructiveAction = true
+        return alert
+    }
+
+    /// Asks first, in a sheet on the panel (so the panel stays open behind it); Clear deletes the statistics (the
+    /// song history stays). Esc cancels too: NSAlert gives Esc only to a button titled "Cancel" in English.
+    func confirmClearStatistics() {
+        let alert = Self.clearStatisticsAlert()
+        let clear = { [weak self] in
+            guard let self else { return }
+            if self.sampleStatistics != nil { self.sampleStatistics = StatisticsLog() } else { self.controller.clearStatistics() }
+            self.refresh()
+        }
+        guard let window = AppDelegate.shared?.panel?.window else {
+            if alert.runModal() == .alertSecondButtonReturn { clear() }
+            return
+        }
+        let escape = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak window] event in
+            guard event.keyCode == 53, event.window === alert.window, let window else { return event }
+            window.endSheet(alert.window, returnCode: .alertFirstButtonReturn)
+            return nil
+        }
+        alert.beginSheetModal(for: window) { response in
+            if let escape { NSEvent.removeMonitor(escape) }
+            if response == .alertSecondButtonReturn { clear() }
+        }
+    }
+
+    /// The station on the list for a history entry or a statistics row: by address, then by name.
+    func station(url: String? = nil, name: String) -> Station? {
+        if let url, let byAddress = controller.stations.first(where: { sameStream($0.url, url) }) { return byAddress }
+        return controller.stations.first { $0.name == name }
+    }
 }
