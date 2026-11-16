@@ -791,7 +791,14 @@ internal sealed partial class Radio
         // systems or browsers where the link doesn't open the radio by itself).
         void TakeLinks(TextBox box) => DataObject.AddPastingHandler(box, (sender, e) =>
         {
-            if (!(e.DataObject.GetData(DataFormats.UnicodeText) is string text) || !ShareLink.TryParse(text, out SharedStation _)) return;
+            string text;
+            try { text = e.DataObject.GetData(DataFormats.UnicodeText) as string; }
+            catch (ExternalException error)   // another program holds the clipboard: an ordinary paste, which fails quietly
+            {
+                Debug.WriteLine(error);
+                return;
+            }
+            if (text == null || !ShareLink.TryParse(text, out SharedStation _)) return;
             e.CancelCommand();
             Post(() => OpenShared(text));
         });
@@ -2068,13 +2075,20 @@ internal sealed partial class Radio
             Click(Descendants(playerPanel).OfType<Button>().First(button => button.ToolTip as string == L("Back")));
             Click(ButtonWith(L("Station")));
             string pasted = ShareLink.Web("Wklejona stacja", "https://example.invalid/pasted", null);
-            if (CopyText(pasted))
+            bool Readable()
+            {
+                try { return Clipboard.GetText() == pasted; }
+                catch (ExternalException) { return false; }   // another program holds the clipboard: not the app's fault
+            }
+            if (CopyText(pasted) && Readable())
             {
                 TextBox box = Descendants(playerPanel).OfType<TextBox>().First(item => item.IsVisible);
                 box.Focus();
                 ApplicationCommands.Paste.Execute(null, box);
                 await Task.Delay(300);
-                if (!Shows(L("Shared station")) || !Shows("Wklejona stacja")) Fail("wklejony link nie otworzył strony stacji.");
+                // Nothing pasted at all means the clipboard was taken meanwhile; the link pasted as text is a failure.
+                bool pastedNothing = box.Text.Length == 0 && !Shows(L("Shared station"));
+                if (!pastedNothing && (!Shows(L("Shared station")) || !Shows("Wklejona stacja"))) Fail("wklejony link nie otworzył strony stacji.");
             }
             // A second start of the radio with --open hands its link to this one.
             playerPanel?.Close();
