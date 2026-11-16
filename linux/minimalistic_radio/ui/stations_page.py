@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 LOGO_SIZE = 40
 FALLBACK_ICON = "audio-x-generic-symbolic"
 SCROLL_TICK_MS = 16
+REVEAL_MARGIN = 12                 # a revealed row keeps the list's margin around it
 UP_KEYS = (Gdk.KEY_Up, Gdk.KEY_KP_Up)
 DOWN_KEYS = (Gdk.KEY_Down, Gdk.KEY_KP_Down)
 PLAY_KEYS = (Gdk.KEY_Return, Gdk.KEY_KP_Enter, Gdk.KEY_ISO_Enter, Gdk.KEY_space, Gdk.KEY_KP_Space)
@@ -139,6 +140,8 @@ class StationsPage(Adw.NavigationPage):
         self._drag: _Drag | None = None
         self._returning: _Drag | None = None     # cancelled, sliding back to its place
         self._scroll_timer = 0
+        self._reveal = -1          # the row reveal() scrolls to
+        self._reveal_tick = 0
         self._offsets: list[float] = []
         self._slide_from: list[float] = []
         self._slide_to: list[float] = []
@@ -179,6 +182,9 @@ class StationsPage(Adw.NavigationPage):
     def release(self) -> None:
         """Called when the window is destroyed: no timer may fire on it afterwards."""
         self._abort()
+        if self._reveal_tick:
+            self.scrolled.remove_tick_callback(self._reveal_tick)
+            self._reveal_tick = 0
         Gtk.StyleContext.remove_provider_for_display(Gdk.Display.get_default(), self._slots_css)
 
     # ---- From the controller ----
@@ -216,6 +222,33 @@ class StationsPage(Adw.NavigationPage):
                 else:
                     row.remove_css_class(name)
             row.playing_icon.set_visible(playing)
+
+    def reveal(self, index: int) -> None:
+        """Scrolls the list so the station at `index` shows, as soon as its row is laid out: a station just added,
+        or the list still coming into view."""
+        if not 0 <= index < len(self.rows):
+            return
+        self._reveal = index
+        if not self._reveal_tick:
+            self._reveal_tick = self.scrolled.add_tick_callback(self._reveal_step)
+
+    def _reveal_step(self, _widget: Gtk.Widget, _clock: Gdk.FrameClock) -> bool:
+        if not 0 <= self._reveal < len(self.rows):
+            self._reveal_tick = 0
+            return GLib.SOURCE_REMOVE
+        row = self.rows[self._reveal]
+        ok, bounds = row.compute_bounds(self.scrolled)
+        if not ok or not row.get_mapped() or row.get_height() == 0:
+            return GLib.SOURCE_CONTINUE   # not laid out yet
+        adjustment = self.scrolled.get_vadjustment()
+        top = bounds.get_y() - REVEAL_MARGIN
+        bottom = bounds.get_y() + bounds.get_height() + REVEAL_MARGIN - self.scrolled.get_height()
+        if top < 0:
+            adjustment.set_value(adjustment.get_value() + top)
+        elif bottom > 0:
+            adjustment.set_value(adjustment.get_value() + bottom)
+        self._reveal_tick = 0
+        return GLib.SOURCE_REMOVE
 
     def _show_logo(self, row: StationRow, url: str | None) -> None:
         known, texture = self.logos.lookup(url)

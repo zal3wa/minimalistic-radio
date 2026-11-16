@@ -14,7 +14,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gtk  # noqa: E402
 
 from .. import APP_NAME, main  # noqa: E402
-from ..controller import Change, RadioController  # noqa: E402
+from ..controller import Change, RadioController, SharedLink  # noqa: E402
 from ..core.share import is_share_link, read_link, share_link  # noqa: E402
 from .footer import Footer  # noqa: E402
 from .history_page import HistoryPage  # noqa: E402
@@ -209,18 +209,20 @@ class RadioWindow(Adw.ApplicationWindow):
 
     def open_link(self, text: str) -> bool:
         """A share link (from the command line, or pasted where a station is added). A station on the list
-        already just plays; any other opens the Shared station page, which asks first. False if `text` isn't
-        a share link."""
+        already plays if "Play automatically" was left checked; otherwise the list shows it with "Already on your
+        list". Any other opens the Shared station page, which asks first. False if `text` isn't a share link."""
         if not is_share_link(text):
             return False
         shared = read_link(text)
-        known = self.controller.find_station(shared.url) if shared is not None else -1
-        if known >= 0:
-            self.controller.play_station(known)
-            self.show_page("stations")
-        else:
+        what, index = self.controller.open_shared(shared)
+        if what is SharedLink.ASK:
             self.shared_page.show_station(shared)
             self.show_page("shared")
+            return True
+        self.show_page("stations")
+        self.stations_page.reveal(index)
+        if what is SharedLink.ON_LIST:
+            self.toast(self._("Already on your list"), overlay=self.stations_page.toasts)
         return True
 
     def toast(self, text: str, seconds: int = 0, overlay: Adw.ToastOverlay | None = None) -> None:

@@ -605,12 +605,16 @@ msgid "Shared station"
 msgstr "Emisora compartida"
 
 #: minimalistic_radio/ui/shared_page.py
-msgid "Add it to your stations and play it now?"
-msgstr "¿Añadirla a tus emisoras y ponerla ahora?"
+msgid "Add it to your stations?"
+msgstr "¿Añadirla a tus emisoras?"
 
 #: minimalistic_radio/ui/shared_page.py
-msgid "Add and play"
-msgstr "Añadir y reproducir"
+msgid "Add"
+msgstr "Añadir"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Play automatically"
+msgstr "Reproducir automáticamente"
 
 #: minimalistic_radio/ui/shared_page.py
 msgid "This link doesn't contain a station."
