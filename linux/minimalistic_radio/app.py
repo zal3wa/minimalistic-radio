@@ -57,12 +57,13 @@ def fetch(url: str, cb: Callable[[Any | None], None]) -> None:
 
 
 def fetch_file(url: str, path: Path, cb: Callable[[bool], None]) -> None:
-    """Downloads to `path` without blocking. The file appears whole (a temporary file renamed into place) or not at all."""
+    """Downloads a cover picture to `path` without blocking (never from the local network). The file appears whole
+    (a temporary file renamed into place) or not at all."""
     def work() -> None:
         temp = None
         ok = False
         try:
-            data = net.fetch_bytes(url, 10, COVER_LIMIT)
+            data = net.fetch_picture(url, COVER_LIMIT)
             fd, temp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".part")
             with os.fdopen(fd, "wb") as file:
                 file.write(data)

@@ -19,6 +19,7 @@ python.install_sources(
 
 python.install_sources(
   'core/__init__.py',
+  'core/addresses.py',
   'core/covers.py',
   'core/directory.py',
   'core/models.py',

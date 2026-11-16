@@ -109,7 +109,7 @@ class LogoCache:
         except OSError:
             pass
         try:
-            data = net.fetch_bytes(url, 10, LOGO_LIMIT)   # load() let only http and https through
+            data = net.fetch_picture(url, LOGO_LIMIT)   # never from the local network
         except net.NetworkError:
             return None, False
         texture = _decode(data)
