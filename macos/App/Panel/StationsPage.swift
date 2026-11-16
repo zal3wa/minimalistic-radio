@@ -1,11 +1,14 @@
 import RadioCore
 import SwiftUI
+import UniformTypeIdentifiers
 
-/// The station list: logo, name, the playing mark and a ⋯ menu. A click plays a station; dragging reorders the
-/// list (the Mac list's own drag), and ⌘⌥↑/↓ move the selected station. After a shared station it shows that one.
+/// The station list: logo, name, the playing mark and a ⋯ menu. A click plays a station; dragging a station reorders the
+/// list (StationDrop), and ⌘⌥↑/↓ move the selected station. After a shared station it shows that one.
 struct StationsPage: View {
     @ObservedObject var model: PanelModel
     @State private var selected: String?
+    /// The address of the station being dragged, while a drag lasts.
+    @State private var dragging: String?
 
     private var controller: RadioController { model.controller }
 
@@ -23,9 +26,14 @@ struct StationsPage: View {
                     ForEach(Array(controller.stations.enumerated()), id: \.element.url) { index, station in
                         StationRow(model: model, station: station, index: index) { play(index) }
                             .tag(station.url)
-                    }
-                    .onMove { from, to in
-                        if let source = from.first { controller.moveStation(from: source, to: to) }
+                            // The row's click (play) takes the mouse, so the list's own drag (onMove) never starts
+                            // on a Mac: the row is a drag source of its own, and the list follows it as it moves.
+                            .onDrag {
+                                dragging = station.url
+                                return NSItemProvider(object: station.url as NSString)
+                            }
+                            .onDrop(of: [.text], delegate: StationDrop(target: station.url, controller: controller,
+                                                                       dragging: $dragging))
                     }
                 }
                 .listStyle(.inset)
@@ -64,6 +72,32 @@ struct StationsPage: View {
         let target = index + delta
         guard controller.stations.indices.contains(target) else { return }
         controller.moveStation(from: index, to: delta > 0 ? target + 1 : target)
+    }
+}
+
+/// Dragging a station over another one moves it there at once (the list reorders under the pointer); dropping ends
+/// the drag. Only a drag that started on this list moves anything.
+struct StationDrop: DropDelegate {
+    let target: String
+    let controller: RadioController
+    @Binding var dragging: String?
+
+    func dropEntered(info: DropInfo) {
+        guard let dragging, dragging != target,
+              let from = controller.stations.firstIndex(where: { $0.url == dragging }),
+              let to = controller.stations.firstIndex(where: { $0.url == target }) else { return }
+        controller.moveStation(from: from, to: to > from ? to + 1 : to)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: dragging == nil ? .forbidden : .move)
+    }
+
+    func validateDrop(info: DropInfo) -> Bool { dragging != nil }
+
+    func performDrop(info: DropInfo) -> Bool {
+        dragging = nil
+        return true
     }
 }
 
