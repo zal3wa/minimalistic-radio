@@ -268,6 +268,13 @@ internal sealed partial class Radio
                 ParseTrack("Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F", -1) != "Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F" ||
                 ParseTrack(new string('x', 300), -1) != new string('x', 240) + "…")
                 throw new InvalidOperationException("Błędne czyszczenie tytułu utworu.");
+            // "--open <link>": only as the last two arguments, and only the radio's own links.
+            const string shared = "minimalistic-radio://add?n=A&u=https%3A%2F%2Fa.example%2F";
+            if (Program.OpenLink(new[] { "--open", shared }) != shared || Program.OpenLink(new[] { "--autostart", "--open", "MINIMALISTIC-RADIO:add" }) == null ||
+                new[] { new[] { "--open", shared, "--updated" }, new[] { "--open", "https://minimalistic-radio.github.io/#n=A" }, new[] { "--open" }, new string[0],
+                    new[] { "--open", "minimalistic-radio-evil:x" }, new[] { shared }, new[] { "--open", "--test-menu" }, new[] { "--open", "file:///C:/x.exe" },
+                    new[] { "--open", shared, "--open", "javascript:alert(1)" } }.Any(args => Program.OpenLink(args) != null))
+                throw new InvalidOperationException("Błędne zasady argumentu --open.");
             if (iconHandle == IntPtr.Zero || Theme.AppImage(64)?.PixelWidth != 64)
                 throw new InvalidOperationException("Brak ikony w zasobach programu.");
             Covers.Split("Leonard Cohen - Everybody Knows", out string artist, out string song);
