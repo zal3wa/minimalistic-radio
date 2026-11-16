@@ -22,6 +22,7 @@ python.install_sources(
   'core/addresses.py',
   'core/covers.py',
   'core/directory.py',
+  'core/imagesize.py',
   'core/models.py',
   'core/net.py',
   'core/share.py',

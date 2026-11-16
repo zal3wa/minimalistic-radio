@@ -17,6 +17,7 @@ from typing import Any, Callable, Protocol
 
 from . import APP_NAME
 from .core.covers import CoverCache, itunes_search_url, pick_cover
+from .core.imagesize import fits
 from .core.models import HistoryEntry, Preferences, Station, Statistics
 from .core.share import SharedStation
 from .core.statistics import SAVE_SECONDS, Recorder
@@ -578,6 +579,19 @@ class RadioController:
         self.fetch_file(url, path, done)
 
     def _show_cover(self, path: Path) -> None:
+        """Only a picture whose declared size is read and fits (core/imagesize.py), downloaded now or kept from
+        before: the footer, the notification and the desktop's media controls (MPRIS) all decode it. Any other file
+        is deleted."""
+        try:
+            ok = fits(path.read_bytes())
+        except OSError:
+            return
+        if not ok:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return
         self.cover_path = path
         self._emit(Change.COVER)
 

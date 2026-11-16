@@ -86,12 +86,20 @@ class FakeFetch:
     def file(self, url: str, path: Path, callback: Callable[[bool], None]) -> None:
         self.downloads.append((url, path, callback))
 
-    def finish_download(self, ok: bool = True) -> None:
+    def finish_download(self, ok: bool = True, data: bytes | None = None) -> None:
+        """Saves `data` (a 600 px JPEG's header by default) and calls back."""
         url, path, callback = self.downloads.pop(0)
         if ok:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-            Path(path).write_bytes(b"\xff\xd8 cover of " + url.encode())
+            Path(path).write_bytes(jpeg_header(600, 600) if data is None else data)
         callback(ok)
+
+
+def jpeg_header(width: int, height: int) -> bytes:
+    """The start of a JPEG: enough for its size to be read (core/imagesize.py)."""
+    frame = (b"\xff\xc0" + (17).to_bytes(2, "big") + b"\x08" + height.to_bytes(2, "big") + width.to_bytes(2, "big")
+             + b"\x03\x01\x22\x00\x02\x11\x01\x03\x11\x01")
+    return b"\xff\xd8" + frame + b"\xff\xd9"
 
 
 # Sample stations for tests (A, B and C are what the `ctl` fixture starts with).

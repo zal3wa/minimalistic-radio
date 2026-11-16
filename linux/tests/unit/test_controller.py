@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 
-from fakes import A, B, C
+from fakes import A, B, C, jpeg_header
 from minimalistic_radio.controller import AddResult, Change, ErrorKind, ImportResult, Status
 from minimalistic_radio.core.models import Preferences, Station
 from minimalistic_radio.core.storage import load_history, load_preferences, load_stations
@@ -219,6 +219,18 @@ def test_stream_artwork_is_used_only_with_a_title(ctl_factory):
     assert c.track == "Sienna Spiro – Great Expectation" and c.fetch.urls == []
     assert [d[:2] for d in c.fetch.downloads] == [(art, cover_file(c, art))]
     c.fetch.finish_download(); assert c.cover_path == cover_file(c, art)
+def test_a_cover_too_big_is_never_shown(ctl_factory):
+    c = ctl_factory(stations=[Station("KIIS", "https://stream.revma.ihrhls.com/zc185")]); c.start(autostart=True); playing(c)
+    art = "https://img.example/huge.jpg"
+    c.on_player_title(f'Sienna Spiro - text="Great Expectation" song_spot="M" amgArtworkURL="{art}"')
+    c.fetch.finish_download(data=jpeg_header(5000, 5000))
+    assert c.cover_path is None and not cover_file(c, art).exists()   # never handed to MPRIS or a notification
+def test_a_cached_cover_is_checked_again(ctl):
+    playing(ctl)
+    cover_file(ctl, BIG_COVER).parent.mkdir(parents=True)
+    cover_file(ctl, BIG_COVER).write_bytes(b"<svg/>")                    # a cache file that isn't a picture read here
+    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES)
+    assert ctl.cover_path is None and not cover_file(ctl, BIG_COVER).exists()
 def test_history_skips_repeats_keeps_100_and_clears(ctl):
     playing(ctl)
     ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("***"); ctl.on_player_title("Queen - A Kind Of Magic")

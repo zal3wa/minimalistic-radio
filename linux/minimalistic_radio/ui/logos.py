@@ -33,7 +33,8 @@ Texture = Gdk.Texture
 
 
 def _decode(data: bytes) -> Texture | None:
-    """A texture from PNG, JPEG, SVG… bytes, at most LOGO_PIXELS; None if it isn't a picture."""
+    """A texture from PNG, JPEG, GIF, WebP, BMP or ICO bytes, at most LOGO_PIXELS; None if it isn't one of them, or
+    declares more than 4096 pixels on a side."""
     return picture(data, LOGO_PIXELS)
 
 
