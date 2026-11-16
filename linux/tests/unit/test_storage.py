@@ -76,3 +76,12 @@ def test_save_is_atomic(tmp_path, monkeypatch):
     with pytest.raises(OSError):
         save_stations(f, [])
     assert load_stations(f)[0] == [Station("A", "http://a/1")]
+
+
+def test_station_names_are_cleaned_on_load(tmp_path):
+    f = tmp_path / "stations.json"
+    f.write_text(json.dumps([{"Name": " ‮Radio\x00 357 ", "Url": "http://a.example/s", "Logo": None},
+                             {"Name": "‎‮", "Url": "http://b.example/s", "Logo": None},
+                             {"Name": "x" * 150, "Url": "http://c.example/s", "Logo": None}]), "utf-8")
+    assert load_stations(f) == ([Station("Radio 357", "http://a.example/s"), Station("x" * 100, "http://c.example/s")],
+                                False)

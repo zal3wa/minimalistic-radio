@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from collections.abc import Mapping
@@ -6,7 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import HistoryEntry, ListeningSession, Preferences, SongPlay, Station, Statistics
+from .statistics import SONGS_KEPT
 from .streams import is_web_url
+from .text import clean_name
 
 _DIR = "minimalistic-radio"
 _LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
@@ -32,6 +35,11 @@ def default_paths(env: Mapping[str, str] = os.environ) -> Paths:
         data=pick("XDG_DATA_HOME", home / ".local" / "share"),
         cache=pick("XDG_CACHE_HOME", home / ".cache"),
     )
+
+
+def logo_name(url: str) -> str:
+    """A logo's file name in the cache's logos folder: made from its address."""
+    return hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def _read_json(path: Path):
@@ -77,7 +85,8 @@ def load_stations(path: Path) -> tuple[list[Station], bool]:
         if not isinstance(item, dict):
             continue
         name, url, logo = item.get("Name"), item.get("Url"), item.get("Logo")
-        if not isinstance(name, str) or not name.strip() or not isinstance(url, str) or not is_web_url(url):
+        name = clean_name(name) if isinstance(name, str) else ""
+        if not name or not isinstance(url, str) or not is_web_url(url):
             continue
         stations.append(Station(name, url, logo if isinstance(logo, str) else None))
     return stations, False
@@ -189,6 +198,7 @@ def load_statistics(path: Path) -> Statistics:
         station, title, time = item.get("station"), item.get("title"), _utc_time(item.get("time"))
         if isinstance(station, str) and isinstance(title, str) and time is not None:
             stats.songs.append(SongPlay(station, title, time))
+    del stats.songs[:-SONGS_KEPT]   # a file from before the limit: its newest plays
     return stats
 
 

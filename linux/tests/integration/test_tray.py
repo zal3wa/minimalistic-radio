@@ -185,6 +185,15 @@ def test_item_properties(make, watcher):
     assert item.get("ItemIsMenu") is False
 
 
+def test_tooltip_title_and_body_are_escaped(make, watcher):
+    _, c, _, _, _ = make(names=("<b>Rock</b> & Roll", "Beta"))
+    c.select(0)
+    c.track = "AC/DC - <i>T.N.T.</i>"
+    _, _, title, body = Client(ITEM_PATH, ITEM).get("ToolTip")
+    assert title == "<span>Minimalistic Radio · &lt;b&gt;Rock&lt;/b&gt; &amp; Roll</span>"
+    assert body == "<span>AC/DC - &lt;i&gt;T.N.T.&lt;/i&gt;</span>"
+
+
 def test_icon_theme_path_in_the_snap(make, watcher, monkeypatch):
     """The host finds the symbolic icon in the snap's folder, which it can read."""
     monkeypatch.setenv("SNAP_NAME", "minimalistic-radio")

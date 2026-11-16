@@ -2,10 +2,10 @@ import hashlib
 import json
 import os
 
-from fakes import A, B, C
+from fakes import A, B, C, jpeg_header
 from minimalistic_radio.controller import AddResult, Change, ErrorKind, ImportResult, Status
 from minimalistic_radio.core.models import Preferences, Station
-from minimalistic_radio.core.storage import load_history, load_preferences, load_stations
+from minimalistic_radio.core.storage import load_history, load_preferences, load_stations, logo_name
 from minimalistic_radio.core.titles import RADIO357_NOW_URL
 
 NOT_A_LIST = "This isn't a Minimalistic Radio station list."
@@ -15,6 +15,11 @@ BIG_COVER = "https://is1.example/a/600x600bb.jpg"
 
 def playing(ctl, index=0):
     ctl.select(index); ctl.play(); ctl.on_player_started()
+
+
+def title(ctl, raw):
+    """A title from the stream, then the 5 seconds after which the next one is applied at once."""
+    ctl.on_player_title(raw); ctl.scheduler.advance(5)
 
 
 def give_up_on_network(ctl):
@@ -196,18 +201,18 @@ def test_itunes_cover_is_downloaded_then_shown(ctl):
     assert ctl.cover_path == cover_file(ctl, BIG_COVER) and Change.COVER in seen[-1]
 def test_cover_lookups_are_cached(ctl):
     playing(ctl)
-    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES); ctl.fetch.finish_download()
-    ctl.on_player_title("Dżingiel")                                          # no artist: no lookup, no cover
+    title(ctl, "Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES); ctl.fetch.finish_download()
+    title(ctl, "Dżingiel")                                                   # no artist: no lookup, no cover
     assert ctl.cover_path is None and len(ctl.fetch.urls) == 1
-    ctl.on_player_title("Leonard Cohen - Everybody Knows")                   # known song, picture already saved
+    title(ctl, "Leonard Cohen - Everybody Knows")                            # known song, picture already saved
     assert len(ctl.fetch.urls) == 1 and ctl.fetch.downloads == [] and ctl.cover_path == cover_file(ctl, BIG_COVER)
-    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.fetch.reply(None)   # failed: asked again next time
-    ctl.on_player_title("Editors - Shadow"); ctl.fetch.reply({"results": []})  # no cover: remembered
-    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("Editors - Shadow")
+    title(ctl, "Queen - A Kind Of Magic"); ctl.fetch.reply(None)            # failed: asked again next time
+    title(ctl, "Editors - Shadow"); ctl.fetch.reply({"results": []})         # no cover: remembered
+    title(ctl, "Queen - A Kind Of Magic"); title(ctl, "Editors - Shadow")
     assert len(ctl.fetch.urls) == 4 and ctl.fetch.urls[-1].endswith("Queen%20A%20Kind%20Of%20Magic")
 def test_late_cover_for_an_earlier_song_is_not_shown(ctl):
     playing(ctl)
-    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.on_player_title("Queen - A Kind Of Magic")
+    title(ctl, "Leonard Cohen - Everybody Knows"); title(ctl, "Queen - A Kind Of Magic")
     ctl.fetch.reply(ITUNES)
     assert ctl.fetch.downloads == [] and ctl.cover_path is None
 def test_stream_artwork_is_used_only_with_a_title(ctl_factory):
@@ -219,16 +224,67 @@ def test_stream_artwork_is_used_only_with_a_title(ctl_factory):
     assert c.track == "Sienna Spiro – Great Expectation" and c.fetch.urls == []
     assert [d[:2] for d in c.fetch.downloads] == [(art, cover_file(c, art))]
     c.fetch.finish_download(); assert c.cover_path == cover_file(c, art)
+def test_a_cover_too_big_is_never_shown(ctl_factory):
+    c = ctl_factory(stations=[Station("KIIS", "https://stream.revma.ihrhls.com/zc185")]); c.start(autostart=True); playing(c)
+    art = "https://img.example/huge.jpg"
+    c.on_player_title(f'Sienna Spiro - text="Great Expectation" song_spot="M" amgArtworkURL="{art}"')
+    c.fetch.finish_download(data=jpeg_header(5000, 5000))
+    assert c.cover_path is None and not cover_file(c, art).exists()   # never handed to MPRIS or a notification
+def test_a_cached_cover_is_checked_again(ctl):
+    playing(ctl)
+    cover_file(ctl, BIG_COVER).parent.mkdir(parents=True)
+    cover_file(ctl, BIG_COVER).write_bytes(b"<svg/>")                    # a cache file that isn't a picture read here
+    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES)
+    assert ctl.cover_path is None and not cover_file(ctl, BIG_COVER).exists()
 def test_history_skips_repeats_keeps_100_and_clears(ctl):
     playing(ctl)
     ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("***"); ctl.on_player_title("Queen - A Kind Of Magic")
     assert [h.title for h in ctl.history] == ["Queen - A Kind Of Magic"] and ctl.history[0].station == "Alpha"
     assert ctl.history[0].time == ctl.scheduler.now()
-    for n in range(105): ctl.on_player_title(f"Artist - Song {n}")
+    for n in range(105): title(ctl, f"Artist - Song {n}")
     assert len(ctl.history) == 100 and ctl.history[0].title == "Artist - Song 104"
     assert [h.title for h in load_history(ctl.paths.data / "history.json")] == [h.title for h in ctl.history]
     ctl.clear_history()
     assert ctl.history == [] and load_history(ctl.paths.data / "history.json") == []
+def test_titles_apply_at_most_every_5_seconds(ctl):
+    playing(ctl); seen = []; ctl.subscribe(seen.append)
+    ctl.on_player_title("Queen - A Kind Of Magic")                           # the first after starting: at once
+    assert ctl.track == "Queen - A Kind Of Magic"
+    for n in range(1000):                                                    # a flood within the next 4 s
+        ctl.scheduler.advance(0.004); ctl.on_player_title(f"Spam {n} - Song")
+    assert ctl.track == "Queen - A Kind Of Magic" and len(ctl.history) == 1 and len(ctl.fetch.urls) == 1
+    ctl.scheduler.advance(1.5)                                               # 5 s on: the newest, never an old one
+    assert ctl.track == "Spam 999 - Song"
+    assert [h.title for h in ctl.history] == ["Spam 999 - Song", "Queen - A Kind Of Magic"]
+    assert len(ctl.statistics.songs) == 2 and len(ctl.fetch.urls) == 2 and sum(Change.TRACK in c for c in seen) == 2
+    assert [h.title for h in load_history(ctl.paths.data / "history.json")] == [h.title for h in ctl.history]
+    ctl.on_player_title("Editors - Shadow")                                  # within 5 s of the last one
+    assert ctl.track == "Spam 999 - Song"
+    ctl.scheduler.advance(5)
+    assert ctl.track == "Editors - Shadow"
+def test_a_title_back_to_the_one_shown_is_no_change(ctl):
+    playing(ctl)
+    ctl.on_player_title("Queen - A Kind Of Magic")
+    ctl.on_player_title("Station - Jingle"); ctl.on_player_title("Queen - A Kind Of Magic")
+    ctl.scheduler.advance(5)
+    assert ctl.track == "Queen - A Kind Of Magic" and len(ctl.history) == 1
+def test_a_repeated_title_doesnt_hold_back_the_next_one(ctl):
+    playing(ctl)
+    title(ctl, "Queen - A Kind Of Magic"); ctl.scheduler.advance(1)
+    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.scheduler.advance(1)   # the same again: not a change
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
+def test_a_new_station_or_a_reconnect_shows_its_first_title_at_once(ctl):
+    playing(ctl)
+    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("Station A - Jingle")   # the jingle waits
+    playing(ctl, 1)
+    ctl.scheduler.advance(5)
+    assert ctl.track is None                                                 # not the other station's title
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
+    ctl.on_player_error(ErrorKind.NETWORK, "lost"); ctl.scheduler.advance(2); ctl.on_player_started()
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
 
 
 # ---- The station list ----
@@ -250,6 +306,12 @@ def test_add_station_rejects_invalid_and_duplicates(ctl):
     assert ctl.add_station(Station(" New ", "http://new/s")) is AddResult.ADDED and ctl.stations[-1].name == "New"
     assert ctl.add_station(Station("Logo", "http://logo/s", "javascript:alert(1)")) is AddResult.INVALID
     assert saved_names(ctl) == ["Alpha", "Beta", "Gamma", "New"]
+def test_added_and_edited_names_are_cleaned(ctl):
+    # The manual form, radio-browser and share links all add through add_station.
+    assert ctl.add_station(Station("‮New\x00 FM⁩", "http://new/s")) is AddResult.ADDED
+    assert ctl.stations[-1].name == "New FM"
+    assert ctl.add_station(Station("‎‏", "http://other/s")) is AddResult.INVALID
+    assert ctl.update_station(0, Station("z" * 130, A.url)) is AddResult.ADDED and ctl.stations[0].name == "z" * 100
 def test_update_station_follows_the_playing_station(ctl):
     playing(ctl, 1)
     assert ctl.update_station(1, Station("Beta FM", B.url, B.logo)) is AddResult.ADDED          # renamed only
@@ -298,6 +360,11 @@ def test_import_merges_like_windows(ctl, tmp_path):
     assert f.exists()                                                        # never moved aside
     assert ctl.import_stations(tmp_path / "missing.json") == ImportResult(0, NOT_A_LIST)
     assert len(ctl.stations) == 5
+def test_imported_names_are_cleaned(ctl, tmp_path):
+    f = tmp_path / "list.json"
+    f.write_text(json.dumps([{"Name": "‮Delta\x07", "Url": "http://d.example/live", "Logo": None},
+                             {"Name": "⁦⁩", "Url": "http://e.example/live", "Logo": None}]), "utf-8")
+    assert ctl.import_stations(f) == ImportResult(1, None) and ctl.stations[-1].name == "Delta"
 def test_export_writes_windows_list_and_reports_failure(ctl, tmp_path):
     out = tmp_path / "export.json"
     assert ctl.export_stations(out) is True
@@ -353,3 +420,11 @@ def test_start_keeps_the_200_newest_covers(ctl_factory):
         f = covers / f"{n:03}.jpg"; f.write_bytes(b"cover"); os.utime(f, (1_700_000_000 + n, 1_700_000_000 + n))
     c.start(autostart=True)
     assert sorted(p.name for p in covers.iterdir()) == [f"{n:03}.jpg" for n in range(5, 205)]
+def test_start_keeps_the_stations_logos_and_the_200_newest_others(ctl_factory):
+    c = ctl_factory()                                                        # Beta has a logo
+    logos = c.paths.cache / "logos"; logos.mkdir(parents=True)
+    for n in range(205):                                                     # favicons from searches
+        f = logos / f"{n:03}"; f.write_bytes(b"logo"); os.utime(f, (1_700_000_000 + n, 1_700_000_000 + n))
+    own = logos / logo_name(B.logo); own.write_bytes(b"logo"); os.utime(own, (1_600_000_000, 1_600_000_000))
+    c.start(autostart=True)
+    assert sorted(p.name for p in logos.iterdir()) == sorted([f"{n:03}" for n in range(5, 205)] + [own.name])

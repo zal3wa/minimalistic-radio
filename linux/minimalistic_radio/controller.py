@@ -13,18 +13,20 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum, Flag, auto
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Collection, Protocol
 
 from . import APP_NAME
 from .core.covers import CoverCache, itunes_search_url, pick_cover
+from .core.imagesize import fits
 from .core.models import HistoryEntry, Preferences, Station, Statistics
 from .core.share import SharedStation
 from .core.statistics import SAVE_SECONDS, Recorder
 from .core.storage import (
-    HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations,
+    HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations, logo_name,
     save_history, save_preferences, save_statistics, save_stations,
 )
 from .core.streams import is_web_url, same_stream, stream_key
+from .core.text import clean_name
 from .core.titles import (
     RADIO357_NOW_URL, artwork_from_raw, parse_title, radio357_title, split_track, station_kind,
 )
@@ -35,7 +37,9 @@ LONG_CONNECTION = timedelta(seconds=60)      # a connection that lasted longer r
 NETWORK_RETURN_WINDOW = timedelta(minutes=10)
 FADE_SECONDS = 30                            # the sleep timer fades out over its last 30 seconds
 RADIO357_POLL_SECONDS = 10
+TITLE_SECONDS = 5                            # a stream's title changes are applied at most this often
 COVERS_KEPT = 200                            # pictures kept in the cover cache
+LOGOS_KEPT = 200                             # logos kept in the logo cache, besides those of the stations on the list
 VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
 SWITCH_SETTLE = 0.3                          # a media key or tray switch connects once switching pauses this long
 LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
@@ -153,6 +157,8 @@ class RadioController:
         self._retry_timer: object | None = None
         self._poll_timer: object | None = None
         self._switch_timer: object | None = None   # set while a switched station waits to connect
+        self._title_timer: object | None = None    # set for TITLE_SECONDS after a title was applied
+        self._title_waiting: tuple[str | None] | None = None   # (raw,): the newest title that came meanwhile
         self._polling = False
         # Listening statistics: the sessions and songs go to statistics.json, the running session every 5 minutes.
         self._recorder = Recorder(self.statistics)
@@ -223,7 +229,8 @@ class RadioController:
         self.statistics = self._load_statistics()
         self._recorder = Recorder(self.statistics)
         self.volume = self.prefs.volume
-        self._prune_covers()
+        self._prune(self.paths.cache / "covers", COVERS_KEPT)
+        self._prune(self.paths.cache / "logos", LOGOS_KEPT, {logo_name(s.logo) for s in self.stations if s.logo})
         self.current = next((i for i, s in enumerate(self.stations) if s.url == self.prefs.last_played), -1)
         self.player.set_volume(self.effective_volume)
         self._emit(Change.STATE | Change.STATIONS | Change.VOLUME | Change.HISTORY | Change.PREFERENCES
@@ -231,21 +238,23 @@ class RadioController:
         if self.current >= 0 and not autostart:
             self.play()
 
-    def _prune_covers(self) -> None:
-        """Keeps only the newest cover pictures, so the cache doesn't grow with every song."""
+    @staticmethod
+    def _prune(folder: Path, kept: int, keep: Collection[str] = ()) -> None:
+        """Keeps only the `kept` newest files of a cache folder, and those named in `keep`, so the cache doesn't
+        grow with every song or search. (The logo cache freshens a logo's file each time it is used.)"""
         try:
-            entries = list(os.scandir(self.paths.cache / "covers"))
+            entries = list(os.scandir(folder))
         except OSError:
             return
         files = []
         for entry in entries:
             try:
-                if entry.is_file():
+                if entry.is_file() and entry.name not in keep:
                     files.append((entry.stat().st_mtime, entry.path))
             except OSError:
                 continue
         files.sort(reverse=True)
-        for _mtime, path in files[COVERS_KEPT:]:
+        for _mtime, path in files[kept:]:
             try:
                 os.remove(path)
             except OSError:
@@ -337,6 +346,7 @@ class RadioController:
             if timer is not None:
                 self.scheduler.cancel(timer)
         self._retry_timer = self._poll_timer = self._switch_timer = None
+        self._forget_titles()
         self.gave_up_on_network_at = None
         self.track = None
         self.cover_path = None
@@ -369,6 +379,7 @@ class RadioController:
         self._attempt += 1
         self._listening_ended()   # a reconnect within 2 minutes continues the same statistics session
         self.player.stop()
+        self._forget_titles()
         self.track = None
         self.cover_path = None
         self.status = Status.RETRYING
@@ -417,7 +428,7 @@ class RadioController:
     def on_player_title(self, raw: str) -> None:
         # Radio 357 sends a fixed slogan in the stream; its songs come from playing.json.
         if self._connected() and self._kind != "radio357":
-            self._show_track(raw)
+            self._offer_title(raw)
 
     def on_player_error(self, kind: ErrorKind, detail: str) -> None:
         if not self._connected():
@@ -432,6 +443,32 @@ class RadioController:
             self._connection_ended(None)
 
     # ---- Titles, covers, history ----
+
+    def _offer_title(self, raw: str | None) -> None:
+        """A title from the stream. Changes are applied at most once every TITLE_SECONDS, so a station sending
+        titles by the hundred can't slow the radio down (each one is saved in the history and the statistics, and
+        looks for a cover): the first at once, and of those that come in the next TITLE_SECONDS the newest when
+        they are over, so the title shown is never an old one. Everything after a title sees only applied ones."""
+        if self._title_timer is not None:
+            self._title_waiting = (raw,)
+            return
+        if parse_title(raw, self._kind) == self.track:
+            return   # no change: nothing to hold the next one back for
+        self._show_track(raw)
+        self._title_timer = self.scheduler.call_later(TITLE_SECONDS, self._title_due)
+
+    def _title_due(self) -> None:
+        self._title_timer = None
+        waiting, self._title_waiting = self._title_waiting, None
+        if waiting is not None and self._connected():
+            self._offer_title(waiting[0])
+
+    def _forget_titles(self) -> None:
+        """A new station or connection: its first title is applied at once, and none from before."""
+        if self._title_timer is not None:
+            self.scheduler.cancel(self._title_timer)
+        self._title_timer = None
+        self._title_waiting = None
 
     def _show_track(self, raw: str | None) -> None:
         title = parse_title(raw, self._kind)
@@ -577,6 +614,19 @@ class RadioController:
         self.fetch_file(url, path, done)
 
     def _show_cover(self, path: Path) -> None:
+        """Only a picture whose declared size is read and fits (core/imagesize.py), downloaded now or kept from
+        before: the footer, the notification and the desktop's media controls (MPRIS) all decode it. Any other file
+        is deleted."""
+        try:
+            ok = fits(path.read_bytes())
+        except OSError:
+            return
+        if not ok:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return
         self.cover_path = path
         self._emit(Change.COVER)
 
@@ -590,7 +640,7 @@ class RadioController:
             if session != self._session:
                 return
             if self._connected():
-                self._show_track(radio357_title(payload))
+                self._offer_title(radio357_title(payload))
             self._poll_timer = self.scheduler.call_later(
                 RADIO357_POLL_SECONDS, lambda: self._poll_radio357(session))
 
@@ -700,7 +750,8 @@ class RadioController:
 
     @staticmethod
     def _cleaned(s: Station) -> Station | None:
-        name, url, logo = (s.name or "").strip(), (s.url or "").strip(), (s.logo or "").strip()
+        """The station form, radio-browser and share links all add through here."""
+        name, url, logo = clean_name(s.name), (s.url or "").strip(), (s.logo or "").strip()
         if not name or not is_web_url(url) or (logo and not is_web_url(logo)):
             return None
         return Station(name, url, logo or None)
@@ -799,13 +850,14 @@ class RadioController:
             if not isinstance(item, dict):
                 continue
             name, url, logo = item.get("Name"), item.get("Url"), item.get("Logo")
-            if not isinstance(name, str) or not name.strip() or not isinstance(url, str) or not is_web_url(url):
+            name = clean_name(name) if isinstance(name, str) else ""
+            if not name or not isinstance(url, str) or not is_web_url(url):
                 continue
             key = stream_key(url)
             if key in known:
                 continue
             known.add(key)
-            fresh.append(Station(name.strip(), url, logo if isinstance(logo, str) and is_web_url(logo) else None))
+            fresh.append(Station(name, url, logo if isinstance(logo, str) and is_web_url(logo) else None))
         if fresh:
             self.stations.extend(fresh)
             self._stations_changed()

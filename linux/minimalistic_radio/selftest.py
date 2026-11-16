@@ -240,12 +240,19 @@ def _check_bans() -> None:
            "the banned-stations list is not loaded: Radio Republika would be shown")
 
 
+def _png(width: int, height: int) -> bytes:
+    red = GLib.Bytes.new(bytes([200, 30, 30, 255]) * width * height)
+    return Gdk.MemoryTexture.new(width, height, Gdk.MemoryFormat.R8G8B8A8, red, width * 4).save_to_png_bytes().get_data()
+
+
 def _check_pictures() -> None:
-    """A PNG logo decodes and shrinks: in the Flatpak, gdk-pixbuf's decoders may not start (pictures.py)."""
-    red = GLib.Bytes.new(bytes([200, 30, 30, 255]) * 16 * 16)
-    png = Gdk.MemoryTexture.new(16, 16, Gdk.MemoryFormat.R8G8B8A8, red, 16 * 4).save_to_png_bytes()
-    small = picture(png.get_data(), 8)
+    """A PNG logo decodes and shrinks: in the Flatpak, gdk-pixbuf's decoders may not start (pictures.py). A picture
+    4096 pixels wide still does; one pixel wider is refused before the decoder sees it."""
+    small = picture(_png(16, 16), 8)
     _check(small is not None and (small.get_width(), small.get_height()) == (8, 8), "a PNG logo doesn't decode")
+    wide = picture(_png(4096, 1), 8)
+    _check(wide is not None and (wide.get_width(), wide.get_height()) == (8, 1), "a 4096 px wide PNG doesn't decode")
+    _check(picture(_png(4097, 1), 8) is None, "a picture wider than 4096 px is decoded")
 
 
 def run_self_test(app: Any) -> int:

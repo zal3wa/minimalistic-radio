@@ -1,11 +1,11 @@
 """Station logos: downloaded once into the cache folder, decoded off the main thread, kept in memory.
 
 Keeping the decoded pictures means the list can be redrawn (a station added, moved or renamed)
-without a logo going blank for a moment.
+without a logo going blank for a moment. The controller prunes the folder at start (the stations' logos and the
+newest others stay), so each file read from it is freshened.
 """
 from __future__ import annotations
 
-import hashlib
 import os
 import tempfile
 import threading
@@ -20,6 +20,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
 from ..core import net  # noqa: E402
+from ..core.storage import logo_name  # noqa: E402
 from ..core.streams import is_web_url  # noqa: E402
 from ..pictures import picture  # noqa: E402
 
@@ -33,7 +34,8 @@ Texture = Gdk.Texture
 
 
 def _decode(data: bytes) -> Texture | None:
-    """A texture from PNG, JPEG, SVG… bytes, at most LOGO_PIXELS; None if it isn't a picture."""
+    """A texture from PNG, JPEG, GIF, WebP, BMP or ICO bytes, at most LOGO_PIXELS; None if it isn't one of them, or
+    declares more than 4096 pixels on a side."""
     return picture(data, LOGO_PIXELS)
 
 
@@ -92,7 +94,7 @@ class LogoCache:
         threading.Thread(target=self._work, args=(url, self._file(url)), daemon=True).start()
 
     def _file(self, url: str) -> Path:
-        return self.folder / hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest()
+        return self.folder / logo_name(url)
 
     def _work(self, url: str, path: Path) -> None:
         with _WORKERS:
@@ -104,12 +106,16 @@ class LogoCache:
         """(texture, whether the download worked). The cached file first, then the network."""
         try:
             texture = _decode(path.read_bytes())
-            if texture is not None:
-                return texture, True
         except OSError:
-            pass
+            texture = None
+        if texture is not None:
+            try:
+                os.utime(path)   # in use: pruning keeps the newest files
+            except OSError:
+                pass
+            return texture, True
         try:
-            data = net.fetch_bytes(url, 10, LOGO_LIMIT)   # load() let only http and https through
+            data = net.fetch_picture(url, LOGO_LIMIT)   # never from the local network
         except net.NetworkError:
             return None, False
         texture = _decode(data)

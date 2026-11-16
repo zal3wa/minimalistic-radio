@@ -8,19 +8,18 @@ anything by itself. The part after # never reaches a server.
 """
 from __future__ import annotations
 
-import unicodedata
 from dataclasses import dataclass
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from .models import Station
 from .streams import is_web_url
+from .text import MAX_NAME, clean_name  # noqa: F401 - MAX_NAME: names from every source share the limit
 
 WEB_LINK = "https://minimalistic-radio.github.io/#"
 APP_LINK = "minimalistic-radio://add?"
 APP_SCHEME = "minimalistic-radio"
 _PAGE_HOST = "minimalistic-radio.github.io"
 MAX_ADDRESS = 2048
-MAX_NAME = 100
 
 
 @dataclass(frozen=True)
@@ -66,11 +65,6 @@ def is_share_link(text: str | None) -> bool:
     return bool(text) and _query(text) is not None
 
 
-def _clean_name(value: str) -> str:
-    kept = "".join(c for c in value if unicodedata.category(c) != "Cc").strip()
-    return kept[:MAX_NAME].rstrip()
-
-
 def read_link(text: str | None) -> SharedStation | None:
     """The station in a share link; None if it isn't a share link or holds no valid station."""
     query = _query(text) if text else None
@@ -80,7 +74,7 @@ def read_link(text: str | None) -> SharedStation | None:
     for key, value in parse_qsl(query, keep_blank_values=True):
         fields.setdefault(key, value)   # the first one counts, as URLSearchParams.get does
     url = fields.get("u", "").strip()
-    name = _clean_name(fields.get("n", ""))
+    name = clean_name(fields.get("n", ""))
     if not name or not _web_address(url):
         return None
     logo = fields.get("l", "").strip()

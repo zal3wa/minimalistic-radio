@@ -11,6 +11,7 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gio  # noqa: E402
 
 from ..controller import Change, Status  # noqa: E402
+from ..core.text import notification_text  # noqa: E402
 from ..pictures import picture  # noqa: E402
 
 NOTIFICATION_ID = "station"
@@ -84,9 +85,10 @@ class StationNotifier:
         name = controller.station_name
         if not name:
             return
-        self.last_title = name
-        self.last_body = self._body()
-        notification = Gio.Notification.new(name)
+        # Some notification servers read the texts as markup (GNOME the body): ‹ and › show instead of < and >.
+        self.last_title = notification_text(name)
+        self.last_body = notification_text(self._body())
+        notification = Gio.Notification.new(self.last_title)
         notification.set_body(self.last_body)
         cover = controller.cover_path
         icon = cover_icon(cover) if cover is not None and cover.exists() else None

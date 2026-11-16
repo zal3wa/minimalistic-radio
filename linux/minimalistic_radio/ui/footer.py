@@ -11,12 +11,14 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 from ..controller import Change, RadioController, Status  # noqa: E402
+from ..pictures import picture  # noqa: E402
 from ..platform.menu_model import SLEEP_MINUTES  # noqa: E402
 
 if TYPE_CHECKING:
     from .window import RadioWindow
 
 COVER_SIZE = 42
+COVER_PIXELS = 600        # decoded at most this big: the size of the iTunes covers, which stay as they are
 FALLBACK_ICON = "audio-x-generic-symbolic"
 BUBBLE_MS = 1000          # the volume bubble hides this long after the last change
 
@@ -149,10 +151,11 @@ class Footer(Gtk.Box):
                 texture = self._cover[1]
             else:
                 try:
-                    texture = Gdk.Texture.new_from_filename(str(path))
-                    self._cover = (path, texture)
-                except GLib.Error:
+                    texture = picture(path.read_bytes(), COVER_PIXELS)
+                except OSError:
                     texture = None
+                if texture is not None:
+                    self._cover = (path, texture)
         if texture is not None:
             self.cover.set_from_paintable(texture)
             self.cover.set_pixel_size(COVER_SIZE)

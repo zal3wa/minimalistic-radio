@@ -1,8 +1,10 @@
-"""Pictures from bytes, made small: station logos and the cover in the notification.
+"""Pictures from bytes, made small: station logos, and the cover in the footer and the notification.
 
-PNG, JPEG and TIFF go through GTK's own decoders. Everything else (SVG, ICO, GIF, WebP…) goes through gdk-pixbuf,
-whose decoders may run as helper processes (glycin) that can fail to start in the Flatpak sandbox, so the common
-formats don't depend on them. Safe to call from a worker thread.
+Nothing is decoded before its declared size is read from its header (core/imagesize.py): a picture wider or taller
+than 4096 pixels, or in a format whose size isn't read there (SVG, TIFF…), is not a picture here. PNG and JPEG go
+through GTK's own decoders. The others (ICO, GIF, WebP, BMP) go through gdk-pixbuf, whose decoders may run as
+helper processes (glycin) that can fail to start in the Flatpak sandbox, so the common formats don't depend on
+them. Safe to call from a worker thread.
 """
 from __future__ import annotations
 
@@ -12,7 +14,9 @@ gi.require_version("Gdk", "4.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib  # noqa: E402
 
-_GTK_FORMATS = (b"\x89PNG", b"\xff\xd8\xff", b"II*\x00", b"MM\x00*")
+from .core.imagesize import fits  # noqa: E402
+
+_GTK_FORMATS = (b"\x89PNG", b"\xff\xd8\xff")
 
 
 def _texture(pixbuf: GdkPixbuf.Pixbuf) -> Gdk.Texture:
@@ -49,6 +53,9 @@ def _with_pixbuf(data: bytes, pixels: int) -> Gdk.Texture | None:
 
 
 def picture(data: bytes, pixels: int) -> Gdk.Texture | None:
-    """At most `pixels` on its longer side (a smaller picture keeps its size); None if it isn't a picture."""
+    """At most `pixels` on its longer side (a smaller picture keeps its size); None if it isn't a picture, or one
+    too big to decode."""
+    if not fits(data):
+        return None
     first, second = (_with_gtk, _with_pixbuf) if data.startswith(_GTK_FORMATS) else (_with_pixbuf, _with_gtk)
     return first(data, pixels) or second(data, pixels)

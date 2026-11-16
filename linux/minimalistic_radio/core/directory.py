@@ -10,6 +10,7 @@ from urllib.parse import quote, urlsplit
 from .models import Station
 from .net import NetworkError, fetch_json
 from .streams import is_web_url, stream_key
+from .text import clean_name
 
 SERVERS = ("de1.api.radio-browser.info", "nl1.api.radio-browser.info")
 _LIMIT = 30
@@ -51,8 +52,8 @@ def parse_results(items: Any, limit: int = _LIMIT, bans: BanList | None = None) 
             continue
         resolved, url = _text(item, "url_resolved"), _text(item, "url")
         address = resolved if is_web_url(resolved) else url
-        name = _text(item, "name")
-        if not name.strip() or not is_web_url(address) or address in seen:
+        name = clean_name(_text(item, "name"))
+        if not name or not is_web_url(address) or address in seen:
             continue
         bitrate = item.get("bitrate")
         entry = DirectoryStation(
@@ -135,7 +136,7 @@ def subtitle(entry: DirectoryStation) -> str:
 
 
 def to_station(entry: DirectoryStation) -> Station:
-    return Station(entry.name.strip(), entry.url, entry.logo if is_web_url(entry.logo) else None)
+    return Station(clean_name(entry.name), entry.url, entry.logo if is_web_url(entry.logo) else None)
 
 
 

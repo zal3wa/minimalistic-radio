@@ -22,7 +22,7 @@ from .. import APP_ID, APP_NAME  # noqa: E402
 from .. import main as entry  # noqa: E402
 from . import in_snap  # noqa: E402
 from .dbusmenu import DBusMenu  # noqa: E402
-from .menu_model import build_tray_menu, tooltip  # noqa: E402
+from .menu_model import build_tray_menu, tooltip, tooltip_markup  # noqa: E402
 
 ITEM_PATH = "/StatusNotifierItem"
 ITEM_IFACE = "org.kde.StatusNotifierItem"
@@ -328,10 +328,7 @@ class TrayIcon(GObject.Object):
 
     def _on_get_property(self, connection, sender, path, interface, name):
         if name == "ToolTip":
-            title, body = tooltip(self.controller)
-            if any(mark in body for mark in "&<>"):
-                # Xfce reads the body as markup and KDE guesses: escaped in a <span>, both show the text as it is.
-                body = f"<span>{GLib.markup_escape_text(body, -1)}</span>"
+            title, body = (tooltip_markup(text) for text in tooltip(self.controller))
             return GLib.Variant("(sa(iiay)ss)", ("", [], title, body))
         if name == "IconPixmap":
             return self._pixmaps

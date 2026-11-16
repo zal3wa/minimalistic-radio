@@ -19,14 +19,17 @@ python.install_sources(
 
 python.install_sources(
   'core/__init__.py',
+  'core/addresses.py',
   'core/covers.py',
   'core/directory.py',
+  'core/imagesize.py',
   'core/models.py',
   'core/net.py',
   'core/share.py',
   'core/statistics.py',
   'core/storage.py',
   'core/streams.py',
+  'core/text.py',
   'core/titles.py',
   subdir: 'minimalistic_radio/core',
 )
