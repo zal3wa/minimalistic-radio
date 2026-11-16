@@ -44,5 +44,17 @@
   </categories>
   <releases>
     <release version="1.0.0" date="2026-11-15"/>
+    <release version="1.0.0~beta.8" type="development" date="2026-11-16">
+      <description translate="no">
+        <p>Safer with pictures and texts from the internet:</p>
+        <ul>
+          <li>Pictures larger than 4096 pixels on a side are not opened, so a logo or a cover can't use up the memory.</li>
+          <li>Logos and covers are never loaded from your home network.</li>
+          <li>A station that changes its song title many times a second no longer slows the radio down.</li>
+          <li>Downloads give up after 30 seconds.</li>
+          <li>Station names and song titles can't turn their text around with hidden direction marks.</li>
+        </ul>
+      </description>
+    </release>
   </releases>
 </component>
