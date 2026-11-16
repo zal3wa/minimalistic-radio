@@ -16,6 +16,7 @@ let fadeSeconds: Double = 30                            // the sleep timer fades
 let radio357PollSeconds: Double = 10
 let coversKept = 200                                    // pictures kept in the cover cache
 let logosKept = 200                                     // pictures kept in the logo cache
+let titleInterval: TimeInterval = 5                     // a stream's title changes are applied at most this often
 let volumeBurst: TimeInterval = 1                       // volume changes closer than this are one (a drag, keys)
 let switchSettle: Double = 0.3                          // a media key or menu switch connects once switching pauses
 let sessionRejoin: TimeInterval = 2 * 60                // a reconnect this soon continues the listening session
@@ -137,6 +138,10 @@ public final class RadioController {
     private var pollTimer: AnyObject?
     private var switchTimer: AnyObject?   // set while a switched station waits to connect
     private var polling = false
+    // Stream titles: when the last change was applied (this connection), and the newest one waiting for its turn.
+    private var titleAppliedAt: Date?
+    private var waitingTitle: String?
+    private var titleTimer: AnyObject?
     // Statistics: the last of statistics.sessions is running while audio plays.
     private var listening = false
     private var statisticsTimer: AnyObject?
@@ -271,8 +276,17 @@ public final class RadioController {
         pollTimer = nil
         switchTimer = nil
         gaveUpOnNetworkAt = nil
+        forgetTitles()
         track = nil
         coverPath = nil
+    }
+
+    /// A new connection has no title waiting, and its first title is applied at once.
+    private func forgetTitles() {
+        if let timer = titleTimer { scheduler.cancel(timer) }
+        titleTimer = nil
+        waitingTitle = nil
+        titleAppliedAt = nil
     }
 
     private func connect() {
@@ -306,6 +320,7 @@ public final class RadioController {
         attempt += 1
         listeningStopped()
         player.stop()
+        forgetTitles()
         track = nil
         coverPath = nil
         status = .retrying
@@ -357,7 +372,7 @@ public final class RadioController {
 
     public func onPlayerTitle(_ raw: String) {
         // Radio 357 sends a fixed slogan in the stream; its songs come from playing.json.
-        if connected() && kind != "radio357" { showTrack(raw) }
+        if connected() && kind != "radio357" { offerTitle(raw) }
     }
 
     public func onPlayerError(_ kind: ErrorKind, detail: String) {
@@ -371,18 +386,50 @@ public final class RadioController {
 
     // MARK: - Titles, covers, history
 
-    private func showTrack(_ raw: String?) {
+    /// A stream's title changes are applied at most once every 5 seconds: the first one at once, then the newest
+    /// one when the 5 seconds have passed, so a flood of titles can't slow the radio down and the title shown is
+    /// never stale. A repeat of the title shown changes nothing and doesn't wait.
+    private func offerTitle(_ raw: String) {
+        if titleTimer == nil && parseTitle(raw, kind: kind) == track { return }
+        let now = scheduler.now()
+        guard let applied = titleAppliedAt, now.timeIntervalSince(applied) < titleInterval else {
+            applyTitle(raw)
+            return
+        }
+        waitingTitle = raw
+        guard titleTimer == nil else { return }
+        let wanted = session
+        titleTimer = scheduler.callLater(titleInterval - now.timeIntervalSince(applied)) { [weak self] in
+            self?.titleDue(wanted)
+        }
+    }
+
+    private func titleDue(_ wanted: Int) {
+        titleTimer = nil
+        guard wanted == session, connected(), let raw = waitingTitle else { return }
+        waitingTitle = nil
+        applyTitle(raw)
+    }
+
+    private func applyTitle(_ raw: String) {
+        if showTrack(raw) { titleAppliedAt = scheduler.now() }
+    }
+
+    /// True when the title shown changed. History, statistics, covers and Now Playing follow from here.
+    @discardableResult
+    private func showTrack(_ raw: String?) -> Bool {
         let title = parseTitle(raw, kind: kind)
         let artwork = title != nil ? artworkFromRaw(raw) : nil
-        if title == track { return }
+        if title == track { return false }
         track = title
         coverPath = nil
         if title != nil && listening { statistics.sessions[statistics.sessions.count - 1].titles = true }
         var changes: Change = [.track, .cover]
         if let title, addToHistory(title) { changes.insert(.history) }
         emit(changes)
-        guard let title else { return }
+        guard let title else { return true }
         if let artwork { downloadCover(artwork, title) } else { findCover(title) }
+        return true
     }
 
     private func stillShowing(_ wanted: Int, _ title: String) -> Bool {
