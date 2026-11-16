@@ -4,9 +4,6 @@ import Foundation
 // Temporary: only the declarations the new security tests need, doing nothing yet, so the tests compile and fail
 // first. Each one is replaced by its real code in the commits that follow.
 
-public func withoutHiddenCharacters(_ text: String) -> String { text }
-public func cleanName(_ name: String?) -> String { name ?? "" }
-
 public typealias ResolveHost = (String) -> [String]?
 public func pictureAddressAllowed(_ url: URL, resolve: ResolveHost) -> Bool { true }
 public func systemResolve(_ host: String) -> [String]? { nil }

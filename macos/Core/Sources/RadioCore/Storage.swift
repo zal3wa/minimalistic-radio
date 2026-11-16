@@ -66,8 +66,8 @@ public func loadStations(_ url: URL) -> (stations: [Station], wasCorrupt: Bool) 
     }
     var stations: [Station] = []
     for case let item as [String: Any] in items {
-        guard let name = item["Name"] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty,
-              let address = item["Url"] as? String, isWebURL(address) else { continue }
+        let name = cleanName(item["Name"] as? String)
+        guard !name.isEmpty, let address = item["Url"] as? String, isWebURL(address) else { continue }
         stations.append(Station(name: name, url: address, logo: item["Logo"] as? String))
     }
     return (stations, false)

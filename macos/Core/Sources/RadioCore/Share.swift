@@ -3,7 +3,8 @@ import Foundation
 // Share a station: a link that opens a page on minimalistic-radio.github.io, which opens the radio with the station
 // (docs/superpowers/specs/2026-11-15-share-station-design.md). The same rules as on Windows, Linux and the page.
 
-/// A station from a share link, checked: a name of 1–100 characters, an http(s) address, an http(s) logo or none.
+/// A station from a share link, checked: a name of 1–100 characters (cleanName), an http(s) address, an http(s)
+/// logo or none.
 public struct SharedStation: Equatable, Sendable {
     public let name: String
     public let url: String
@@ -27,7 +28,6 @@ public let shareAppPrefix = "minimalistic-radio://add?"
 let shareHost = "minimalistic-radio.github.io"
 let shareScheme = "minimalistic-radio"
 let shareMaxAddress = 2048
-let shareMaxName = 100
 
 /// n=name&u=address(&l=logo), form-encoded as the page's URLSearchParams writes it. The logo only when it is one a
 /// link may carry.
@@ -93,10 +93,7 @@ private func webRest(_ link: String, _ lowered: String, _ scheme: String) -> Sub
 func sharedStation(name: String?, url: String?, logo: String?) -> SharedStation? {
     guard let address = url?.trimmingCharacters(in: .whitespacesAndNewlines), address.count <= shareMaxAddress,
           isWebURL(address) else { return nil }
-    var visible = String.UnicodeScalarView()
-    visible.append(contentsOf: (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars
-        .filter { !CharacterSet.controlCharacters.contains($0) })
-    let cleaned = String(String(visible).prefix(shareMaxName)).trimmingCharacters(in: .whitespacesAndNewlines)
+    let cleaned = cleanName(name)
     guard !cleaned.isEmpty else { return nil }
     return SharedStation(name: cleaned, url: address, logo: shareableLogo(logo))
 }

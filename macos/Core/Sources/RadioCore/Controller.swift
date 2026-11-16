@@ -645,8 +645,9 @@ public final class RadioController {
 
     // MARK: - Editing the station list
 
+    /// The form, radio-browser and share links all add through here: the name cleaned, the addresses checked.
     private static func cleaned(_ s: Station) -> Station? {
-        let name = s.name.trimmingCharacters(in: .whitespaces)
+        let name = cleanName(s.name)
         let address = s.url.trimmingCharacters(in: .whitespaces)
         let logo = (s.logo ?? "").trimmingCharacters(in: .whitespaces)
         if name.isEmpty || !isWebURL(address) || (!logo.isEmpty && !isWebURL(logo)) { return nil }
@@ -749,14 +750,13 @@ public final class RadioController {
         var known = Set(stations.map { streamKey($0.url) })
         var fresh: [Station] = []
         for case let item as [String: Any] in items {
-            guard let name = item["Name"] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty,
-                  let address = item["Url"] as? String, isWebURL(address) else { continue }
+            let name = cleanName(item["Name"] as? String)
+            guard !name.isEmpty, let address = item["Url"] as? String, isWebURL(address) else { continue }
             let key = streamKey(address)
             if known.contains(key) { continue }
             known.insert(key)
             let logo = item["Logo"] as? String
-            fresh.append(Station(name: name.trimmingCharacters(in: .whitespaces), url: address,
-                                 logo: isWebURL(logo) ? logo : nil))
+            fresh.append(Station(name: name, url: address, logo: isWebURL(logo) ? logo : nil))
         }
         if !fresh.isEmpty {
             stations.append(contentsOf: fresh)
