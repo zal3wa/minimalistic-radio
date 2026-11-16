@@ -15,6 +15,7 @@ let networkReturnWindow: TimeInterval = 10 * 60
 let fadeSeconds: Double = 30                            // the sleep timer fades out over its last 30 seconds
 let radio357PollSeconds: Double = 10
 let coversKept = 200                                    // pictures kept in the cover cache
+let logosKept = 200                                     // pictures kept in the logo cache
 let volumeBurst: TimeInterval = 1                       // volume changes closer than this are one (a drag, keys)
 let switchSettle: Double = 0.3                          // a media key or menu switch connects once switching pauses
 let sessionRejoin: TimeInterval = 2 * 60                // a reconnect this soon continues the listening session
@@ -192,25 +193,12 @@ public final class RadioController {
         history = loadHistory(paths.historyFile)
         statistics = loadStatistics(paths.statisticsFile)
         volume = prefs.volume
-        pruneCovers()
+        pruneFolder(paths.coversFolder, keep: coversKept)
+        pruneFolder(paths.logosFolder, keep: logosKept)
         current = stations.firstIndex { $0.url == prefs.lastPlayed } ?? -1
         player.setVolume(effectiveVolume)
         emit([.state, .stations, .volume, .history, .preferences])
         if current >= 0 && !autostart { play() }
-    }
-
-    /// Keeps only the newest cover pictures, so the cache doesn't grow with every song.
-    private func pruneCovers() {
-        let files = FileManager.default
-        guard let entries = try? files.contentsOfDirectory(at: paths.coversFolder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey]) else { return }
-        let dated: [(Date, URL)] = entries.compactMap { url in
-            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
-                  values.isRegularFile == true else { return nil }
-            return (values.contentModificationDate ?? .distantPast, url)
-        }
-        for (_, url) in dated.sorted(by: { $0.0 > $1.0 }).dropFirst(coversKept) {
-            try? files.removeItem(at: url)
-        }
     }
 
     // Saving never stops the radio. Only a station list that couldn't be saved is worth telling (as Windows).

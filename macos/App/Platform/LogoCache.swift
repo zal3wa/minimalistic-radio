@@ -72,9 +72,13 @@ final class LogoCache {
         Insecure.SHA1.hash(data: Data(url.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// (image, whether the download worked). The cached file first, then the network.
+    /// (image, whether the download worked). The cached file first, then the network. A cached file that is used
+    /// counts as new again: the controller keeps the 200 newest logos at start, so these are the ones in use.
     nonisolated private static func read(_ url: String, _ file: URL) async -> (NSImage?, Bool) {
-        if let data = try? Data(contentsOf: file), let image = decode(data) { return (image, true) }
+        if let data = try? Data(contentsOf: file), let image = decode(data) {
+            try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: file.path)
+            return (image, true)
+        }
         guard let address = URL(string: url), let data = try? await Network.fetchData(address, limit: logoLimit) else {
             return (nil, false)
         }

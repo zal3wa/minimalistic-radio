@@ -73,6 +73,20 @@ public func loadStations(_ url: URL) -> (stations: [Station], wasCorrupt: Bool) 
     return (stations, false)
 }
 
+/// Keeps only the `keep` newest files of a cache folder (covers, logos), so it doesn't grow without end.
+func pruneFolder(_ folder: URL, keep: Int) {
+    let files = FileManager.default
+    let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
+    guard let entries = try? files.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys) else { return }
+    let dated: [(Date, URL)] = entries.compactMap { url in
+        guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isRegularFile == true else { return nil }
+        return (values.contentModificationDate ?? .distantPast, url)
+    }
+    for (_, url) in dated.sorted(by: { $0.0 > $1.0 }).dropFirst(keep) {
+        try? files.removeItem(at: url)
+    }
+}
+
 func moveAside(_ url: URL) {
     let bad = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".bad")
     try? FileManager.default.removeItem(at: bad)
