@@ -1,0 +1,41 @@
+{
+  "about" : "Pixel centres (x, y from the top left) in the macos-demo-<name>-<light|dark>.png pictures, 2x.",
+  "frames" : {
+    "macos-demo-history" : {
+      "back" : [
+        42,
+        44
+      ],
+      "song-menu" : [
+        772,
+        153
+      ],
+      "statistics" : [
+        696,
+        44
+      ]
+    },
+    "macos-demo-history-menu" : {
+      "search-on-spotify" : [
+        660,
+        244
+      ]
+    },
+    "macos-demo-stations" : {
+      "history" : [
+        308,
+        44
+      ]
+    },
+    "macos-demo-statistics" : {
+      "back" : [
+        42,
+        44
+      ]
+    }
+  },
+  "size" : [
+    824,
+    1204
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "size": [
+    804,
+    1184
+  ],
+  "frames": {
+    "linux-demo-stations-light.png": {
+      "history": [
+        323,
+        61
+      ]
+    },
+    "linux-demo-history-light.png": {
+      "song-menu": [
+        708,
+        191
+      ],
+      "statistics": [
+        594,
+        61
+      ]
+    },
+    "linux-demo-history-menu-light.png": {
+      "search-on-spotify": [
+        582,
+        356
+      ]
+    },
+    "linux-demo-statistics-light.png": {
+      "back": [
+        55,
+        61
+      ]
+    },
+    "linux-demo-stations-dark.png": {
+      "history": [
+        323,
+        61
+      ]
+    },
+    "linux-demo-history-dark.png": {
+      "song-menu": [
+        708,
+        191
+      ],
+      "statistics": [
+        594,
+        61
+      ]
+    },
+    "linux-demo-history-menu-dark.png": {
+      "search-on-spotify": [
+        582,
+        356
+      ]
+    },
+    "linux-demo-statistics-dark.png": {
+      "back": [
+        55,
+        61
+      ]
+    }
+  }
+}

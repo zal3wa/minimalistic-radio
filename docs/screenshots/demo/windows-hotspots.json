@@ -1,0 +1,9 @@
+{
+  "scale": 2,
+  "frames": {
+    "stations": { "file": "MinimalisticRadio-shot-demo-stations-light.png", "width": 864, "height": 1244, "history": [327, 78] },
+    "history": { "file": "MinimalisticRadio-shot-demo-history-light.png", "width": 864, "height": 1244, "more": [774, 212], "statistics": [717, 78] },
+    "history-menu": { "file": "MinimalisticRadio-shot-demo-history-menu-light.png", "width": 864, "height": 1244, "spotify": [596, 355] },
+    "statistics": { "file": "MinimalisticRadio-shot-demo-statistics-light.png", "width": 864, "height": 1244, "back": [78, 78] }
+  }
+}
