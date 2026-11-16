@@ -262,6 +262,12 @@ internal sealed partial class Radio
                 ParseTrack("Promo - text=\"Reklama\" song_spot=\"A\"", 0) != null ||
                 ParseTrack("- text=\"Spot Block End\" amgTrackId=\"9876543\" length=\"00:00:00\"", 0) != null)
                 throw new InvalidOperationException("Błędne metadane.");
+            // Song titles: the names' cleanup (also what HTML entities turn into), and at most 240 characters.
+            if (ParseTrack("Queen\u202E - A Kind Of Magic\u200F\u0007", -1) != "Queen - A Kind Of Magic" ||
+                ParseTrack("Queen &#x202E;- A Kind Of &#8207;Magic", -1) != "Queen - A Kind Of Magic" ||
+                ParseTrack("Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F", -1) != "Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F" ||
+                ParseTrack(new string('x', 300), -1) != new string('x', 240) + "…")
+                throw new InvalidOperationException("Błędne czyszczenie tytułu utworu.");
             if (iconHandle == IntPtr.Zero || Theme.AppImage(64)?.PixelWidth != 64)
                 throw new InvalidOperationException("Brak ikony w zasobach programu.");
             Covers.Split("Leonard Cohen - Everybody Knows", out string artist, out string song);
@@ -1003,7 +1009,7 @@ internal sealed partial class Radio
     private static string ParseTrack(string raw, int playingStation)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
-        string value = System.Net.WebUtility.HtmlDecode(raw).Trim();
+        string value = Storage.CleanText(System.Net.WebUtility.HtmlDecode(raw)).Trim();   // the names' cleanup
         if (playingStation == 0)
         {
             // iHeart (KIIS) sends songs either as: title="…",artist="…",url="…"
@@ -1434,8 +1440,11 @@ internal sealed partial class Radio
     {
         var saved = Storage.Read<List<SavedStation>>(Storage.StationFile);
         foreach (var item in saved ?? new List<SavedStation>())
-            if (item != null && !string.IsNullOrWhiteSpace(item.Name) && Storage.IsWebUrl(item.Url))
-                Stations.Add(item);
+        {
+            if (item == null || !Storage.IsWebUrl(item.Url)) continue;
+            item.Name = Storage.CleanName(item.Name);   // like a name from any other source
+            if (item.Name.Length > 0) Stations.Add(item);
+        }
     }
 
     private static int Clamp(int value, int min, int max) => Math.Max(min, Math.Min(max, value));

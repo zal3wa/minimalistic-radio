@@ -835,7 +835,7 @@ internal sealed partial class Radio
                 searchStatus.Text = L("This station is already on the list.");
                 return;
             }
-            var added = new SavedStation { Name = item.Name.Trim(), Url = address, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null };
+            var added = new SavedStation { Name = Storage.CleanName(item.Name), Url = address, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null };
             if (!ApplyStations(Stations.Concat(new[] { added }).ToList())) return;
             if (station < 0) SelectStation(Stations.IndexOf(added));
             list.SelectedIndex = station;
@@ -844,7 +844,7 @@ internal sealed partial class Radio
 
         save.Click += (_, _) =>
         {
-            string label = name.Text?.Trim();
+            string label = Storage.CleanName(name.Text);
             string address = url.Text?.Trim();
             string logoAddress = logo.Text?.Trim();
             if (ShareLink.TryParse(address, out _))   // a shared station's link typed in: its page, not a stream
@@ -1437,10 +1437,10 @@ internal sealed partial class Radio
                         return;
                     }
                     var fresh = loaded
-                        .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Name) && Storage.IsWebUrl(item.Url) &&
-                            !Stations.Any(known => Storage.SameStream(known.Url, item.Url)))
+                        .Where(item => item != null && Storage.IsWebUrl(item.Url) && !Stations.Any(known => Storage.SameStream(known.Url, item.Url)))
+                        .Select(item => new SavedStation { Name = Storage.CleanName(item.Name), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
+                        .Where(item => item.Name.Length > 0)
                         .GroupBy(item => Storage.StreamKey(item.Url)).Select(same => same.First())
-                        .Select(item => new SavedStation { Name = item.Name.Trim(), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
                         .ToList();
                     if (fresh.Count == 0) Report(L("All stations from this file are already on the list."));
                     else if (ApplyStations(Stations.Concat(fresh).ToList())) Report(L("Stations added: {0}.", fresh.Count));
