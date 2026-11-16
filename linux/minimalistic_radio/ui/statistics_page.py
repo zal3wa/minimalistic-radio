@@ -10,7 +10,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk, Pango  # noqa: E402
+from gi.repository import Adw, Gio, Gtk, Pango  # noqa: E402
 
 from ..controller import Change, RadioController  # noqa: E402
 from ..core.statistics import (  # noqa: E402
@@ -156,16 +156,12 @@ class StatisticsPage(Adw.NavigationPage):
         for widget in (self.peak_label, self.chart, axis):
             hours.append(widget)
 
-        self.clear_button = Gtk.Button(label=_("Clear statistics"), halign=Gtk.Align.START, css_classes=["link"])
-        self.clear_button.connect("clicked", lambda _button: self.ask_to_clear())
-
         self.data = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.data.append(_card(listening))
         self.data.append(tiles)
         self.data.append(self._section(_("Top stations"), self.stations_list))
         self.data.append(self._section(_("Top artists"), self.share_label, self.artists_list, self.too_few))
         self.data.append(self._section(_("When you listen"), _card(hours)))
-        self.data.append(self.clear_button)
 
         # The empty line or the numbers. Not a Gtk.Stack: one that isn't homogeneous both ways measures a wrapping
         # label at one line, so a long translation of the empty line would widen the window.
@@ -176,8 +172,21 @@ class StatisticsPage(Adw.NavigationPage):
             body.append(widget)
         self.scroller = Gtk.ScrolledWindow(child=Adw.Clamp(child=body, maximum_size=600), vexpand=True,
                                            hscrollbar_policy=Gtk.PolicyType.NEVER)
+        # ⋯ left of the ✕, with "Clear statistics…" (it asks first).
+        bar = subpage_bar(self.get_title(), _)
+        menu = Gio.Menu()
+        menu.append(_("Clear statistics…"), "statistics.clear")
+        self.menu_button = Gtk.MenuButton(icon_name="view-more-symbolic", menu_model=menu, tooltip_text=_("More"))
+        self.menu_button.update_property([Gtk.AccessibleProperty.LABEL], [_("More")])
+        self.menu_button.get_popover().set_halign(Gtk.Align.END)   # opens leftwards: stays inside the window
+        bar.pack_end(self.menu_button)
+        actions = Gio.SimpleActionGroup()
+        clear = Gio.SimpleAction.new("clear", None)
+        clear.connect("activate", lambda _action, _param: self.ask_to_clear())
+        actions.add_action(clear)
+        self.insert_action_group("statistics", actions)
         toolbar = Adw.ToolbarView(content=self.scroller)
-        toolbar.add_top_bar(subpage_bar(self.get_title(), _))
+        toolbar.add_top_bar(bar)
         self.set_child(toolbar)
         self.connect("showing", lambda _page: self._opened())
         self.connect("map", lambda _page: self.update())
@@ -210,10 +219,12 @@ class StatisticsPage(Adw.NavigationPage):
         self.update()
 
     def ask_to_clear(self) -> Adw.AlertDialog:
+        """⋯ › Clear statistics…: [Cancel] [Clear], Cancel the default (Enter and Esc). The body is two
+        paragraphs: what goes and what stays, then that it can't be undone."""
         _ = self._
-        dialog = Adw.AlertDialog(heading=_("Clear statistics?"),
-                                 body=_("The listening time and the songs counted so far are deleted. "
-                                        "The song history stays."))
+        body = (_("Your listening statistics will be permanently deleted. Your song history will remain.") + "\n\n"
+                + _("This can't be undone."))
+        dialog = Adw.AlertDialog(heading=_("Clear statistics?"), body=body)
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("clear", _("Clear"))
         dialog.set_response_appearance("clear", Adw.ResponseAppearance.DESTRUCTIVE)

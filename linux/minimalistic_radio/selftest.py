@@ -176,7 +176,15 @@ def _check_statistics(window: RadioWindow) -> None:
     _check(not controller.prefs.collect_statistics and page.off.get_visible(),
            "switching the statistics off doesn't show on the Statistics page")
     window.settings_page.statistics_row.set_active(True)
-    controller.clear_statistics()
+    _check(page.menu_button.get_mapped() and page.menu_button.get_menu_model().get_n_items() == 1,
+           "the Statistics page has no ⋯ menu")
+    page.activate_action("statistics.clear", None)   # its "Clear statistics…"
+    pump(100)
+    dialog = window.get_visible_dialog()
+    _check(isinstance(dialog, Adw.AlertDialog) and dialog.get_default_response() == "cancel"
+           and dialog.get_close_response() == "cancel", "Clear statistics… doesn't ask first")
+    page._clear_answered(dialog, "clear")
+    dialog.force_close()
     pump(20)
     _check(page.shown == "empty", "the Statistics page isn't empty after clearing")
     theme = Gtk.IconTheme.get_for_display(window.get_display())

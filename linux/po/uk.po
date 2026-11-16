@@ -408,16 +408,20 @@ msgid "≈ {time} a day"
 msgstr "≈ {time} на день"
 
 #: minimalistic_radio/ui/statistics_page.py
-msgid "Clear statistics"
-msgstr "Очистити статистику"
+msgid "Clear statistics…"
+msgstr "Очистити статистику…"
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Clear statistics?"
 msgstr "Очистити статистику?"
 
 #: minimalistic_radio/ui/statistics_page.py
-msgid "The listening time and the songs counted so far are deleted. The song history stays."
-msgstr "Підрахований досі час прослуховування й пісні буде видалено. Історія пісень залишиться."
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Вашу статистику прослуховування буде остаточно видалено. Історія композицій залишиться без змін."
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "This can't be undone."
+msgstr "Цю дію неможливо скасувати."
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Clear"
