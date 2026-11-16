@@ -37,6 +37,7 @@ LONG_CONNECTION = timedelta(seconds=60)      # a connection that lasted longer r
 NETWORK_RETURN_WINDOW = timedelta(minutes=10)
 FADE_SECONDS = 30                            # the sleep timer fades out over its last 30 seconds
 RADIO357_POLL_SECONDS = 10
+TITLE_SECONDS = 5                            # a stream's title changes are applied at most this often
 COVERS_KEPT = 200                            # pictures kept in the cover cache
 VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
 SWITCH_SETTLE = 0.3                          # a media key or tray switch connects once switching pauses this long
@@ -155,6 +156,8 @@ class RadioController:
         self._retry_timer: object | None = None
         self._poll_timer: object | None = None
         self._switch_timer: object | None = None   # set while a switched station waits to connect
+        self._title_timer: object | None = None    # set for TITLE_SECONDS after a title was applied
+        self._title_waiting: tuple[str | None] | None = None   # (raw,): the newest title that came meanwhile
         self._polling = False
         # Listening statistics: the sessions and songs go to statistics.json, the running session every 5 minutes.
         self._recorder = Recorder(self.statistics)
@@ -339,6 +342,7 @@ class RadioController:
             if timer is not None:
                 self.scheduler.cancel(timer)
         self._retry_timer = self._poll_timer = self._switch_timer = None
+        self._forget_titles()
         self.gave_up_on_network_at = None
         self.track = None
         self.cover_path = None
@@ -371,6 +375,7 @@ class RadioController:
         self._attempt += 1
         self._listening_ended()   # a reconnect within 2 minutes continues the same statistics session
         self.player.stop()
+        self._forget_titles()
         self.track = None
         self.cover_path = None
         self.status = Status.RETRYING
@@ -419,7 +424,7 @@ class RadioController:
     def on_player_title(self, raw: str) -> None:
         # Radio 357 sends a fixed slogan in the stream; its songs come from playing.json.
         if self._connected() and self._kind != "radio357":
-            self._show_track(raw)
+            self._offer_title(raw)
 
     def on_player_error(self, kind: ErrorKind, detail: str) -> None:
         if not self._connected():
@@ -434,6 +439,32 @@ class RadioController:
             self._connection_ended(None)
 
     # ---- Titles, covers, history ----
+
+    def _offer_title(self, raw: str | None) -> None:
+        """A title from the stream. Changes are applied at most once every TITLE_SECONDS, so a station sending
+        titles by the hundred can't slow the radio down (each one is saved in the history and the statistics, and
+        looks for a cover): the first at once, and of those that come in the next TITLE_SECONDS the newest when
+        they are over, so the title shown is never an old one. Everything after a title sees only applied ones."""
+        if self._title_timer is not None:
+            self._title_waiting = (raw,)
+            return
+        if parse_title(raw, self._kind) == self.track:
+            return   # no change: nothing to hold the next one back for
+        self._show_track(raw)
+        self._title_timer = self.scheduler.call_later(TITLE_SECONDS, self._title_due)
+
+    def _title_due(self) -> None:
+        self._title_timer = None
+        waiting, self._title_waiting = self._title_waiting, None
+        if waiting is not None and self._connected():
+            self._offer_title(waiting[0])
+
+    def _forget_titles(self) -> None:
+        """A new station or connection: its first title is applied at once, and none from before."""
+        if self._title_timer is not None:
+            self.scheduler.cancel(self._title_timer)
+        self._title_timer = None
+        self._title_waiting = None
 
     def _show_track(self, raw: str | None) -> None:
         title = parse_title(raw, self._kind)
@@ -605,7 +636,7 @@ class RadioController:
             if session != self._session:
                 return
             if self._connected():
-                self._show_track(radio357_title(payload))
+                self._offer_title(radio357_title(payload))
             self._poll_timer = self.scheduler.call_later(
                 RADIO357_POLL_SECONDS, lambda: self._poll_radio357(session))
 

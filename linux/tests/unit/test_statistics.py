@@ -5,7 +5,7 @@ import pytest
 
 from minimalistic_radio.core.models import ListeningSession, SongPlay, Station, Statistics
 from minimalistic_radio.core.statistics import (
-    Period, Recorder, artist_of, collected_since, count, enough_titles, find_logo, format_count, format_duration,
+    SONGS_KEPT, Period, Recorder, artist_of, collected_since, count, enough_titles, find_logo, format_count, format_duration,
     format_hours, period_label, plays_text, since_label,
 )
 from minimalistic_radio.core.storage import load_statistics, save_statistics
@@ -37,6 +37,20 @@ def test_save_and_load_round_trip(tmp_path):
     assert '"version": 1' in text and '"start": "2026-11-15T19:02:00Z"' in text and '"titles": true' in text
     assert '"time": "2026-11-15T19:05:12Z"' in text
     assert load_statistics(path) == stats
+
+
+def test_at_most_100_000_song_plays_are_kept(tmp_path):
+    assert SONGS_KEPT == 100_000
+    when = at(2026, 11, 15, 19, 0)
+    stats = stats_of(songs=[SongPlay("Alpha", f"Artist - Song {n}", when) for n in range(SONGS_KEPT)])
+    Recorder(stats).song("Alpha", "Queen - A Kind Of Magic", when)
+    assert len(stats.songs) == SONGS_KEPT                                  # the oldest went
+    assert stats.songs[0].title == "Artist - Song 1" and stats.songs[-1].title == "Queen - A Kind Of Magic"
+    stats.songs[:0] = [SongPlay("Alpha", "Older - Song", when)] * 2         # a file from before the limit
+    path = tmp_path / "statistics.json"
+    save_statistics(path, stats)
+    loaded = load_statistics(path).songs
+    assert len(loaded) == SONGS_KEPT and loaded[0].title == "Artist - Song 1"
 
 
 def test_times_are_saved_in_utc(tmp_path):

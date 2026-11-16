@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import HistoryEntry, ListeningSession, Preferences, SongPlay, Station, Statistics
+from .statistics import SONGS_KEPT
 from .streams import is_web_url
 from .text import clean_name
 
@@ -191,6 +192,7 @@ def load_statistics(path: Path) -> Statistics:
         station, title, time = item.get("station"), item.get("title"), _utc_time(item.get("time"))
         if isinstance(station, str) and isinstance(title, str) and time is not None:
             stats.songs.append(SongPlay(station, title, time))
+    del stats.songs[:-SONGS_KEPT]   # a file from before the limit: its newest plays
     return stats
 
 

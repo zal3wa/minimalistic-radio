@@ -27,6 +27,7 @@ SAVE_SECONDS = 300                                # a running session is saved t
 CLOCK_JUMP = timedelta(seconds=SAVE_SECONDS + 60)   # longer between two updates: the computer slept
 TITLES_SHARE = 0.2                                # less of the time with song titles: too few for Top artists
 TOP = 5
+SONGS_KEPT = 100_000                              # song plays kept at most; the oldest go first
 
 
 def _same(text: str) -> str:
@@ -93,7 +94,10 @@ class Recorder:
         self._titles_waiting = False
 
     def song(self, station: str, title: str, now: datetime) -> None:
-        self.stats.songs.append(SongPlay(station, title, now))
+        songs = self.stats.songs
+        songs.append(SongPlay(station, title, now))
+        if len(songs) > SONGS_KEPT:
+            del songs[:len(songs) - SONGS_KEPT]
         if self.current is not None:
             self.current.titles = True
         else:

@@ -17,6 +17,11 @@ def playing(ctl, index=0):
     ctl.select(index); ctl.play(); ctl.on_player_started()
 
 
+def title(ctl, raw):
+    """A title from the stream, then the 5 seconds after which the next one is applied at once."""
+    ctl.on_player_title(raw); ctl.scheduler.advance(5)
+
+
 def give_up_on_network(ctl):
     """The first station never starts: two retries, then the third NETWORK error stops it."""
     ctl.select(0); ctl.play()
@@ -196,18 +201,18 @@ def test_itunes_cover_is_downloaded_then_shown(ctl):
     assert ctl.cover_path == cover_file(ctl, BIG_COVER) and Change.COVER in seen[-1]
 def test_cover_lookups_are_cached(ctl):
     playing(ctl)
-    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES); ctl.fetch.finish_download()
-    ctl.on_player_title("Dżingiel")                                          # no artist: no lookup, no cover
+    title(ctl, "Leonard Cohen - Everybody Knows"); ctl.fetch.reply(ITUNES); ctl.fetch.finish_download()
+    title(ctl, "Dżingiel")                                                   # no artist: no lookup, no cover
     assert ctl.cover_path is None and len(ctl.fetch.urls) == 1
-    ctl.on_player_title("Leonard Cohen - Everybody Knows")                   # known song, picture already saved
+    title(ctl, "Leonard Cohen - Everybody Knows")                            # known song, picture already saved
     assert len(ctl.fetch.urls) == 1 and ctl.fetch.downloads == [] and ctl.cover_path == cover_file(ctl, BIG_COVER)
-    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.fetch.reply(None)   # failed: asked again next time
-    ctl.on_player_title("Editors - Shadow"); ctl.fetch.reply({"results": []})  # no cover: remembered
-    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("Editors - Shadow")
+    title(ctl, "Queen - A Kind Of Magic"); ctl.fetch.reply(None)            # failed: asked again next time
+    title(ctl, "Editors - Shadow"); ctl.fetch.reply({"results": []})         # no cover: remembered
+    title(ctl, "Queen - A Kind Of Magic"); title(ctl, "Editors - Shadow")
     assert len(ctl.fetch.urls) == 4 and ctl.fetch.urls[-1].endswith("Queen%20A%20Kind%20Of%20Magic")
 def test_late_cover_for_an_earlier_song_is_not_shown(ctl):
     playing(ctl)
-    ctl.on_player_title("Leonard Cohen - Everybody Knows"); ctl.on_player_title("Queen - A Kind Of Magic")
+    title(ctl, "Leonard Cohen - Everybody Knows"); title(ctl, "Queen - A Kind Of Magic")
     ctl.fetch.reply(ITUNES)
     assert ctl.fetch.downloads == [] and ctl.cover_path is None
 def test_stream_artwork_is_used_only_with_a_title(ctl_factory):
@@ -236,11 +241,50 @@ def test_history_skips_repeats_keeps_100_and_clears(ctl):
     ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("***"); ctl.on_player_title("Queen - A Kind Of Magic")
     assert [h.title for h in ctl.history] == ["Queen - A Kind Of Magic"] and ctl.history[0].station == "Alpha"
     assert ctl.history[0].time == ctl.scheduler.now()
-    for n in range(105): ctl.on_player_title(f"Artist - Song {n}")
+    for n in range(105): title(ctl, f"Artist - Song {n}")
     assert len(ctl.history) == 100 and ctl.history[0].title == "Artist - Song 104"
     assert [h.title for h in load_history(ctl.paths.data / "history.json")] == [h.title for h in ctl.history]
     ctl.clear_history()
     assert ctl.history == [] and load_history(ctl.paths.data / "history.json") == []
+def test_titles_apply_at_most_every_5_seconds(ctl):
+    playing(ctl); seen = []; ctl.subscribe(seen.append)
+    ctl.on_player_title("Queen - A Kind Of Magic")                           # the first after starting: at once
+    assert ctl.track == "Queen - A Kind Of Magic"
+    for n in range(1000):                                                    # a flood within the next 4 s
+        ctl.scheduler.advance(0.004); ctl.on_player_title(f"Spam {n} - Song")
+    assert ctl.track == "Queen - A Kind Of Magic" and len(ctl.history) == 1 and len(ctl.fetch.urls) == 1
+    ctl.scheduler.advance(1.5)                                               # 5 s on: the newest, never an old one
+    assert ctl.track == "Spam 999 - Song"
+    assert [h.title for h in ctl.history] == ["Spam 999 - Song", "Queen - A Kind Of Magic"]
+    assert len(ctl.statistics.songs) == 2 and len(ctl.fetch.urls) == 2 and sum(Change.TRACK in c for c in seen) == 2
+    assert [h.title for h in load_history(ctl.paths.data / "history.json")] == [h.title for h in ctl.history]
+    ctl.on_player_title("Editors - Shadow")                                  # within 5 s of the last one
+    assert ctl.track == "Spam 999 - Song"
+    ctl.scheduler.advance(5)
+    assert ctl.track == "Editors - Shadow"
+def test_a_title_back_to_the_one_shown_is_no_change(ctl):
+    playing(ctl)
+    ctl.on_player_title("Queen - A Kind Of Magic")
+    ctl.on_player_title("Station - Jingle"); ctl.on_player_title("Queen - A Kind Of Magic")
+    ctl.scheduler.advance(5)
+    assert ctl.track == "Queen - A Kind Of Magic" and len(ctl.history) == 1
+def test_a_repeated_title_doesnt_hold_back_the_next_one(ctl):
+    playing(ctl)
+    title(ctl, "Queen - A Kind Of Magic"); ctl.scheduler.advance(1)
+    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.scheduler.advance(1)   # the same again: not a change
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
+def test_a_new_station_or_a_reconnect_shows_its_first_title_at_once(ctl):
+    playing(ctl)
+    ctl.on_player_title("Queen - A Kind Of Magic"); ctl.on_player_title("Station A - Jingle")   # the jingle waits
+    playing(ctl, 1)
+    ctl.scheduler.advance(5)
+    assert ctl.track is None                                                 # not the other station's title
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
+    ctl.on_player_error(ErrorKind.NETWORK, "lost"); ctl.scheduler.advance(2); ctl.on_player_started()
+    ctl.on_player_title("Editors - Shadow")
+    assert ctl.track == "Editors - Shadow"
 
 
 # ---- The station list ----
