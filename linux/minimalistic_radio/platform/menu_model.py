@@ -2,6 +2,7 @@
 without a desktop."""
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass, field
 from typing import Any, Callable, Hashable, TypeVar
 
@@ -127,6 +128,14 @@ def tooltip(c: RadioController) -> tuple[str, str]:
     name = c.station_name
     title = f"{APP_NAME} · {name}" if name else APP_NAME
     return _shorten(title), _shorten(c.track or "")
+
+
+def tooltip_markup(text: str) -> str:
+    """A tooltip text as the tray item sends it. Xfce reads the title and body as markup and KDE guesses: with &, <
+    or > in it, escaped in a <span>, both show the text as it is."""
+    if not any(mark in text for mark in "&<>"):
+        return text
+    return f"<span>{html.escape(text, quote=False)}</span>"
 
 
 def mpris_metadata(c: RadioController) -> dict[str, Any]:

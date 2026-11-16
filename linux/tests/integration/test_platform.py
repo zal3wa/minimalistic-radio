@@ -284,6 +284,24 @@ def test_switch_notification(setup, monkeypatch):
     notifier.close()
 
 
+def test_the_notification_has_no_angle_brackets(setup, monkeypatch):
+    """Some notification servers read the texts as markup: < and > become ‹ and ›."""
+    app, controller = setup()
+    sent = []
+    monkeypatch.setattr(app, "send_notification", lambda nid, n: sent.append(nid))
+    controller.stations[1].name = "<b>Beta</b>"
+    notifier = StationNotifier(app)
+    controller.select(0)
+    controller.next_station()   # stopped: Beta is chosen at once
+    assert notifier.last_title == "‹b›Beta‹/b›"
+    controller.play()
+    controller.on_player_started()
+    controller.on_player_title("AC/DC - <i>T.N.T.</i>")   # the first title replaces the notification
+    assert sent == ["station", "station"] and notifier.last_body == "AC/DC - ‹i›T.N.T.‹/i›"
+    assert controller.track == "AC/DC - <i>T.N.T.</i>"   # only the notification changes it
+    notifier.close()
+
+
 def test_no_tray_hint_once(setup, monkeypatch):
     app, controller = setup()
     sent = []

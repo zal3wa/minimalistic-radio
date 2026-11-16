@@ -1,6 +1,6 @@
 from conftest import item
 from minimalistic_radio.platform.menu_model import (TRACK_ID, build_tray_menu, item_properties, mpris_metadata,
-                                                    property_changes, tooltip)
+                                                    property_changes, tooltip, tooltip_markup)
 
 
 def test_menu_order_and_labels(ctl_playing):
@@ -75,6 +75,13 @@ def test_tooltip_truncated(ctl_playing):
     ctl_playing.track = "X" * 400
     title, body = tooltip(ctl_playing)
     assert title == "Minimalistic Radio · Radio A" and len(body) <= 120 and body.endswith("…")
+
+
+def test_tooltip_markup_shows_any_text_as_it_is():
+    assert tooltip_markup("Minimalistic Radio · Radio A") == "Minimalistic Radio · Radio A"
+    assert tooltip_markup("Minimalistic Radio · <b>Rock</b> & Roll") == \
+        "<span>Minimalistic Radio · &lt;b&gt;Rock&lt;/b&gt; &amp; Roll</span>"
+    assert tooltip_markup("") == ""
 
 
 def test_track_item_truncated(ctl_playing):
