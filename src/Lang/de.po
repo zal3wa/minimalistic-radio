@@ -177,7 +177,7 @@ msgid "Recommended"
 msgstr "Empfohlen"
 
 msgid "Popular in your country"
-msgstr "Beliebt in Ihrem Land"
+msgstr "Beliebt in deinem Land"
 
 msgid "Popular worldwide"
 msgstr "Weltweit beliebt"
@@ -200,10 +200,10 @@ msgid "This address is already on the list."
 msgstr "Diese Adresse ist schon in der Liste."
 
 msgid "Already on your list"
-msgstr "Schon in Ihrer Liste"
+msgstr "Schon in deiner Liste"
 
 msgid "Add to your stations"
-msgstr "Zu Ihren Sendern hinzufügen"
+msgstr "Zu deinen Sendern hinzufügen"
 
 msgid "Station options"
 msgstr "Senderoptionen"

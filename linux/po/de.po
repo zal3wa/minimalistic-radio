@@ -120,7 +120,7 @@ msgid "Song history"
 msgstr "Titelverlauf"
 
 msgid "Your station list couldn't be read. It was saved as stations.json.bad."
-msgstr "Ihre Senderliste konnte nicht gelesen werden. Sie wurde als stations.json.bad gespeichert."
+msgstr "Deine Senderliste konnte nicht gelesen werden. Sie wurde als stations.json.bad gespeichert."
 
 msgid "Edit"
 msgstr "Bearbeiten"
@@ -187,16 +187,16 @@ msgid "Recommended"
 msgstr "Empfohlen"
 
 msgid "Popular in your country"
-msgstr "Beliebt in Ihrem Land"
+msgstr "Beliebt in deinem Land"
 
 msgid "Popular worldwide"
 msgstr "Weltweit beliebt"
 
 msgid "Already on your list"
-msgstr "Schon in Ihrer Liste"
+msgstr "Schon in deiner Liste"
 
 msgid "Add to your stations"
-msgstr "Zu Ihren Sendern hinzufügen"
+msgstr "Zu deinen Sendern hinzufügen"
 
 msgid "Edit station"
 msgstr "Sender bearbeiten"
@@ -309,7 +309,7 @@ msgid "The radio keeps playing"
 msgstr "Das Radio spielt weiter"
 
 msgid "Open it again from your apps, or control it from the clock menu."
-msgstr "Öffnen Sie es wieder über Ihre Apps oder steuern Sie es über das Uhrmenü."
+msgstr "Öffne es wieder über deine Apps oder steuere es über das Uhrmenü."
 
 msgid "Update"
 msgstr "Aktualisieren"
@@ -334,7 +334,7 @@ msgstr "Schließen (das Radio spielt weiter)"
 
 #: minimalistic_radio/app.py
 msgid "Open it again from the tray icon."
-msgstr "Öffnen Sie es wieder über das Symbol im Infobereich."
+msgstr "Öffne es wieder über das Symbol im Infobereich."
 
 #: minimalistic_radio/ui/settings_page.py minimalistic_radio/ui/statistics_page.py
 msgid "Statistics"
@@ -362,7 +362,7 @@ msgstr "Monat"
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Nothing here yet. Listen for a while and come back."
-msgstr "Hier ist noch nichts. Hören Sie eine Weile zu und kommen Sie dann wieder."
+msgstr "Hier ist noch nichts. Hör eine Weile zu und komm dann wieder."
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Listening time"
@@ -395,7 +395,7 @@ msgstr "Noch nicht genug Songtitel"
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "When you listen"
-msgstr "Wann Sie hören"
+msgstr "Wann du hörst"
 
 #: minimalistic_radio/ui/statistics_page.py
 #, python-brace-format

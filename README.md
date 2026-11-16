@@ -151,6 +151,12 @@ The same radio for the Mac, in the menu bar next to the clock: a click opens the
 
 **Install:** open `Minimalistic-Radio.dmg` and drag Minimalistic Radio to Applications. The radio isn't from Apple's store, so the first time you open it macOS blocks it: click Done, open **System Settings → Privacy & Security**, scroll to "Minimalistic Radio was blocked", click **Open Anyway** and confirm with your password. That's needed once: updates come by themselves, with the green arrow, as on Windows.
 
+If nothing happens after **Open Anyway** and no icon appears in the menu bar (seen on macOS 26), macOS is still holding the radio back. Open Terminal and paste this line, which quits the held-back copy, clears the "downloaded from the internet" mark on the radio only, and starts it again:
+
+```
+pkill -9 -x "Minimalistic Radio"; xattr -dr com.apple.quarantine "/Applications/Minimalistic Radio.app"; open "/Applications/Minimalistic Radio.app"
+```
+
 The app is about 2 MB. Mac beta testers are welcome: see the [test checklist](docs/MACOS-TEST-CHECKLIST.md).
 
 <table align="center">

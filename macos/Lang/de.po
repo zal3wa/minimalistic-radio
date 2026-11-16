@@ -105,7 +105,7 @@ msgid "Link copied"
 msgstr "Link kopiert"
 
 msgid "Already on your list"
-msgstr "Schon in Ihrer Liste"
+msgstr "Schon in deiner Liste"
 
 msgid "Station"
 msgstr "Sender"
@@ -153,7 +153,7 @@ msgid "Popular worldwide"
 msgstr "Weltweit beliebt"
 
 msgid "Popular in your country"
-msgstr "Beliebt in Ihrem Land"
+msgstr "Beliebt in deinem Land"
 
 msgid "Searching…"
 msgstr "Suche läuft…"
@@ -171,7 +171,7 @@ msgid "This station is already on the list."
 msgstr "Dieser Sender ist schon in der Liste."
 
 msgid "Add to your stations"
-msgstr "Zu Ihren Sendern hinzufügen"
+msgstr "Zu deinen Sendern hinzufügen"
 
 msgid "General"
 msgstr "Allgemein"
