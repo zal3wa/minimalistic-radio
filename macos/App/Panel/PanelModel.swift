@@ -42,6 +42,8 @@ final class PanelModel: ObservableObject {
     /// The pictures show what an installed copy shows: no "Move … to Applications" note (the runner doesn't run the
     /// app from Applications).
     var picturesMode = false
+    /// Where some buttons are, in points from the panel's top left (`hotspot(_:)`): for the demo pictures' cursor.
+    var hotspots: [String: CGRect] = [:]
     /// "Link copied" over the stations, for a moment after Share.
     @Published private(set) var linkCopied = false
     private var linkCopiedTimer: DispatchWorkItem?
