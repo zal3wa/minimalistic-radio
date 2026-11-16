@@ -317,7 +317,7 @@ internal sealed partial class Radio
         Button button = NewButton("LinkButton", content);
         button.Padding = new Thickness(8, 5, 0, 5);   // the arrow ends where the row's controls end
         button.VerticalAlignment = VerticalAlignment.Center;
-        button.Click += (_, _) => OpenWebPage(address);
+        if (address != null) button.Click += (_, _) => OpenWebPage(address);
         return button;
     }
 
@@ -1471,7 +1471,13 @@ internal sealed partial class Radio
 
             // Updates
             var updateNote = Note("");
-            updateNote.VerticalAlignment = VerticalAlignment.Center;
+            // An update that couldn't be verified: its release page, under the message that says so.
+            Button releasePage = Link("GitHub", null);
+            releasePage.HorizontalAlignment = HorizontalAlignment.Left;
+            releasePage.Padding = new Thickness(0, 5, 8, 5);
+            releasePage.Click += (_, _) => OpenWebPage(unverifiedPage ?? Updater.Page + "/releases/latest");
+            var updateMessage = Spaced(Orientation.Vertical, 0, updateNote, releasePage);
+            updateMessage.VerticalAlignment = VerticalAlignment.Center;
             var updateDescription = Note("");
             var checkNow = RowButton("");
             checkNow.Margin = new Thickness(8, 0, 0, 0);
@@ -1493,10 +1499,11 @@ internal sealed partial class Radio
                 checkNow.Content = readyUpdate != null ? L("Update") : L("Check now");
                 checkNow.SetResourceReference(FrameworkElement.StyleProperty, readyUpdate != null ? "AccentButton" : (object)typeof(Button));
                 checkNow.IsEnabled = !installing && !checking;
+                releasePage.Visibility = unverifiedPage != null && readyUpdate == null ? Visibility.Visible : Visibility.Collapsed;
             };
             refreshUpdates();
             settings.Children.Add(Group(L("Updates")));
-            var lastCheck = Columns((updateNote, Star), (checkNow, Auto));
+            var lastCheck = Columns((updateMessage, Star), (checkNow, Auto));
             lastCheck.Margin = new Thickness(14, 10, 14, 10);
             settings.Children.Add(SettingsCard(
                 SettingRow(L("Automatic updates"), updateDescription, Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); })),

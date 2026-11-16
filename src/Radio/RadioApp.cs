@@ -96,6 +96,7 @@ internal sealed partial class Radio
     private DateTime? lastUpdateCheck;
     private Release readyUpdate;   // downloaded and checked, waiting for a click
     private string readyFile;
+    private string unverifiedPage;   // the release page of an update that couldn't be verified (Settings offers it)
     private bool installing, checking;
     private string updateStatus;
     private int updateVersion;
@@ -249,6 +250,7 @@ internal sealed partial class Radio
             Lang.Verify();   // the catalogs: all there, nothing missing, English for an unknown text
             Statistics.Verify();   // the listening statistics: periods, sessions, top lists, hours, the file
             ShareLink.Verify();    // links to share a station: building, reading, what makes one invalid
+            Updater.Verify();      // the updates' signature and the release addresses that are used
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -1249,8 +1251,9 @@ internal sealed partial class Radio
 
     // ---- Updates ----
     // Like Discord: every few hours the radio looks for a newer release and quietly downloads it
-    // (checked against GitHub's SHA-256). A green arrow in the panel then says "Update Ready!",
-    // and a click swaps the exe and restarts into the new version. No pop-ups.
+    // (checked against GitHub's SHA-256 and the project's signature). A green arrow in the panel then says "Update Ready!",
+    // and a click swaps the exe and restarts into the new version. No pop-ups. An update that can't be verified is never
+    // installed: Settings says so and offers its release page.
 
     private static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(6);
 
@@ -1269,11 +1272,14 @@ internal sealed partial class Radio
         if (manual)
         {
             updateStatus = L("Checking…");
+            unverifiedPage = null;
             updateVersion++;
         }
+        Release latest = null;
         try
         {
-            Release latest = await Updater.Latest(metadataClient);
+            latest = await Updater.Latest(metadataClient);
+            unverifiedPage = null;
             if (latest == null || latest.Version <= Updater.Current)
                 updateStatus = manual ? L("You have the latest version.") : null;
             else if (readyUpdate?.Tag != latest.Tag || !File.Exists(readyFile))
@@ -1294,6 +1300,12 @@ internal sealed partial class Radio
                 updateStatus = null;
             }
             else updateStatus = null;
+        }
+        catch (UpdateNotVerifiedException error)
+        {
+            Debug.WriteLine(error);
+            updateStatus = error.Message;   // also after a check of its own: this one has to be seen
+            unverifiedPage = latest.Page ?? Updater.Page + "/releases/latest";
         }
         catch (Exception error) when (error is HttpRequestException || error is IOException || error is InvalidDataException ||
             error is OperationCanceledException || error is ArgumentException || error is InvalidOperationException ||
@@ -1322,8 +1334,20 @@ internal sealed partial class Radio
         installing = true;
         try
         {
-            Updater.Install(readyFile);   // swaps the exe and starts the new version
+            Updater.Install(release, readyFile);   // verifies it again, swaps the exe and starts the new version
             Shutdown();
+        }
+        catch (UpdateNotVerifiedException error)
+        {
+            // Changed since it was downloaded: not installed. The release page, where it can be downloaded by hand.
+            Debug.WriteLine(error);
+            installing = false;
+            readyUpdate = null;
+            readyFile = null;
+            updateStatus = error.Message;
+            unverifiedPage = release.Page ?? Updater.Page + "/releases/latest";
+            updateVersion++;
+            OpenWebPage(unverifiedPage);
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException ||
             error is System.ComponentModel.Win32Exception || error is ArgumentException)

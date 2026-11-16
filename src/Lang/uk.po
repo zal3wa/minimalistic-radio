@@ -511,3 +511,8 @@ msgstr "Додати й увімкнути"
 
 msgid "This link doesn't contain a station."
 msgstr "Це посилання не містить станції."
+
+msgid "This update could not be verified. Download it from the release page."
+msgstr ""
+"Не вдалося перевірити справжність цього оновлення. Завантажте його зі "
+"сторінки з новою версією."

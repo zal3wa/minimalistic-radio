@@ -512,3 +512,8 @@ msgstr "Přidat a přehrát"
 
 msgid "This link doesn't contain a station."
 msgstr "Tento odkaz neobsahuje žádnou stanici."
+
+msgid "This update could not be verified. Download it from the release page."
+msgstr ""
+"Tuto aktualizaci se nepodařilo ověřit. Stáhněte si ji ze stránky s novou "
+"verzí."

@@ -3,3 +3,5 @@
 *.ico binary
 *.png binary
 *.gpg binary
+# The update signing key's public half: byte for byte the same everywhere (the release job compares it).
+*.pem text eol=lf
