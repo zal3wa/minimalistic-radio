@@ -66,6 +66,7 @@ jobs:
           test -d "$APP/Contents/Resources/Metadata.appintents" || { echo "::error::No App Intents metadata (Shortcuts and Siri)"; exit 1; }
           test -f "$APP/Contents/Resources/pl.lproj/AppShortcuts.strings"
           size=$(du -sk "$APP" | cut -f1); echo "app size: ${size} KB"; test "$size" -lt 10240
+          codesign -dv "$APP" 2>&1 | grep -E "^CodeDirectory.*flags=.*runtime" || { echo "::error::No hardened runtime"; codesign -dv "$APP"; exit 1; }
           "$binary" --self-test
 
       # The runner's display is 1×: the pictures taken from the screen (the menus) need a 2× one. A virtual HiDPI
@@ -144,16 +145,17 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           security find-identity -p codesigning "$keychain" | sed 's/[0-9A-F]\{40\}/<hash>/'
-          if ! codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP" 2> sign.log; then
+          if ! codesign --force --deep --options runtime --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP" 2> sign.log; then
             cat sign.log
             echo "Trusting the certificate for code signing in this runner, then signing again."
             security find-certificate -c "$IDENTITY" -p "$keychain" > "$RUNNER_TEMP/cert.pem"
             sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
-            codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP"
+            codesign --force --deep --options runtime --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP"
           fi
           codesign --verify --deep --strict "$APP"
           requirement=$(codesign -d -r- "$APP" 2>&1); echo "$requirement"
           echo "$requirement" | grep -q 'certificate leaf = H"' || { echo "::error::Not signed with the project's certificate"; exit 1; }
+          codesign -dv "$APP" 2>&1 | grep -E "^CodeDirectory.*flags=.*runtime" || { echo "::error::Signed without the hardened runtime"; exit 1; }
           "$APP/Contents/MacOS/Minimalistic Radio" --self-test
 
       - name: DMG and update zip
