@@ -453,7 +453,7 @@ public final class RadioController {
     }
 
     private func downloadCover(_ address: String, _ title: String) {
-        guard let source = URL(string: address) else { return }
+        guard isWebURL(address), let source = URL(string: address) else { return }
         let hex = Insecure.SHA1.hash(data: Data(address.utf8)).map { String(format: "%02x", $0) }.joined()
         let file = paths.coversFolder.appendingPathComponent(hex + ".jpg")
         if FileManager.default.fileExists(atPath: file.path) {

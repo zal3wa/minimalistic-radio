@@ -25,12 +25,14 @@ public func sameArtist(_ wanted: String, _ found: String?) -> Bool {
     return first.count > 1 && other.count > 1 && (first.contains(other) || other.contains(first))
 }
 
+/// The first result by the same artist with an http(s) picture, asked for at 600 × 600.
 public func pickCover(artist: String, payload: Any?) -> String? {
     guard let results = (payload as? [String: Any])?["results"] as? [Any] else { return nil }
     for case let item as [String: Any] in results {
         if let picture = item["artworkUrl100"] as? String, let name = item["artistName"] as? String,
            sameArtist(artist, name) {
-            return picture.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+            let big = picture.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+            if isWebURL(big) { return big }
         }
     }
     return nil
