@@ -513,6 +513,7 @@ internal sealed partial class Radio
                 await VerifyCopyFeedback(preview);
                 await VerifyDismiss();
                 await VerifyShare(preview);
+                await VerifyClearStatistics(preview);
             }
         }
         catch (Exception error)

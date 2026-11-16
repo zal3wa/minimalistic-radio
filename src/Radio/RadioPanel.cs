@@ -528,7 +528,11 @@ internal sealed partial class Radio
         updateButton.Visibility = Visibility.Collapsed;
         updateButton.Click += (_, _) => InstallUpdate();
         var backButton = NewButton("GhostButton", Theme.Glyph(Theme.BackIcon), L("Back"));
-        foreach (Button button in new[] { updateButton, settingsButton, backButton })
+        // Statistics' ⋯ at the right end of its bar, with the page's rare commands (Clear statistics…, see further down).
+        var statisticsMore = NewButton("GhostButton", Theme.Glyph(Theme.MoreIcon), L("More"));
+        AutomationProperties.SetName(statisticsMore, L("More"));
+        statisticsMore.Margin = new Thickness(4, 0, 0, 0);
+        foreach (Button button in new[] { updateButton, settingsButton, backButton, statisticsMore })
         {
             button.Width = button.Height = 32;
             button.Padding = new Thickness(0);
@@ -540,7 +544,7 @@ internal sealed partial class Radio
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 2)
         };
         var stationsBar = Columns((add, Auto), (historyButton, Auto), (new Border(), Star), (updateButton, Auto), (settingsButton, Auto));
-        var pageBar = Columns((backButton, Auto), (pageTitle, Star), (statisticsButton, Auto));
+        var pageBar = Columns((backButton, Auto), (pageTitle, Star), (statisticsButton, Auto), (statisticsMore, Auto));
         var bar = new Grid { Margin = new Thickness(Gutter) };
         bar.Children.Add(stationsBar);
         bar.Children.Add(pageBar);
@@ -557,6 +561,87 @@ internal sealed partial class Radio
         Button sharedAdd = null;   // the Shared station page's Add (none for a link without a station)
         Action refreshCollected = null;   // Settings › Statistics' "Collected since", again after a clear
         string statisticsFrom = "settings";   // where ← goes back to from Statistics: Settings or Song history
+        StatisticsPeriod statisticsPeriod = StatisticsPeriod.Month;   // the period Statistics shows
+
+        // A question over the whole panel, like Windows 11's ContentDialog: the panel dimmed, and in the middle a card
+        // with the title, the text (the note on a line of its own), and [confirm] [Cancel] under a line. Cancel is the
+        // accent button and the default: the keyboard starts on it, and Enter (on no other button) and Esc answer it.
+        // The keyboard stays in the card (Tab goes round it) and goes back to `back` after.
+        var dialogLayer = new Grid { Visibility = Visibility.Collapsed };
+        Action cancelDialog = null;   // while a question is open: answers it with Cancel
+        void Ask(string title, string text, string note, string confirm, Action confirmed, IInputElement back)
+        {
+            cancelDialog?.Invoke();
+            var dim = new Border { CornerRadius = new CornerRadius(8), Background = new SolidColorBrush(Color.FromArgb(0x4D, 0, 0, 0)) };
+            var words = new StackPanel { Margin = new Thickness(24, 22, 24, 24) };
+            words.Children.Add(new TextBlock { Text = title, FontSize = 20, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+            foreach (string paragraph in new[] { text, note })
+                words.Children.Add(new TextBlock { Text = paragraph, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) });
+            var top = new Border { CornerRadius = new CornerRadius(7, 7, 0, 0), Child = words };
+            top.SetResourceReference(Border.BackgroundProperty, "Card");
+            Button yes = NewButton(null, confirm), no = NewButton("AccentButton", L("Cancel"));
+            yes.SetResourceReference(Control.ForegroundProperty, "Danger");   // red text: it deletes
+            foreach (Button button in new[] { yes, no }) button.Height = 32;
+            var answers = new Grid();
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            answers.ColumnDefinitions.Add(new ColumnDefinition { Width = Star });
+            Grid.SetColumn(no, 2);
+            answers.Children.Add(yes);
+            answers.Children.Add(no);
+            var bottom = new Border
+            {
+                CornerRadius = new CornerRadius(0, 0, 7, 7), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(24), Child = answers
+            };
+            bottom.SetResourceReference(Border.BackgroundProperty, "Bg");
+            bottom.SetResourceReference(Border.BorderBrushProperty, "Line");
+            var face = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Child = Spaced(Orientation.Vertical, 0, top, bottom) };
+            face.SetResourceReference(Border.BackgroundProperty, "Bg");
+            face.SetResourceReference(Border.BorderBrushProperty, "Line");
+            // The shadow on a layer of its own, so the text keeps sharp ClearType rendering.
+            var card = new Grid { Margin = new Thickness(24, 0, 24, 0), VerticalAlignment = VerticalAlignment.Center, Tag = "dialog" };
+            card.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(8), Background = Brushes.Black,
+                Effect = new DropShadowEffect { BlurRadius = 32, ShadowDepth = 8, Opacity = 0.28, Direction = 270 }
+            });
+            card.Children.Add(face);
+            AutomationProperties.SetName(card, title);
+            KeyboardNavigation.SetTabNavigation(card, KeyboardNavigationMode.Cycle);
+            KeyboardNavigation.SetDirectionalNavigation(card, KeyboardNavigationMode.Cycle);
+            KeyboardNavigation.SetControlTabNavigation(card, KeyboardNavigationMode.Cycle);
+            void Answer(bool confirmedNow)
+            {
+                cancelDialog = null;
+                dialogLayer.Visibility = Visibility.Collapsed;
+                dialogLayer.Children.Clear();
+                if (confirmedNow) confirmed();
+                back?.Focus();
+            }
+            yes.Click += (_, _) => Answer(true);
+            no.Click += (_, _) => Answer(false);
+            cancelDialog = () => Answer(false);
+            dialogLayer.Children.Add(dim);
+            dialogLayer.Children.Add(card);
+            dialogLayer.Visibility = Visibility.Visible;
+            // Once it is laid out (and after the menu it came from has given the keyboard back to its button).
+            app.Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => { if (no.IsVisible) no.Focus(); }));
+        }
+
+        // Statistics' ⋯ menu: one item, Clear statistics…, which asks first (the song history stays).
+        ContextMenu statisticsMenu = RowMenu(statisticsMore);
+        statisticsMenu.Items.Add(Item(L("Clear statistics…"), null, () => Ask(L("Clear statistics?"),
+            L("Your listening statistics will be permanently deleted. Your song history will remain."), L("This can't be undone."), L("Clear"),
+            () =>
+            {
+                ClearStatistics();
+                FillStatistics(statisticsPeriod);
+            }, statisticsMore)));
+        Hold(statisticsMenu);
+        statisticsMore.Click += (_, _) => statisticsMenu.IsOpen = true;
+#if SELFTEST
+        statisticsMore.Tag = statisticsMenu;   // the self-test reads the menu from here
+#endif
 
         int shownStation = station;
         // A station brought into view instead of the current one (ShowOnList: a shared link's station, just added or
@@ -738,6 +823,7 @@ internal sealed partial class Radio
         // "shared" (Shared station).
         void SetPage(string target)
         {
+            cancelDialog?.Invoke();   // a shared station's link that comes in meanwhile answers a question with Cancel
             revealed = null;
             if (target != "form") editing = null;
             if (page == "search" && target != "search") ResetSearch();
@@ -748,6 +834,7 @@ internal sealed partial class Radio
             list.Visibility = footer.Visibility = stationsBar.Visibility = Shown(stations);
             pageBar.Visibility = Shown(!stations);
             statisticsButton.Visibility = Shown(target == "history");
+            statisticsMore.Visibility = Shown(target == "statistics");
             if (target == "statistics" && from != "statistics") statisticsFrom = from == "history" ? "history" : "settings";
             searchPane.Visibility = Shown(target == "search");
             fields.Visibility = Shown(target == "form");
@@ -1190,6 +1277,7 @@ internal sealed partial class Radio
         {
             statistics.Tick(DateTime.UtcNow);   // the station playing now counts up to now
             StatisticsSummary summary = statistics.Summarize(period, DateTime.UtcNow, TimeZoneInfo.Local);
+            statisticsPeriod = period;
             CultureInfo culture = Culture;
             var content = new StackPanel { Margin = new Thickness(Gutter) };
 
@@ -1371,38 +1459,6 @@ internal sealed partial class Radio
             content.Children.Add(Box(Spaced(Orientation.Vertical, 6,
                 Note(L("Most often {0}", Hour(summary.BusiestHour) + "–" + Hour(summary.BusiestHour + 1))), axis, marks),
                 new Thickness(16, 14, 16, 10), 0));
-
-            // Clear statistics, after a question (the history stays).
-            var clear = SmallButton("LinkButton", L("Clear statistics"));
-            clear.HorizontalAlignment = HorizontalAlignment.Left;
-            clear.Margin = new Thickness(-4, 10, 0, 0);
-            var confirmClear = RowButton(L("Clear statistics"));
-            confirmClear.SetResourceReference(Control.ForegroundProperty, "Danger");
-            var keep = RowButton(L("Cancel"));
-            keep.Margin = new Thickness(8, 0, 0, 0);
-            TextBlock question = Note(L("Clear all statistics? This can't be undone."));
-            question.Margin = new Thickness(0, 0, 0, 8);
-            var confirmation = new StackPanel { Margin = new Thickness(2, Gutter, 0, 0), Visibility = Visibility.Collapsed };
-            confirmation.Children.Add(question);
-            confirmation.Children.Add(Columns((confirmClear, Auto), (keep, Auto), (new Border(), Star)));
-            clear.Click += (_, _) =>
-            {
-                clear.Visibility = Visibility.Collapsed;
-                confirmation.Visibility = Visibility.Visible;
-                confirmation.BringIntoView();
-            };
-            keep.Click += (_, _) =>
-            {
-                confirmation.Visibility = Visibility.Collapsed;
-                clear.Visibility = Visibility.Visible;
-            };
-            confirmClear.Click += (_, _) =>
-            {
-                ClearStatistics();
-                FillStatistics(period);
-            };
-            content.Children.Add(clear);
-            content.Children.Add(confirmation);
         }
 
         // Settings page, laid out like the Windows 11 Settings app (and like the Linux and Mac apps): General, Stations,
@@ -1775,6 +1831,7 @@ internal sealed partial class Radio
         var root = new Grid { Margin = new Thickness(ShadowMargin) };
         root.Children.Add(shadow);
         root.Children.Add(frame);
+        root.Children.Add(dialogLayer);
         root.Children.Add(noticeLayer);
         panel.Content = root;
         FillList();
@@ -1789,6 +1846,14 @@ internal sealed partial class Radio
 
         panel.KeyDown += (_, e) =>
         {
+            // A question open: Esc, and Enter on no other button, answer it with Cancel; nothing else happens behind it.
+            if (cancelDialog != null)
+            {
+                if (e.Key != Key.Escape && e.Key != Key.Enter) return;
+                cancelDialog();
+                e.Handled = true;
+                return;
+            }
             // On the Shared station page, Enter is Add (also with the keyboard on "Play automatically").
             if (e.Key == Key.Enter && page == "shared" && sharedAdd != null)
             {
@@ -2243,6 +2308,95 @@ internal sealed partial class Radio
             Stations.RemoveRange(count, Stations.Count - count);   // only in memory: the self-test saves nothing
             station = Math.Min(station, Stations.Count - 1);
             playShared = savedChoice;
+        }
+    }
+
+    // Self-test of clearing the statistics (--test-menu): no link at the bottom of the page any more; the page's ⋯ has one
+    // item, "Clear statistics…", which asks in a dialog over the panel: the title, the text and the line after it, and
+    // [Clear] [Cancel], the keyboard on Cancel. Enter, Esc and Cancel change nothing and give the keyboard back to ⋯;
+    // Clear deletes the statistics and the song history stays. With --preview: statistics-menu and statistics-clear.
+    private async Task VerifyClearStatistics(bool preview)
+    {
+        void Fail(string what) => throw new InvalidOperationException("Czyszczenie statystyk: " + what);
+        void Click(UIElement element) => element.RaiseEvent(new RoutedEventArgs(element is MenuItem ? MenuItem.ClickEvent : ButtonBase.ClickEvent));
+        void Press(UIElement element, Key key) => element.RaiseEvent(
+            new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(element), Environment.TickCount, key) { RoutedEvent = Keyboard.KeyDownEvent });
+        bool Shows(string text)
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<TextBlock>().Any(block => block.IsVisible && block.Text == text);
+        }
+        Button ButtonWith(string text)
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<Button>().FirstOrDefault(button => button.IsVisible && button.Content as string == text)
+                ?? throw new InvalidOperationException("Czyszczenie statystyk: brak przycisku " + text);
+        }
+        FrameworkElement Dialog()
+        {
+            playerPanel.UpdateLayout();
+            return Descendants(playerPanel).OfType<FrameworkElement>().FirstOrDefault(element => element.IsVisible && element.Tag as string == "dialog");
+        }
+        bool Collected() => !statistics.Summarize(StatisticsPeriod.All, DateTime.UtcNow, TimeZoneInfo.Local).Empty;
+        // Without the activation (a test started in the background) the keyboard can't be anywhere in the panel.
+        bool FocusedOn(IInputElement element) => !playerPanel.IsActive || Keyboard.FocusedElement == element;
+
+        playerPanel?.Close();
+        if (Stations.Count == 0) Stations.Add(new SavedStation { Name = "Stacja testowa", Url = "https://example.com/radio" });
+        FillSampleStatistics();   // in memory only
+        AddToHistory("Historia - Zostaje");
+        int songs = history.Count;
+        try
+        {
+            OpenPlayer("statistics");
+            await Task.Delay(500);
+            var page = (StackPanel)Descendants(playerPanel).OfType<ScrollViewer>().First(item => item.IsVisible && item.Content is StackPanel).Content;
+            if (!Collected() || page.Children.OfType<Button>().Any()) Fail("pod statystykami nadal jest przycisk albo brak danych do testu.");
+            Button more = Descendants(playerPanel).OfType<Button>().FirstOrDefault(button => button.IsVisible && button.ToolTip as string == L("More"))
+                ?? throw new InvalidOperationException("Czyszczenie statystyk: brak ⋯ na pasku.");
+            if (AutomationProperties.GetName(more) != L("More")) Fail("⋯ nie ma nazwy dla czytników ekranu.");
+            var menu = (ContextMenu)more.Tag;
+            Click(more);
+            await Task.Delay(300);
+            if (!menu.IsOpen || menu.Items.Count != 1 || !(menu.Items[0] is MenuItem item) || item.Header as string != L("Clear statistics…"))
+                throw new InvalidOperationException("Czyszczenie statystyk: menu ⋯ ma mieć jedną pozycję " + L("Clear statistics…"));
+            if (preview) await SaveWithMenu(playerPanel, menu, "statistics-menu");
+            menu.IsOpen = false;
+            async Task Ask()
+            {
+                Click(item);
+                await Task.Delay(300);   // the keyboard goes into the dialog once it is laid out
+                if (Dialog() == null || !Shows(L("Clear statistics?")) ||
+                    !Shows(L("Your listening statistics will be permanently deleted. Your song history will remain.")) || !Shows(L("This can't be undone.")))
+                    Fail("pytanie nie pokazało się albo ma złe teksty.");
+            }
+            await Ask();
+            Button cancel = ButtonWith(L("Cancel")), clear = ButtonWith(L("Clear"));
+            if (!FocusedOn(cancel)) Fail("klawiatura nie jest na Anuluj.");
+            if (clear.TranslatePoint(new Point(), cancel).X >= 0 || cancel.Background != app.Resources["Accent"] || clear.Foreground != app.Resources["Danger"])
+                Fail("przyciski nie są w kolejności [Wyczyść] [Anuluj] albo mają zły wygląd.");
+            if (preview) await SavePreview(playerPanel, "statistics-clear");
+            // Enter (with the keyboard on no button), Esc and Cancel: nothing is deleted, the page stays, the keyboard is on ⋯.
+            foreach (Action answer in new Action[] { () => Press(Dialog(), Key.Enter), () => Press(Dialog(), Key.Escape), () => Click(ButtonWith(L("Cancel"))) })
+            {
+                if (Dialog() == null) await Ask();
+                answer();
+                await Task.Delay(200);
+                if (Dialog() != null || !Collected() || !Shows(L("Statistics")) || !FocusedOn(more))
+                    Fail("Enter, Esc albo Anuluj nie zamknęły pytania bez zmian albo nie oddały klawiatury.");
+            }
+            // Clear: the statistics are gone, the song history stays.
+            await Ask();
+            Click(ButtonWith(L("Clear")));
+            await Task.Delay(200);
+            if (Dialog() != null || Collected() || statistics.Songs.Count > 0 || history.Count != songs ||
+                !Shows(L("Nothing here yet. Listen for a while and come back.")))
+                Fail("Wyczyść nie usunęło statystyk albo usunęło historię.");
+        }
+        finally
+        {
+            playerPanel?.Close();
+            statistics.Clear(DateTime.UtcNow);   // only in memory
         }
     }
 

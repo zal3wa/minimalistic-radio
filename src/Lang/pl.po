@@ -471,11 +471,20 @@ msgstr "Kiedy słuchasz"
 msgid "Most often {0}"
 msgstr "Najczęściej {0}"
 
-msgid "Clear statistics"
-msgstr "Wyczyść statystyki"
+msgid "Clear statistics…"
+msgstr "Wyczyść statystyki…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Wyczyścić wszystkie statystyki? Tego nie da się cofnąć."
+msgid "Clear statistics?"
+msgstr "Wyczyścić statystyki?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Wszystkie statystyki słuchania zostaną trwale usunięte. Historia utworów pozostanie bez zmian."
+
+msgid "This can't be undone."
+msgstr "Tej operacji nie można cofnąć."
+
+msgid "Clear"
+msgstr "Wyczyść"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Na razie nic tu nie ma. Posłuchaj chwilę radia i wróć tutaj."

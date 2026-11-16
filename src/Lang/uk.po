@@ -470,11 +470,20 @@ msgstr "Коли ви слухаєте"
 msgid "Most often {0}"
 msgstr "Найчастіше {0}"
 
-msgid "Clear statistics"
-msgstr "Очистити статистику"
+msgid "Clear statistics…"
+msgstr "Очистити статистику…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Очистити всю статистику? Цю дію не можна скасувати."
+msgid "Clear statistics?"
+msgstr "Очистити статистику?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Вашу статистику прослуховування буде остаточно видалено. Історія композицій залишиться без змін."
+
+msgid "This can't be undone."
+msgstr "Цю дію неможливо скасувати."
+
+msgid "Clear"
+msgstr "Очистити"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Тут поки нічого немає. Послухайте радіо трохи й поверніться."

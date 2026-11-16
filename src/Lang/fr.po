@@ -473,11 +473,20 @@ msgstr "Quand vous écoutez"
 msgid "Most often {0}"
 msgstr "Le plus souvent {0}"
 
-msgid "Clear statistics"
-msgstr "Effacer les statistiques"
+msgid "Clear statistics…"
+msgstr "Effacer les statistiques…"
 
-msgid "Clear all statistics? This can't be undone."
-msgstr "Effacer toutes les statistiques ? Cette action est irréversible."
+msgid "Clear statistics?"
+msgstr "Effacer les statistiques ?"
+
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Vos statistiques d'écoute seront définitivement supprimées. Votre historique des titres sera conservé."
+
+msgid "This can't be undone."
+msgstr "Cette action est irréversible."
+
+msgid "Clear"
+msgstr "Effacer"
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Rien pour l'instant. Écoutez un moment et revenez."
