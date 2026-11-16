@@ -130,10 +130,29 @@ def test_statistics_page(make, monkeypatch):
     window.show_page("statistics")   # opened again: this month
     assert wait_for(lambda: page.period is Period.MONTH)
 
+    # "Clear statistics…" is in the ⋯ menu left of the ✕, not at the bottom of the page.
+    assert "Clear statistics" not in texts(page)
+    bar = next(w for w in descendants(page) if isinstance(w, Adw.HeaderBar))
+    button = page.menu_button
+    assert button.get_icon_name() == "view-more-symbolic" and button.get_tooltip_text() == "More"
+    assert button in list(descendants(bar))
+    ok, more = button.compute_bounds(bar)
+    close = next(w for w in descendants(bar) if isinstance(w, Gtk.WindowControls))
+    ok, cross = close.compute_bounds(bar)
+    assert more.get_x() + more.get_width() <= cross.get_x()   # left of ✕
+    assert menu_labels(button.get_menu_model()) == ["Clear statistics…"]
+
     answers = []
     monkeypatch.setattr(controller, "clear_statistics", lambda: answers.append("cleared"))
-    dialog = page.ask_to_clear()
-    assert isinstance(dialog, Adw.AlertDialog) and dialog.get_heading() == "Clear statistics?"
+    page.activate_action("statistics.clear", None)
+    assert wait_for(lambda: isinstance(window.get_visible_dialog(), Adw.AlertDialog))
+    dialog = window.get_visible_dialog()
+    assert dialog.get_heading() == "Clear statistics?"
+    assert dialog.get_body() == ("Your listening statistics will be permanently deleted. Your song history will "
+                                 "remain.\n\nThis can't be undone.")
+    assert [dialog.get_response_label(r) for r in ("cancel", "clear")] == ["Cancel", "Clear"]
+    assert dialog.get_response_appearance("clear") == Adw.ResponseAppearance.DESTRUCTIVE
+    assert dialog.get_default_response() == "cancel" and dialog.get_close_response() == "cancel"
     page._clear_answered(dialog, "cancel")
     assert answers == []
     page._clear_answered(dialog, "clear")

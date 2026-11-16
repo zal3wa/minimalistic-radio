@@ -62,6 +62,17 @@ def test_preferences_round_trip_and_corrupt_fallback(tmp_path):
     assert f.exists()
 
 
+def test_play_automatically_is_on_until_switched_off(tmp_path):
+    """The Shared station page's "Play automatically": checked the first time, then the last choice."""
+    f = tmp_path / "p.json"
+    assert Preferences().play_shared is True
+    save_preferences(f, Preferences(play_shared=False))
+    assert '"PlaySharedAutomatically": false' in f.read_text("utf-8")
+    assert load_preferences(f).play_shared is False
+    f.write_text('{"Volume": 40, "PlaySharedAutomatically": "no"}', "utf-8")
+    assert load_preferences(f).play_shared is True
+
+
 def test_history_round_trip_keeps_100(tmp_path):
     f = tmp_path / "h.json"
     entries = [HistoryEntry(f"Song {i}", "S", datetime(2026, 11, 14, 19, 52)) for i in range(120)]

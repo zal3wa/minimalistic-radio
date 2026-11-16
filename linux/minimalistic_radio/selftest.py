@@ -176,7 +176,15 @@ def _check_statistics(window: RadioWindow) -> None:
     _check(not controller.prefs.collect_statistics and page.off.get_visible(),
            "switching the statistics off doesn't show on the Statistics page")
     window.settings_page.statistics_row.set_active(True)
-    controller.clear_statistics()
+    _check(page.menu_button.get_mapped() and page.menu_button.get_menu_model().get_n_items() == 1,
+           "the Statistics page has no ⋯ menu")
+    page.activate_action("statistics.clear", None)   # its "Clear statistics…"
+    pump(100)
+    dialog = window.get_visible_dialog()
+    _check(isinstance(dialog, Adw.AlertDialog) and dialog.get_default_response() == "cancel"
+           and dialog.get_close_response() == "cancel", "Clear statistics… doesn't ask first")
+    page._clear_answered(dialog, "clear")
+    dialog.force_close()
     pump(20)
     _check(page.shown == "empty", "the Statistics page isn't empty after clearing")
     theme = Gtk.IconTheme.get_for_display(window.get_display())
@@ -190,8 +198,9 @@ def _check_statistics(window: RadioWindow) -> None:
 
 
 def _check_sharing(window: RadioWindow) -> None:
-    """Share, and links opened into the running radio: a new station asks first, Cancel changes nothing, Add and
-    play adds and plays it, a known one just plays, a link without a station says so."""
+    """Share, and links opened into the running radio: a new station asks first, Cancel changes nothing, Add adds
+    and plays it, a known one just plays; with "Play automatically" unchecked, Add only adds and a known one only
+    shows; a link without a station says so."""
     controller = window.controller
     window.share_station(0)
     _check(window._toast is not None and window._toast.get_title() == window._("Link copied"),
@@ -207,11 +216,24 @@ def _check_sharing(window: RadioWindow) -> None:
     window.shared_page.add_button.emit("clicked")
     pump(50)
     _check(controller.stations[-1] == new and controller.current == len(controller.stations) - 1 and controller.active
-           and window.shown_pages() == ["stations"], "Add and play didn't add and play the station")
+           and window.shown_pages() == ["stations"], "Add didn't add and play the station")
     window.open_link(share_link(before[0]))
     pump(50)
     _check(controller.current == 0 and controller.active and window.shown_pages() == ["stations"],
            "a link to a station on the list doesn't just play it")
+    controller.stop()
+    quiet = Station("Quiet Radio", "https://quiet.example/live")
+    window.open_link(share_link(quiet))
+    window.shared_page.play_check.set_active(False)
+    window.shared_page.add_button.emit("clicked")
+    pump(50)
+    _check(controller.stations[-1] == quiet and not controller.active and not controller.prefs.play_shared
+           and window.shown_pages() == ["stations"], "Add with Play automatically unchecked played the station")
+    window.open_link(share_link(new))
+    pump(50)
+    _check(not controller.active and window._toast is not None
+           and window._toast.get_title() == window._("Already on your list"),
+           "a link to a station on the list doesn't say it is there")
     window.open_link(WEB_LINK + "n=Nothing")
     pump(50)
     _check(window.shown_pages() == ["stations", "shared"] and window.shared_page.invalid.get_visible(),

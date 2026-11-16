@@ -408,16 +408,20 @@ msgid "≈ {time} a day"
 msgstr "≈ {time} al giorno"
 
 #: minimalistic_radio/ui/statistics_page.py
-msgid "Clear statistics"
-msgstr "Cancella statistiche"
+msgid "Clear statistics…"
+msgstr "Cancella le statistiche…"
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Clear statistics?"
 msgstr "Cancellare le statistiche?"
 
 #: minimalistic_radio/ui/statistics_page.py
-msgid "The listening time and the songs counted so far are deleted. The song history stays."
-msgstr "Il tempo di ascolto e i brani contati finora verranno cancellati. La cronologia dei brani resta."
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Le statistiche di ascolto verranno eliminate definitivamente. La cronologia dei brani rimarrà invariata."
+
+#: minimalistic_radio/ui/statistics_page.py
+msgid "This can't be undone."
+msgstr "Questa operazione non può essere annullata."
 
 #: minimalistic_radio/ui/statistics_page.py
 msgid "Clear"
@@ -605,12 +609,16 @@ msgid "Shared station"
 msgstr "Stazione condivisa"
 
 #: minimalistic_radio/ui/shared_page.py
-msgid "Add it to your stations and play it now?"
-msgstr "Aggiungerla alle tue stazioni e ascoltarla ora?"
+msgid "Add it to your stations?"
+msgstr "Aggiungerla alle tue stazioni?"
 
 #: minimalistic_radio/ui/shared_page.py
-msgid "Add and play"
-msgstr "Aggiungi e riproduci"
+msgid "Add"
+msgstr "Aggiungi"
+
+#: minimalistic_radio/ui/shared_page.py
+msgid "Play automatically"
+msgstr "Riproduci automaticamente"
 
 #: minimalistic_radio/ui/shared_page.py
 msgid "This link doesn't contain a station."

@@ -44,6 +44,16 @@
   </categories>
   <releases>
     <release version="1.0.0" date="2026-11-15"/>
+    <release version="1.0.0~beta.9" type="development" date="2026-11-16">
+      <description translate="no">
+        <p>Sharing and statistics:</p>
+        <ul>
+          <li>A station from a shared link can be added without stopping what you are listening to: uncheck "Play automatically" under Add. The radio remembers the choice.</li>
+          <li>A link to a station that is already on your list plays it only when "Play automatically" is checked; otherwise the list shows the station.</li>
+          <li>"Clear statistics…" is now in the ⋯ menu of the Statistics page, and it says that your song history stays.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0~beta.8" type="development" date="2026-11-16">
       <description translate="no">
         <p>Safer with pictures and texts from the internet:</p>

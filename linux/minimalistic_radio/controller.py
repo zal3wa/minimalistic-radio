@@ -79,6 +79,13 @@ class AddResult(Enum):
     INVALID = auto()
 
 
+class SharedLink(Enum):
+    """What a share link does when it is opened (open_shared)."""
+    ASK = auto()       # not on the list, or no station in the link: the Shared station page asks
+    PLAYED = auto()    # on the list, and "Play automatically" was left checked: it plays
+    ON_LIST = auto()   # on the list, and it was left unchecked: nothing changes, the list shows it
+
+
 @dataclass
 class ImportResult:
     added: int
@@ -825,13 +832,28 @@ class RadioController:
             self.select(index)
             self.play()
 
-    def add_and_play(self, shared: SharedStation) -> AddResult:
-        """Add and play on the Shared station page: appended at the end and played. One that is on the list
-        already (the link was opened twice) just plays."""
+    def open_shared(self, shared: SharedStation | None) -> tuple[SharedLink, int]:
+        """A share link was opened; `shared` is None when it holds no station. A station on the list plays if
+        "Play automatically" was left checked; otherwise nothing changes. Also gives the station's index (-1 when
+        the page asks)."""
+        index = self.find_station(shared.url) if shared is not None else -1
+        if index < 0:
+            return SharedLink.ASK, -1
+        if not self.prefs.play_shared:
+            return SharedLink.ON_LIST, index
+        self.play_station(index)
+        return SharedLink.PLAYED, index
+
+    def add_shared(self, shared: SharedStation, play: bool) -> AddResult:
+        """Add on the Shared station page: appended at the end, and played if `play` ("Play automatically");
+        otherwise playback stays as it is. `play` is remembered for the next link. One that is on the list
+        already (the link was opened twice) plays only with `play`."""
+        if play != self.prefs.play_shared:
+            self.prefs.play_shared = play
+            self._save_preferences()
+            self._emit(Change.PREFERENCES)
         result = self.add_station(Station(shared.name, shared.url, shared.logo))
-        if result is AddResult.ADDED:
-            self.play_station(len(self.stations) - 1)
-        elif result is AddResult.DUPLICATE:
+        if play and result is not AddResult.INVALID:
             self.play_station(self.find_station(shared.url))
         return result
 
