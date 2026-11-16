@@ -171,21 +171,33 @@ jobs:
       # like this app, with the release's tag) before Finder shows it; a DMG that fails is detached and deleted.
       - name: Check the DMG update path
         run: |
-          app="$APP/Contents/MacOS/Minimalistic Radio"
+          app="$APP"
+          cp Minimalistic-Radio.dmg checked.dmg
+          if ! codesign -d -r- "$APP" 2>&1 | grep -q 'certificate leaf = H"'; then
+            # Signed ad hoc (no certificate): the requirement is the running code's own hash, one per architecture,
+            # which a universal app can't meet for both. The check runs on a copy thinned to this Mac's architecture.
+            mkdir thin
+            cp -R "$APP" thin/
+            app="thin/Minimalistic Radio.app"
+            lipo "$app/Contents/MacOS/Minimalistic Radio" -thin "$(uname -m)" -output thin-binary
+            mv thin-binary "$app/Contents/MacOS/Minimalistic Radio"
+            codesign --force --sign - --options runtime "$app"
+            hdiutil create -volname "Minimalistic Radio" -srcfolder thin -ov -format UDZO checked.dmg > /dev/null
+          fi
+          binary="$app/Contents/MacOS/Minimalistic Radio"
           tag="${TAG:-dev}"
-          "$app" --check-update-dmg "$PWD/Minimalistic-Radio.dmg" "$tag" || { echo "::error::The DMG failed its own check"; exit 1; }
-          test -f Minimalistic-Radio.dmg
-          cp Minimalistic-Radio.dmg other-tag.dmg
-          if "$app" --check-update-dmg "$PWD/other-tag.dmg" macos-v0.0.1; then echo "::error::A DMG with another release tag passed"; exit 1; fi
-          test ! -e other-tag.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
+          "$binary" --check-update-dmg "$PWD/checked.dmg" "$tag" || { echo "::error::The DMG failed its own check"; exit 1; }
+          test -f checked.dmg
+          if "$binary" --check-update-dmg "$PWD/checked.dmg" macos-v0.0.1; then echo "::error::A DMG with another release tag passed"; exit 1; fi
+          test ! -e checked.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
           mkdir changed
-          cp -R "$APP" changed/
+          cp -R "$app" changed/
           echo " " >> "changed/Minimalistic Radio.app/Contents/Resources/banned-stations.json"
           hdiutil create -volname "Minimalistic Radio" -srcfolder changed -ov -format UDZO changed.dmg > /dev/null
-          if "$app" --check-update-dmg "$PWD/changed.dmg" "$tag"; then echo "::error::A DMG with a changed app passed"; exit 1; fi
+          if "$binary" --check-update-dmg "$PWD/changed.dmg" "$tag"; then echo "::error::A DMG with a changed app passed"; exit 1; fi
           test ! -e changed.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
           if hdiutil info | grep -q radio-update-; then echo "::error::A checked DMG is still mounted"; hdiutil info; exit 1; fi
-          rm -rf changed
+          rm -rf thin changed
 
       - uses: actions/upload-artifact@v7
         with:

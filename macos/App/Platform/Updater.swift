@@ -254,7 +254,8 @@ final class Updater {
         let app = volume.appendingPathComponent("Minimalistic Radio.app")
         let values = try? app.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         if !attach.ok {
-            reason = "the disk image didn't mount: \(attach.output)"
+            reason = "the disk image didn't mount"
+            report("hdiutil: " + attach.output)   // only for --check-update-dmg: never logged
         } else if values?.isDirectory != true || values?.isSymbolicLink == true {
             reason = "the disk image has no Minimalistic Radio.app"
         } else if case let status = signatureStatus(app), status != errSecSuccess {
