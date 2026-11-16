@@ -251,6 +251,7 @@ internal sealed partial class Radio
             Statistics.Verify();   // the listening statistics: periods, sessions, top lists, hours, the file
             ShareLink.Verify();    // links to share a station: building, reading, what makes one invalid
             Updater.Verify();      // the updates' signature and the release addresses that are used
+            await Pictures.Verify();   // pictures: no local addresses (also after redirects), at most 4096 pixels
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -1152,9 +1153,33 @@ internal sealed partial class Radio
             if (picture != shownThumbnail)
             {
                 shownThumbnail = picture;
-                display.Thumbnail = picture == null ? null
-                    : Windows.Storage.Streams.RandomAccessStreamReference.CreateFromUri(new Uri(picture));
+                display.Thumbnail = null;
+                if (picture != null) ShowThumbnail(picture);
             }
+            display.Update();
+        }
+        catch (Exception error) { Debug.WriteLine(error); }
+    }
+
+    // The media controls' picture is downloaded by the radio, through the same checks as every picture (Pictures), and
+    // handed over as bytes: Windows never fetches an address from a station or a stream itself.
+    private async void ShowThumbnail(string address)
+    {
+        byte[] data = await Pictures.Download(address);
+        if (data == null || address != shownThumbnail || mediaSession == null || !Pictures.Fits(data)) return;
+        try
+        {
+            var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            using (var writer = new Windows.Storage.Streams.DataWriter(stream))
+            {
+                writer.WriteBytes(data);
+                await writer.StoreAsync().AsTask();
+                writer.DetachStream();
+            }
+            stream.Seek(0);
+            if (address != shownThumbnail || mediaSession == null) return;
+            var display = mediaSession.SystemMediaTransportControls.DisplayUpdater;
+            display.Thumbnail = Windows.Storage.Streams.RandomAccessStreamReference.CreateFromStream(stream);
             display.Update();
         }
         catch (Exception error) { Debug.WriteLine(error); }

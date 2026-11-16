@@ -1898,47 +1898,16 @@ internal sealed partial class Radio
         while (logos.Count > LogoCacheSize) logos.Remove(logoOrder.Dequeue());
     }
 
+    // A picture from outside, through Pictures' checks (no local addresses, at most 1 MB and 4096 pixels); null when it
+    // was refused or didn't load.
     private static async Task<ImageSource> LoadImage(string address)
     {
-        if (!Storage.IsWebUrl(address)) return null;
-        try
-        {
-            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
-            using (HttpResponseMessage response = await metadataClient.GetAsync(address, HttpCompletionOption.ResponseHeadersRead, timeout.Token))
-            {
-                if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType?.StartsWith("image/") != true)
-                    return null;
-                var data = new MemoryStream();
-                using (Stream input = await response.Content.ReadAsStreamAsync())
-                {
-                    var buffer = new byte[8192];
-                    int count;
-                    while ((count = await input.ReadAsync(buffer, 0, buffer.Length, timeout.Token)) > 0)
-                    {
-                        if (data.Length + count > 1024 * 1024) return null;
-                        data.Write(buffer, 0, count);
-                    }
-                }
-                data.Position = 0;
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
+        byte[] data = await Pictures.Download(address);
 #if SELFTEST
-                image.DecodePixelWidth = 144;   // enough for the Shared station page's 72 pt logo in the 2× README pictures
+        return Pictures.Decode(data, 144);   // enough for the Shared station page's 72 pt logo in the 2× README pictures
 #else
-                image.DecodePixelWidth = 120;
+        return Pictures.Decode(data, 120);
 #endif
-                image.StreamSource = data;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-        }
-        catch (Exception error)
-        {
-            Debug.WriteLine(error);
-            return null;
-        }
     }
 
     // The small bubble with a shadow, used by the volume value and by "Copied". It starts hidden; the caller places it.
