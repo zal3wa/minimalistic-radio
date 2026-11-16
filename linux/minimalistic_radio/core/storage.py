@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from collections.abc import Mapping
@@ -34,6 +35,11 @@ def default_paths(env: Mapping[str, str] = os.environ) -> Paths:
         data=pick("XDG_DATA_HOME", home / ".local" / "share"),
         cache=pick("XDG_CACHE_HOME", home / ".cache"),
     )
+
+
+def logo_name(url: str) -> str:
+    """A logo's file name in the cache's logos folder: made from its address."""
+    return hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def _read_json(path: Path):

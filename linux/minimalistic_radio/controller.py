@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum, Flag, auto
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Collection, Protocol
 
 from . import APP_NAME
 from .core.covers import CoverCache, itunes_search_url, pick_cover
@@ -22,7 +22,7 @@ from .core.models import HistoryEntry, Preferences, Station, Statistics
 from .core.share import SharedStation
 from .core.statistics import SAVE_SECONDS, Recorder
 from .core.storage import (
-    HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations,
+    HISTORY_LIMIT, Paths, load_history, load_preferences, load_statistics, load_stations, logo_name,
     save_history, save_preferences, save_statistics, save_stations,
 )
 from .core.streams import is_web_url, same_stream, stream_key
@@ -39,6 +39,7 @@ FADE_SECONDS = 30                            # the sleep timer fades out over it
 RADIO357_POLL_SECONDS = 10
 TITLE_SECONDS = 5                            # a stream's title changes are applied at most this often
 COVERS_KEPT = 200                            # pictures kept in the cover cache
+LOGOS_KEPT = 200                             # logos kept in the logo cache, besides those of the stations on the list
 VOLUME_BURST = timedelta(seconds=1)          # volume changes closer than this are one (a drag, the wheel, keys)
 SWITCH_SETTLE = 0.3                          # a media key or tray switch connects once switching pauses this long
 LANGUAGES = ("auto", "pl", "en", "de", "uk", "cs", "es", "fr", "it", "pt")
@@ -228,7 +229,8 @@ class RadioController:
         self.statistics = self._load_statistics()
         self._recorder = Recorder(self.statistics)
         self.volume = self.prefs.volume
-        self._prune_covers()
+        self._prune(self.paths.cache / "covers", COVERS_KEPT)
+        self._prune(self.paths.cache / "logos", LOGOS_KEPT, {logo_name(s.logo) for s in self.stations if s.logo})
         self.current = next((i for i, s in enumerate(self.stations) if s.url == self.prefs.last_played), -1)
         self.player.set_volume(self.effective_volume)
         self._emit(Change.STATE | Change.STATIONS | Change.VOLUME | Change.HISTORY | Change.PREFERENCES
@@ -236,21 +238,23 @@ class RadioController:
         if self.current >= 0 and not autostart:
             self.play()
 
-    def _prune_covers(self) -> None:
-        """Keeps only the newest cover pictures, so the cache doesn't grow with every song."""
+    @staticmethod
+    def _prune(folder: Path, kept: int, keep: Collection[str] = ()) -> None:
+        """Keeps only the `kept` newest files of a cache folder, and those named in `keep`, so the cache doesn't
+        grow with every song or search. (The logo cache freshens a logo's file each time it is used.)"""
         try:
-            entries = list(os.scandir(self.paths.cache / "covers"))
+            entries = list(os.scandir(folder))
         except OSError:
             return
         files = []
         for entry in entries:
             try:
-                if entry.is_file():
+                if entry.is_file() and entry.name not in keep:
                     files.append((entry.stat().st_mtime, entry.path))
             except OSError:
                 continue
         files.sort(reverse=True)
-        for _mtime, path in files[COVERS_KEPT:]:
+        for _mtime, path in files[kept:]:
             try:
                 os.remove(path)
             except OSError:

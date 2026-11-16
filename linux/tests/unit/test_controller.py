@@ -5,7 +5,7 @@ import os
 from fakes import A, B, C, jpeg_header
 from minimalistic_radio.controller import AddResult, Change, ErrorKind, ImportResult, Status
 from minimalistic_radio.core.models import Preferences, Station
-from minimalistic_radio.core.storage import load_history, load_preferences, load_stations
+from minimalistic_radio.core.storage import load_history, load_preferences, load_stations, logo_name
 from minimalistic_radio.core.titles import RADIO357_NOW_URL
 
 NOT_A_LIST = "This isn't a Minimalistic Radio station list."
@@ -420,3 +420,11 @@ def test_start_keeps_the_200_newest_covers(ctl_factory):
         f = covers / f"{n:03}.jpg"; f.write_bytes(b"cover"); os.utime(f, (1_700_000_000 + n, 1_700_000_000 + n))
     c.start(autostart=True)
     assert sorted(p.name for p in covers.iterdir()) == [f"{n:03}.jpg" for n in range(5, 205)]
+def test_start_keeps_the_stations_logos_and_the_200_newest_others(ctl_factory):
+    c = ctl_factory()                                                        # Beta has a logo
+    logos = c.paths.cache / "logos"; logos.mkdir(parents=True)
+    for n in range(205):                                                     # favicons from searches
+        f = logos / f"{n:03}"; f.write_bytes(b"logo"); os.utime(f, (1_700_000_000 + n, 1_700_000_000 + n))
+    own = logos / logo_name(B.logo); own.write_bytes(b"logo"); os.utime(own, (1_600_000_000, 1_600_000_000))
+    c.start(autostart=True)
+    assert sorted(p.name for p in logos.iterdir()) == sorted([f"{n:03}" for n in range(5, 205)] + [own.name])
