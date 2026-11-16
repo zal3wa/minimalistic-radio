@@ -60,7 +60,8 @@ struct NowPlayingCard: View {
         .padding(10)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.06)))
         .task(id: controller.coverPath) {
-            cover = controller.coverPath.flatMap { NSImage(contentsOf: $0) }
+            let file = controller.coverPath
+            cover = await Task.detached(priority: .utility) { LogoCache.cover(file) }.value
         }
     }
 
