@@ -220,7 +220,8 @@ internal static class Updater
         byte[] exe = File.ReadAllBytes(downloaded);
         if (!Signed(release.Version.ToString(3), exe, release.Signature))
         {
-            File.Delete(downloaded);
+            try { File.Delete(downloaded); }
+            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException) { Debug.WriteLine(error); }
             throw new UpdateNotVerifiedException();
         }
         string target = Exe, old = target + ".old";
