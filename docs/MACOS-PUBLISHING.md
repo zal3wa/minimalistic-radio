@@ -8,7 +8,7 @@ When you push a tag that starts with `macos-v`, the "macOS" workflow:
 
 1. builds the app for Apple Silicon and Intel and runs its tests;
 2. checks that the tag's version matches `MARKETING_VERSION` in `macos/project.yml` (stops if not);
-3. signs the app with the project's own certificate (below);
+3. signs the app with the project's own certificate (below), with the hardened runtime;
 4. makes `Minimalistic-Radio.dmg` (for people) and `Minimalistic-Radio-macOS.zip` (for the app's self-update);
 5. creates the GitHub release, never marked "latest" (that stays the Windows app, whose updater and download button depend on it), and a pre-release for a `-beta.N` tag;
 6. puts the DMG on the fixed release `macos-download`, which the README's "Download for macOS" button points to. Betas go there until the first full release; after that only full releases do.
