@@ -492,6 +492,7 @@ public final class RadioController {
         saveHistoryFile()
         if prefs.collectStatistics {
             statistics.songs.append(PlayedSong(station: station, title: title, time: scheduler.now()))   // saved with the session
+            statistics.keepNewestSongs()
         }
         return true
     }

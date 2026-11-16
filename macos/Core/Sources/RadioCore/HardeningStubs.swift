@@ -17,7 +17,5 @@ public func pictureSizeAllowed(width: Int, height: Int) -> Bool { true }
 public func declaredPictureSize(_ data: Data) -> (width: Int, height: Int)? { nil }
 public func decodePicture(_ data: Data, maxPixels: Int) -> CGImage? { nil }
 
-public let songsKept = 0
-
 public let projectReleasesPage = URL(string: "https://github.com/")!
 public func projectLink(_ text: String?) -> URL? { text.flatMap(URL.init(string:)) }
