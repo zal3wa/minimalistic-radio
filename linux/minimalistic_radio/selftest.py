@@ -7,6 +7,7 @@ Also the silent player behind the test-only --demo-track, which CI uses for pict
 """
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import time
@@ -288,19 +289,119 @@ def _render(window: Gtk.Window, path: Path, popover: Gtk.Popover | None = None) 
     snapshot.scale(scale, scale)
     Gtk.WidgetPaintable.new(window).snapshot(snapshot, window.get_width(), window.get_height())
     if popover is not None and popover.get_mapped():
-        # The popup's place on the window's surface, both widgets' origins inside their surfaces (the shadows).
-        surface = popover.get_surface()
-        own_x, own_y = popover.get_surface_transform()
-        window_x, window_y = window.get_surface_transform()
+        # Through the same mapping as the window (_to_picture), at the popover's own bounds (its arrow included).
+        x, y = _popover_origin(window, popover)
+        ok, bounds = popover.compute_bounds(popover)
+        _left, _top, scale_x, scale_y = _frame(window)
         snapshot.save()
-        snapshot.translate(Graphene.Point().init(surface.get_position_x() + own_x - window_x,
-                                                 surface.get_position_y() + own_y - window_y))
-        Gtk.WidgetPaintable.new(popover).snapshot(snapshot, popover.get_width(), popover.get_height())
+        snapshot.translate(Graphene.Point().init(*_to_picture(window, x + bounds.get_x(), y + bounds.get_y())))
+        snapshot.scale(scale_x, scale_y)
+        Gtk.WidgetPaintable.new(popover).snapshot(snapshot, bounds.get_width(), bounds.get_height())
         snapshot.restore()
     area = Graphene.Rect().init(0, 0, window.get_width() * scale, window.get_height() * scale)   # the window only
     texture = window.get_renderer().render_texture(snapshot.to_node(), area)
     texture.save_to_png(str(path))
     print("wrote", path)
+
+
+def _popover_origin(window: Gtk.Window, popover: Gtk.Popover) -> tuple[float, float]:
+    """Where an open popover's top left is over the window: its popup's place on the window's surface, with both
+    widgets' origins inside their surfaces (the shadows)."""
+    surface = popover.get_surface()
+    own_x, own_y = popover.get_surface_transform()
+    window_x, window_y = window.get_surface_transform()
+    return surface.get_position_x() + own_x - window_x, surface.get_position_y() + own_y - window_y
+
+
+def _frame(window: Gtk.Window) -> tuple[float, float, float, float]:
+    """How a picture of the window maps the window's coordinates: (left, top, x scale, y scale). WidgetPaintable
+    draws the window's bounds, its frame included (left and top are negative), into the window's own size."""
+    ok, bounds = window.compute_bounds(window)
+    return (bounds.get_x(), bounds.get_y(), window.get_width() / bounds.get_width(),
+            window.get_height() / bounds.get_height())
+
+
+def _to_picture(window: Gtk.Window, x: float, y: float) -> tuple[float, float]:
+    """A point of the window in a picture of it (before the display's scale)."""
+    left, top, scale_x, scale_y = _frame(window)
+    return (x - left) * scale_x, (y - top) * scale_y
+
+
+def _centre(window: Gtk.Window, widget: Gtk.Widget, popover: Gtk.Popover | None = None) -> list[int]:
+    """The middle of `widget` in a picture of the window (_render's pixels), from its allocation; `popover`: the
+    open popover it is in."""
+    origin = popover if popover is not None else window
+    ok, bounds = widget.compute_bounds(origin)
+    if not ok:
+        raise AssertionError(f"no place for {widget!r}")
+    x, y = _popover_origin(window, popover) if popover is not None else (0.0, 0.0)
+    px, py = _to_picture(window, x + bounds.get_x() + bounds.get_width() / 2,
+                         y + bounds.get_y() + bounds.get_height() / 2)
+    scale = window.get_scale_factor()
+    return [round(px * scale), round(py * scale)]
+
+
+def _menu_item(popover: Gtk.Popover, text: str) -> Gtk.Widget:
+    """The item of a popover menu with this label."""
+    for item in _descendants(popover):
+        if item.get_css_name() == "modelbutton" and text in [w.get_text() for w in _descendants(item)
+                                                              if isinstance(w, Gtk.Label)]:
+            return item
+    raise AssertionError(f"no menu item {text!r}")
+
+
+def _back_button(page: Gtk.Widget) -> Gtk.Widget:
+    """The ‹ that the navigation view puts in a subpage's bar."""
+    for widget in _descendants(page):
+        if isinstance(widget, Gtk.Button) and widget.get_mapped() and (
+                widget.get_icon_name() == "go-previous-symbolic" or widget.get_action_name() == "navigation.pop"):
+            return widget
+    raise AssertionError("no back button")
+
+
+def _demo_pictures(window: RadioWindow, folder: Path, look: str, hotspots: dict) -> None:
+    """The landing page's demo, from the real window: the stations page, Song history, its first song's ⋯ menu with
+    Search on Spotify highlighted, and Statistics (this month) opened from Song history. `hotspots` gets, per picture,
+    the middle of what the demo's pointer clicks next, in the picture's pixels."""
+    def picture(name: str, popover: Gtk.Popover | None = None) -> str:
+        file = f"linux-demo-{name}-{look}.png"
+        _render(window, folder / file, popover)
+        return file
+
+    window.show_page("stations")
+    pump(600)
+    hotspots[picture("stations")] = {"history": _centre(window, window.history_button)}
+
+    history = window.history_page
+    window.show_page("history")
+    _scroll(history, to_end=False)
+    pump(600)
+    first = history.rows[0].menu_button
+    hotspots[picture("history")] = {"song-menu": _centre(window, first),
+                                    "statistics": _centre(window, history.statistics_button)}
+
+    first.popup()
+    pump(300)
+    popover = first.get_popover()
+    x, y = _popover_origin(window, popover)
+    _check(x >= 0 and y >= 0 and x + popover.get_width() <= window.get_width()
+           and y + popover.get_height() <= window.get_height(), "the song menu sticks out of the window")
+    spotify = _menu_item(popover, window._("Search on Spotify"))
+    spotify.grab_focus()   # highlighted, as under the pointer
+    pump(400)
+    hotspots[picture("history-menu", popover)] = {"search-on-spotify": _centre(window, spotify, popover)}
+    first.popdown()
+    pump(300)
+
+    history.statistics_button.emit("clicked")
+    statistics = window.statistics_page
+    _wait(lambda: statistics.get_mapped(), 5)
+    _scroll(statistics, to_end=False)
+    pump(600)
+    _check(statistics.period is Period.MONTH, "Statistics didn't open on this month")
+    hotspots[picture("statistics")] = {"back": _centre(window, _back_button(statistics))}
+    window.show_page("stations")
+    pump(300)
 
 
 def _descendants(widget: Gtk.Widget):
@@ -316,11 +417,7 @@ def _share_pictures(window: RadioWindow, folder: Path, look: str) -> None:
     button = window.stations_page.rows[SHOT_PLAYING].menu_button
     button.popup()
     pump(300)
-    share = window._("Share")
-    for item in _descendants(button.get_popover()):   # Share highlighted, as under the pointer
-        if item.get_css_name() == "modelbutton" and share in [w.get_text() for w in _descendants(item)
-                                                               if isinstance(w, Gtk.Label)]:
-            item.grab_focus()
+    _menu_item(button.get_popover(), window._("Share")).grab_focus()   # highlighted, as under the pointer
     pump(400)
     _render(window, folder / f"linux-share-menu-{look}.png", button.get_popover())
     button.popdown()
@@ -378,8 +475,10 @@ def _arrived(window: RadioWindow, page: str) -> bool:
 
 def take_screenshots(app: Any, folder: Path) -> int:
     """Writes linux-<page>-<light|dark>.png for every page (the stations, search, history, settings, statistics
-    and shared station pages), linux-<page>-end-<light|dark>.png for the long ones scrolled to their end, and
-    linux-share-menu-/linux-share-copied-<light|dark>.png. The statistics are a sample made up in memory."""
+    and shared station pages), linux-<page>-end-<light|dark>.png for the long ones scrolled to their end,
+    linux-share-menu-/linux-share-copied-<light|dark>.png, and the landing page's demo: linux-demo-<frame>-
+    <light|dark>.png with linux-demo-hotspots.json (where its pointer clicks). The statistics are a sample made up
+    in memory."""
     styles = None
     try:
         Adw.init()
@@ -401,6 +500,7 @@ def take_screenshots(app: Any, folder: Path) -> int:
             window = RadioWindow(controller, translate)
             window.present()
             pump(600)
+            hotspots: dict[str, dict[str, list[int]]] = {}
             for scheme, look in ((Adw.ColorScheme.FORCE_LIGHT, "light"), (Adw.ColorScheme.FORCE_DARK, "dark")):
                 styles.set_color_scheme(scheme)
                 for page in PAGES:
@@ -415,6 +515,13 @@ def take_screenshots(app: Any, folder: Path) -> int:
                         _scroll(window.navigation.get_visible_page(), to_end=True)
                         pump(400)
                         _render(window, folder / f"linux-{page}-end-{look}.png")
+                _demo_pictures(window, folder, look, hotspots)
+            scale = window.get_scale_factor()
+            (folder / "linux-demo-hotspots.json").write_text(json.dumps({
+                "size": [window.get_width() * scale, window.get_height() * scale],   # every picture's pixels
+                "frames": hotspots,
+            }, indent=2) + "\n", encoding="utf-8")
+            print("wrote", folder / "linux-demo-hotspots.json")
             window.destroy()
     except Exception as error:
         print(f"screenshots failed: {error!r}", file=sys.stderr)
