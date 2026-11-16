@@ -5,6 +5,7 @@ import re
 from typing import Any
 from urllib.parse import quote
 
+from .streams import is_web_url
 from .titles import split_track
 
 
@@ -30,6 +31,7 @@ def same_artist(wanted: str, found: str | None) -> bool:
 
 
 def pick_cover(artist: str, payload: Any) -> str | None:
+    """The 600 px artwork of the first result by `artist` whose artwork is an http or https address."""
     results = payload.get("results") if isinstance(payload, dict) else None
     if not isinstance(results, list):
         return None
@@ -37,7 +39,7 @@ def pick_cover(artist: str, payload: Any) -> str | None:
         if not isinstance(item, dict):
             continue
         name, picture = item.get("artistName"), item.get("artworkUrl100")
-        if isinstance(picture, str) and isinstance(name, str) and same_artist(artist, name):
+        if isinstance(picture, str) and is_web_url(picture) and isinstance(name, str) and same_artist(artist, name):
             return picture.replace("100x100bb", "600x600bb")
     return None
 
