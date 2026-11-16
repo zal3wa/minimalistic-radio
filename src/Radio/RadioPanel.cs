@@ -1503,7 +1503,11 @@ internal sealed partial class Radio
                 lastCheck));
 
             // About: the round app icon (as many pixels as the screen shows), the version and a link to the project.
-            int iconPixels = (int)Math.Round(32 * VisualTreeHelper.GetDpi(panel).DpiScaleX);
+            double iconScale = VisualTreeHelper.GetDpi(panel).DpiScaleX;
+#if SELFTEST
+            iconScale = Math.Max(iconScale, shotScale);   // the README pictures are drawn at 2×
+#endif
+            int iconPixels = (int)Math.Round(32 * iconScale);
             var appIcon = new Image { Source = Theme.AppImage(iconPixels), Width = 32, Height = 32 };
             RenderOptions.SetBitmapScalingMode(appIcon, BitmapScalingMode.HighQuality);
             settings.Children.Add(Group(L("About")));
@@ -1912,7 +1916,11 @@ internal sealed partial class Radio
                 var image = new BitmapImage();
                 image.BeginInit();
                 image.CacheOption = BitmapCacheOption.OnLoad;
+#if SELFTEST
+                image.DecodePixelWidth = 144;   // enough for the Shared station page's 72 pt logo in the 2× README pictures
+#else
                 image.DecodePixelWidth = 120;
+#endif
                 image.StreamSource = data;
                 image.EndInit();
                 image.Freeze();

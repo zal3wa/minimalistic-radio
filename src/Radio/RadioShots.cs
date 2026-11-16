@@ -82,13 +82,45 @@ internal sealed partial class Radio
             }
     }
 
+    // The README pictures (--screenshot) are drawn at 2× (192 DPI) whatever the screen's scaling, sharp on high-density
+    // screens; the --preview ones at the screen's own. 0: the screen's.
+    private double shotScale;
+
+    private double ScaleOf(Visual visual) => shotScale > 0 ? shotScale : VisualTreeHelper.GetDpi(visual).DpiScaleX;
+
+    // Physical pixels per point where the window really is (for positions on the screen).
+    private static double ScreenScale(Visual visual) => PresentationSource.FromVisual(visual)?.CompositionTarget?.TransformToDevice.M11 ?? 1;
+
+    // Before drawing at another scale than the screen's: the window (or a menu's popup, or a drawn scene) lays itself out
+    // for that scale, so its lines and text fall on whole pixels of the picture instead of being stretched.
+    private void LayOutFor(Visual visual)
+    {
+        if (shotScale <= 0) return;
+        DependencyObject root = visual;
+        for (DependencyObject parent; (parent = VisualTreeHelper.GetParent(root)) != null;) root = parent;
+        if (root is Visual top && VisualTreeHelper.GetDpi(top).DpiScaleX != shotScale)
+        {
+            VisualTreeHelper.SetRootDpi(top, new DpiScale(shotScale, shotScale));
+            // Only some elements lay themselves out and draw again on a new DPI: every one does, so all edges are rounded
+            // anew (a border drawn for the old rounding lets the shadow under it show through as a thin line).
+            foreach (UIElement element in new[] { top }.Concat(Descendants(top)).OfType<UIElement>())
+            {
+                element.InvalidateMeasure();
+                element.InvalidateArrange();
+                element.InvalidateVisual();
+            }
+        }
+        (root as UIElement)?.UpdateLayout();
+    }
+
     private async Task SavePreview(Visual visual, string name)
     {
         foreach (bool dark in new[] { false, true })
         {
             Theme.Apply(app, dark);
             await Task.Delay(400);
-            SavePng(Snapshot((FrameworkElement)visual, VisualTreeHelper.GetDpi(visual).DpiScaleX), name, dark);
+            LayOutFor(visual);
+            SavePng(Snapshot((FrameworkElement)visual, ScaleOf(visual)), name, dark);
         }
         Theme.Apply(app);
     }
@@ -122,7 +154,8 @@ internal sealed partial class Radio
         FillSampleStatistics();   // a year of listening, in memory only, so the Statistics frame has something to show
         OpenPlayer();
         await Task.Delay(3000);   // logos and the cover arrive over the network
-        scale = VisualTreeHelper.GetDpi(playerPanel).DpiScaleX;
+        LayOutFor(playerPanel);
+        scale = ScaleOf(playerPanel);   // the pictures' pixels per point (2 for --screenshot)
 
         // The stations page, playing; the pointer goes to [History].
         Button history = Find(button => Says(button, L("History")));
@@ -146,8 +179,10 @@ internal sealed partial class Radio
         if (!spotify.IsHighlighted)
             typeof(MenuItem).GetProperty("IsHighlighted").SetValue(spotify, true);   // as the pointer would
         await Task.Delay(300);
+        LayOutFor(menu);
         Point origin = playerPanel.PointToScreen(new Point()), at = menu.PointToScreen(new Point());
-        var offset = new Point((at.X - origin.X) / scale, (at.Y - origin.Y) / scale);
+        double screen = ScreenScale(playerPanel);   // the menu's place, from screen pixels to points
+        var offset = new Point((at.X - origin.X) / screen, (at.Y - origin.Y) / screen);
         if (offset.X < 0 || offset.Y < 0 || offset.X + menu.ActualWidth > playerPanel.ActualWidth || offset.Y + menu.ActualHeight > playerPanel.ActualHeight)
             throw new InvalidOperationException("Menu utworu wychodzi poza obrazek demo.");
         await SaveWithMenu(playerPanel, menu, "shot-demo-history-menu");
@@ -174,9 +209,11 @@ internal sealed partial class Radio
         {
             Theme.Apply(app, dark);
             await Task.Delay(400);
-            double scale = VisualTreeHelper.GetDpi(window).DpiScaleX;
+            LayOutFor(window);
+            LayOutFor(menu);
+            double scale = ScaleOf(window), screen = ScreenScale(window);
             Point origin = window.PointToScreen(new Point()), at = menu.PointToScreen(new Point());
-            double x = (at.X - origin.X) / scale, y = (at.Y - origin.Y) / scale;
+            double x = (at.X - origin.X) / screen, y = (at.Y - origin.Y) / screen;
             double width = Math.Max(window.ActualWidth, x + menu.ActualWidth), height = Math.Max(window.ActualHeight, y + menu.ActualHeight);
             var drawing = new DrawingVisual();
             using (DrawingContext context = drawing.RenderOpen())
@@ -197,8 +234,10 @@ internal sealed partial class Radio
         {
             Theme.Apply(app, dark);
             await Task.Delay(400);
-            double scale = VisualTreeHelper.GetDpi(opened).DpiScaleX;
+            LayOutFor(opened);
+            double scale = ScaleOf(opened);
             FrameworkElement scene = TrayScene(Snapshot(opened, scale), scale, dark);
+            LayOutFor(scene);
             SavePng(Snapshot(scene, scale), name, dark);
         }
         Theme.Apply(app);

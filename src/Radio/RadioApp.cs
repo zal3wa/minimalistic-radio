@@ -516,6 +516,7 @@ internal sealed partial class Radio
         try
         {
             Lang.Setting = "en";
+            shotScale = 2;   // 192 DPI, whatever the screen's scaling
             Stations.AddRange(ShotStations.Select(s => new SavedStation { Name = s.Name, Url = s.Url, Logo = s.Logo }));
             using (var shot = new CancellationTokenSource())
             {
