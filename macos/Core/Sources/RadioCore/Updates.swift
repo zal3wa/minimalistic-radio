@@ -7,6 +7,22 @@ public let releasesURL = URL(string: "https://api.github.com/repos/zal3wa/minima
 public let updateCheckInterval: TimeInterval = 6 * 3600
 public let updateZipName = "Minimalistic-Radio-macOS.zip"
 public let updateDMGName = "Minimalistic-Radio.dmg"
+/// Where the updater sends people when a release's own page can't be trusted.
+public let projectReleasesPage = URL(string: "https://github.com/zal3wa/minimalistic-radio/releases")!
+private let projectPath = "/zal3wa/minimalistic-radio/"
+
+/// A link from the GitHub API that the updater may download or open: https on github.com, under the project
+/// (https://github.com/zal3wa/minimalistic-radio/…). nil for anything else.
+public func projectLink(_ text: String?) -> URL? {
+    guard let text, let url = URL(string: text), let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
+          parts.scheme?.lowercased() == "https", parts.host?.lowercased() == "github.com",
+          parts.port == nil, parts.user == nil, parts.password == nil else { return nil }
+    let path = parts.percentEncodedPath
+    guard path.hasPrefix(projectPath), !path.contains(".."), !path.contains("\\"),
+          path.range(of: "%2e", options: .caseInsensitive) == nil, path.range(of: "%2f", options: .caseInsensitive) == nil,
+          path.range(of: "%5c", options: .caseInsensitive) == nil else { return nil }
+    return url
+}
 
 private let tagPattern = try! NSRegularExpression(pattern: #"^macos-v(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?$"#)
 
@@ -52,7 +68,9 @@ public struct AvailableUpdate: Equatable, Sendable {
 }
 
 /// The newest Mac release newer than `current`, from the GitHub API's list of releases. Drafts, other systems'
-/// tags and releases missing a file are skipped; betas are offered only to a beta.
+/// tags and releases missing a file are skipped; betas are offered only to a beta. Only project links are used
+/// (projectLink): a release whose files are elsewhere is skipped, and a page elsewhere becomes the project's
+/// releases page.
 public func newestUpdate(releases: Any?, current: ReleaseTag) -> AvailableUpdate? {
     var best: AvailableUpdate?
     for case let release as [String: Any] in releases as? [Any] ?? [] {
@@ -60,13 +78,12 @@ public func newestUpdate(releases: Any?, current: ReleaseTag) -> AvailableUpdate
               let tag = ReleaseTag(name), tag > current, tag.beta == nil || current.beta != nil else { continue }
         var files: [String: URL] = [:]
         for case let asset as [String: Any] in release["assets"] as? [Any] ?? [] {
-            if let file = asset["name"] as? String, let link = asset["browser_download_url"] as? String,
-               let url = URL(string: link) {
+            if let file = asset["name"] as? String, let url = projectLink(asset["browser_download_url"] as? String) {
                 files[file] = url
             }
         }
-        guard let zip = files[updateZipName], let dmg = files[updateDMGName],
-              let page = (release["html_url"] as? String).flatMap(URL.init(string:)) else { continue }
+        guard let zip = files[updateZipName], let dmg = files[updateDMGName] else { continue }
+        let page = projectLink(release["html_url"] as? String) ?? projectReleasesPage
         if best == nil || best!.tag < tag {
             best = AvailableUpdate(tag: tag, tagName: name, zip: zip, dmg: dmg, page: page)
         }
@@ -127,9 +144,9 @@ public enum UpdateFallback: Equatable, Sendable {
 
 public func updateFallback(for error: UpdateError) -> UpdateFallback {
     switch error {
-    case .network, .unverified: return .retryLater
+    case .network: return .retryLater
     case .permissionDenied, .unpackFailed: return .downloadDMG
-    case .signatureMismatch, .wrongVersion: return .openReleasePage
+    case .signatureMismatch, .wrongVersion, .unverified: return .openReleasePage
     }
 }
 
@@ -144,7 +161,7 @@ public func updateFailureReason(_ error: UpdateError) -> String {
     case .unpackFailed: return L("The update couldn't be unpacked. It opens as a disk image instead.")
     case .signatureMismatch: return L("The update isn't signed like this radio, so it wasn't installed. Its page opens instead.")
     case .wrongVersion: return L("The update file doesn't match its version, so it wasn't installed. Its page opens instead.")
-    case .unverified: return ""
+    case .unverified: return L("This update couldn't be verified. Download it from its release page, which opens now.")
     }
 }
 

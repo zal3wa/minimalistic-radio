@@ -425,6 +425,9 @@ msgstr "Aktualizace není podepsaná stejně jako toto rádio, proto nebyla nain
 msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
 msgstr "Soubor aktualizace neodpovídá její verzi, proto nebyl nainstalován. Místo toho se otevře její stránka."
 
+msgid "This update couldn't be verified. Download it from its release page, which opens now."
+msgstr "Tuto aktualizaci se nepodařilo ověřit. Stáhněte si ji z její stránky, která se právě otevírá."
+
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio ještě není připravené. Zkuste to znovu."
 
