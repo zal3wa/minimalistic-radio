@@ -82,7 +82,7 @@ class SharedPage(Adw.NavigationPage):
 
     def add_and_play(self) -> None:
         if self.station is not None:
-            self.controller.add_and_play(self.station)
+            self.controller.add_shared(self.station, play=True)
         self.window.show_page("stations")
 
     def cancel(self) -> None:
