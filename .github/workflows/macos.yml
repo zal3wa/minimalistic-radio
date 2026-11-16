@@ -165,6 +165,26 @@ jobs:
           ditto -c -k --keepParent "$APP" Minimalistic-Radio-macOS.zip
           ls -l Minimalistic-Radio.dmg Minimalistic-Radio-macOS.zip
 
+      # The disk-image update path (Updater.mountVerifiedDMG): the app inside is checked like a zip update (signed
+      # like this app, with the release's tag) before Finder shows it; a DMG that fails is detached and deleted.
+      - name: Check the DMG update path
+        run: |
+          app="$APP/Contents/MacOS/Minimalistic Radio"
+          tag="${TAG:-dev}"
+          "$app" --check-update-dmg "$PWD/Minimalistic-Radio.dmg" "$tag" || { echo "::error::The DMG failed its own check"; exit 1; }
+          test -f Minimalistic-Radio.dmg
+          cp Minimalistic-Radio.dmg other-tag.dmg
+          if "$app" --check-update-dmg "$PWD/other-tag.dmg" macos-v0.0.1; then echo "::error::A DMG with another release tag passed"; exit 1; fi
+          test ! -e other-tag.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
+          mkdir changed
+          cp -R "$APP" changed/
+          echo " " >> "changed/Minimalistic Radio.app/Contents/Resources/banned-stations.json"
+          hdiutil create -volname "Minimalistic Radio" -srcfolder changed -ov -format UDZO changed.dmg > /dev/null
+          if "$app" --check-update-dmg "$PWD/changed.dmg" "$tag"; then echo "::error::A DMG with a changed app passed"; exit 1; fi
+          test ! -e changed.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
+          if hdiutil info | grep -q radio-update-; then echo "::error::A checked DMG is still mounted"; hdiutil info; exit 1; fi
+          rm -rf changed
+
       - uses: actions/upload-artifact@v7
         with:
           name: Minimalistic-Radio-dmg

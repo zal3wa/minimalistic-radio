@@ -12,7 +12,9 @@ final class Updater {
     private let current: ReleaseTag?
     private var timer: Timer?
     private static let explainedKey = "UpdatePermissionExplained"
-    private static let log = Logger(subsystem: "io.github.zal3wa.minimalistic-radio", category: "updates")
+    nonisolated private static let log = Logger(subsystem: "io.github.zal3wa.minimalistic-radio", category: "updates")
+    /// Temporary folders of update downloads (the zip, the disk image and its hidden mount point).
+    nonisolated private static let folderPrefix = "radio-update-"
 
     private(set) var state: UpdateState = .none {
         didSet { if state != oldValue { onChange() } }
@@ -44,6 +46,8 @@ final class Updater {
         // Beta 1 remembered a DMG fallback for good; now each update decides for itself.
         if controller.prefs.updateByDownload { controller.setUpdateByDownload(false) }
         guard enabled else { return }
+        let started = Date()
+        Task.detached(priority: .background) { Self.removeOldDownloads(before: started) }
         checkIfDue()
         timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIfDue() }
@@ -135,7 +139,7 @@ final class Updater {
 
     /// The release's zip, unpacked: the new Minimalistic Radio.app in a temporary folder.
     private static func downloadApp(_ zip: URL) async throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("radio-update-\(UUID().uuidString)")
+        let folder = newFolder()
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let (file, response) = try await Network.session.download(from: zip)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw UpdateError.network }
@@ -156,7 +160,7 @@ final class Updater {
     }
 
     /// The new app meets this app's designated requirement: signed with the same project certificate.
-    private static func signedLikeThisApp(_ app: URL) -> Bool {
+    nonisolated private static func signedLikeThisApp(_ app: URL) -> Bool {
         var running: SecCode?
         var runningStatic: SecStaticCode?
         var requirement: SecRequirement?
@@ -181,23 +185,125 @@ final class Updater {
         NSApp.terminate(nil)
     }
 
-    /// When the app can't replace itself (opened from the DMG or Downloads, or macOS said no): the DMG opens in
-    /// Finder, to drag the radio to Applications. Only for this update; the next one tries the swap again.
+    /// When the app can't replace itself (opened from the DMG or Downloads, or macOS said no): the DMG is checked
+    /// like a zip update, then opens in Finder, to drag the radio to Applications. Only for this update; the next
+    /// one tries the swap again. A DMG that fails the check is never shown: its release page opens instead.
     private func downloadDMG(_ update: AvailableUpdate) {
         state = .downloading(0)
         Task {
+            let dmg = Self.newFolder().appendingPathComponent(updateDMGName)
             do {
+                try FileManager.default.createDirectory(at: dmg.deletingLastPathComponent(), withIntermediateDirectories: true)
                 let (file, response) = try await Network.session.download(from: update.dmg)
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw UpdateError.network }
-                let target = FileManager.default.temporaryDirectory.appendingPathComponent("Minimalistic-Radio-\(UUID().uuidString).dmg")
-                try FileManager.default.moveItem(at: file, to: target)
-                NSWorkspace.shared.open(target)
-                showCard(L("Quit the radio, then drag Minimalistic Radio to Applications to finish the update."))
+                try FileManager.default.moveItem(at: file, to: dmg)
             } catch {
                 Self.log.error("downloading the DMG failed: \(String(describing: error), privacy: .public)")
+                try? FileManager.default.removeItem(at: dmg.deletingLastPathComponent())
                 NSWorkspace.shared.open(update.page)
+                state = .available(update)
+                return
             }
+            let tag = update.tagName
+            let checked = await Task.detached(priority: .userInitiated) { Self.mountVerifiedDMG(dmg, tag: tag) }.value
+            guard let volume = checked else {
+                try? FileManager.default.removeItem(at: dmg.deletingLastPathComponent())
+                failed(update, .unverified)
+                return
+            }
+            if !NSWorkspace.shared.open(volume) {
+                // Finder didn't show the hidden volume: the same image, already checked, mounted the usual way.
+                Self.detach(volume)
+                NSWorkspace.shared.open(dmg)
+            }
+            showCard(L("Quit the radio, then drag Minimalistic Radio to Applications to finish the update."))
             state = .available(update)
         }
+    }
+
+    // MARK: - Checking a disk image
+
+    nonisolated private static func newFolder() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent(folderPrefix + UUID().uuidString)
+    }
+
+    /// Mounts the DMG read-only and hidden at a private mount point, and checks the app inside as a zip update is
+    /// checked: signed like this app, with the release's tag. Returns the mount point when it passes. Otherwise
+    /// the DMG is detached and deleted, and nil comes back.
+    nonisolated static func mountVerifiedDMG(_ dmg: URL, tag: String) -> URL? {
+        let folder = newFolder()
+        let volume = folder.appendingPathComponent("volume")
+        do {
+            try FileManager.default.createDirectory(at: volume, withIntermediateDirectories: true)
+        } catch {
+            try? FileManager.default.removeItem(at: dmg)
+            return nil
+        }
+        let mounted = run("/usr/bin/hdiutil", ["attach", "-nobrowse", "-readonly", "-noautoopen", "-mountpoint", volume.path,
+                                               dmg.path])
+        let app = volume.appendingPathComponent("Minimalistic Radio.app")
+        let values = try? app.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        if mounted && values?.isDirectory == true && values?.isSymbolicLink != true && signedLikeThisApp(app)
+            && Bundle(url: app)?.object(forInfoDictionaryKey: "MRReleaseTag") as? String == tag {
+            return volume
+        }
+        log.error("the update's disk image failed its check (mounted: \(mounted, privacy: .public))")
+        if mounted { detach(volume) }
+        try? FileManager.default.removeItem(at: dmg)
+        if !isMountPoint(volume) { try? FileManager.default.removeItem(at: folder) }
+        return nil
+    }
+
+    /// Unmounts a checked disk image (forcibly if it is busy) and removes its mount point.
+    nonisolated static func detach(_ volume: URL) {
+        if !run("/usr/bin/hdiutil", ["detach", volume.path]) { _ = run("/usr/bin/hdiutil", ["detach", "-force", volume.path]) }
+        if !isMountPoint(volume) { try? FileManager.default.removeItem(at: volume.deletingLastPathComponent()) }
+    }
+
+    /// `--check-update-dmg <dmg> <tag>` (CI): the disk-image check alone. Exit code 0 when the DMG passes (it is
+    /// detached again), 1 when it fails (it is detached and deleted).
+    nonisolated static func checkDMG(_ dmg: URL, tag: String) -> Int32 {
+        guard let volume = mountVerifiedDMG(dmg, tag: tag) else { return 1 }
+        detach(volume)
+        return 0
+    }
+
+    /// Update downloads from before `date`, unpacked zips and checked disk images still mounted (once the radio was
+    /// dragged to Applications): detached and removed, except the one this copy runs from.
+    nonisolated private static func removeOldDownloads(before date: Date) {
+        let files = FileManager.default
+        let running = Bundle.main.bundleURL.resolvingSymlinksInPath().path
+        guard let folders = try? files.contentsOfDirectory(at: files.temporaryDirectory,
+                                                           includingPropertiesForKeys: [.creationDateKey]) else { return }
+        for folder in folders where folder.lastPathComponent.hasPrefix(folderPrefix) {
+            let created = (try? folder.resourceValues(forKeys: [.creationDateKey]))?.creationDate ?? .distantFuture
+            if created >= date || running.hasPrefix(folder.resolvingSymlinksInPath().path + "/") { continue }
+            let volume = folder.appendingPathComponent("volume")
+            if isMountPoint(volume) && !run("/usr/bin/hdiutil", ["detach", volume.path]) { continue }
+            try? files.removeItem(at: folder)
+        }
+    }
+
+    /// Something is mounted at `path` (it is on another device than its folder).
+    nonisolated private static func isMountPoint(_ path: URL) -> Bool {
+        var inner = stat(), outer = stat()
+        guard stat(path.path, &inner) == 0, stat(path.deletingLastPathComponent().path, &outer) == 0 else { return false }
+        return inner.st_dev != outer.st_dev
+    }
+
+    nonisolated private static func run(_ tool: String, _ arguments: [String]) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tool)
+        process.arguments = arguments
+        process.standardInput = FileHandle.nullDevice
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+        process.waitUntilExit()
+        return process.terminationStatus == 0
     }
 }
