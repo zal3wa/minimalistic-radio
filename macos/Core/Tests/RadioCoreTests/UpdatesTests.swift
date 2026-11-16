@@ -2,10 +2,16 @@ import Foundation
 import Testing
 @testable import RadioCore
 
+private let project = "https://github.com/zal3wa/minimalistic-radio/releases/"
+
+private func asset(_ tag: String, _ name: String) -> [String: Any] {
+    ["name": name, "browser_download_url": project + "download/\(tag)/\(name)"]
+}
+
 private func release(_ tag: String, draft: Bool = false, zip: Bool = true) -> [String: Any] {
-    var assets: [[String: Any]] = [["name": "Minimalistic-Radio.dmg", "browser_download_url": "https://github.com/x/\(tag)/Minimalistic-Radio.dmg"]]
-    if zip { assets.append(["name": "Minimalistic-Radio-macOS.zip", "browser_download_url": "https://github.com/x/\(tag)/Minimalistic-Radio-macOS.zip"]) }
-    return ["tag_name": tag, "draft": draft, "html_url": "https://github.com/x/releases/tag/\(tag)", "assets": assets]
+    var assets = [asset(tag, "Minimalistic-Radio.dmg")]
+    if zip { assets.append(asset(tag, "Minimalistic-Radio-macOS.zip")) }
+    return ["tag_name": tag, "draft": draft, "html_url": project + "tag/\(tag)", "assets": assets]
 }
 
 private let releases: [[String: Any]] = [
@@ -25,9 +31,9 @@ private let releases: [[String: Any]] = [
     #expect(newestUpdate(releases: releases, current: ReleaseTag("macos-v1.0.0-beta.3")!)?.tagName == "macos-v1.0.1-beta.1")
     #expect(newestUpdate(releases: releases, current: ReleaseTag("macos-v1.0.0")!) == nil)
     let update = newestUpdate(releases: releases, current: ReleaseTag("macos-v0.9.0")!)
-    #expect(update?.zip.absoluteString == "https://github.com/x/macos-v1.0.0/Minimalistic-Radio-macOS.zip")
-    #expect(update?.dmg.absoluteString == "https://github.com/x/macos-v1.0.0/Minimalistic-Radio.dmg")
-    #expect(update?.page.absoluteString == "https://github.com/x/releases/tag/macos-v1.0.0")
+    #expect(update?.zip.absoluteString == project + "download/macos-v1.0.0/Minimalistic-Radio-macOS.zip")
+    #expect(update?.dmg.absoluteString == project + "download/macos-v1.0.0/Minimalistic-Radio.dmg")
+    #expect(update?.page.absoluteString == project + "tag/macos-v1.0.0")
 }
 
 @Test func releaseWithoutTheZipIsSkipped() {
@@ -67,6 +73,62 @@ private let releases: [[String: Any]] = [
     #expect(updateFallback(for: .unpackFailed) == .downloadDMG)
     #expect(updateFallback(for: .signatureMismatch) == .openReleasePage)
     #expect(updateFallback(for: .wrongVersion) == .openReleasePage)
+    #expect(updateFallback(for: .unverified) == .openReleasePage)
+}
+
+@Test func anUnverifiedDiskImageSaysSo() {
+    #expect(updateFailureReason(.unverified) == "This update couldn't be verified. Download it from its release page, which opens now.")
+}
+
+// MARK: - Links from the GitHub API
+
+@Test(arguments: [
+    "https://github.com/zal3wa/minimalistic-radio/releases/tag/macos-v1.0.0",
+    "https://github.com/zal3wa/minimalistic-radio/releases/download/macos-v1.0.0/Minimalistic-Radio.dmg",
+    "https://GitHub.com/zal3wa/minimalistic-radio/releases/tag/macos-v1.0.0-beta.4",
+])
+func projectLinksAreUsed(link: String) {
+    #expect(projectLink(link)?.absoluteString == link)
+}
+
+@Test(arguments: [
+    "http://github.com/zal3wa/minimalistic-radio/releases/tag/macos-v1.0.0",          // not https
+    "https://evil.example/zal3wa/minimalistic-radio/releases/tag/macos-v1.0.0",       // not GitHub
+    "https://github.com.evil.example/zal3wa/minimalistic-radio/releases/tag/x",
+    "https://evilgithub.com/zal3wa/minimalistic-radio/releases/tag/x",
+    "https://api.github.com/zal3wa/minimalistic-radio/releases/tag/x",
+    "https://github.com/someone/minimalistic-radio/releases/tag/macos-v1.0.0",        // another project
+    "https://github.com/zal3wa/minimalistic-radio-fork/releases/tag/x",
+    "https://github.com/zal3wa/minimalistic-radio",                                   // not under the project
+    "https://github.com/zal3wa/minimalistic-radio/../evil/releases/tag/x",
+    "https://github.com/zal3wa/minimalistic-radio/%2E%2E/evil/releases/tag/x",
+    "https://user@github.com/zal3wa/minimalistic-radio/releases/tag/x",
+    "https://github.com:8443/zal3wa/minimalistic-radio/releases/tag/x",
+    "javascript:alert(1)",
+    "",
+])
+func otherLinksAreNotUsed(link: String) {
+    #expect(projectLink(link) == nil)
+}
+
+@Test func anUntrustedReleasePageFallsBackToTheProjectPage() {
+    var odd = release("macos-v2.0.0")
+    odd["html_url"] = "https://evil.example/download-me"
+    #expect(newestUpdate(releases: [odd], current: ReleaseTag("macos-v1.0.0")!)?.page == projectReleasesPage)
+    odd["html_url"] = nil
+    #expect(newestUpdate(releases: [odd], current: ReleaseTag("macos-v1.0.0")!)?.page == projectReleasesPage)
+    #expect(projectReleasesPage.absoluteString == "https://github.com/zal3wa/minimalistic-radio/releases")
+}
+
+@Test func untrustedDownloadsSkipTheRelease() {
+    let elsewhere: [String: Any] = ["name": "Minimalistic-Radio.dmg", "browser_download_url": "https://evil.example/Minimalistic-Radio.dmg"]
+    var dmg = release("macos-v2.0.0")
+    dmg["assets"] = [elsewhere, asset("macos-v2.0.0", "Minimalistic-Radio-macOS.zip")]
+    #expect(newestUpdate(releases: [dmg, release("macos-v1.5.0")], current: ReleaseTag("macos-v1.0.0")!)?.tagName == "macos-v1.5.0")
+    var zip = release("macos-v2.0.0")
+    zip["assets"] = [asset("macos-v2.0.0", "Minimalistic-Radio.dmg"),
+                     ["name": "Minimalistic-Radio-macOS.zip", "browser_download_url": "http://github.com/zal3wa/minimalistic-radio/releases/download/macos-v2.0.0/Minimalistic-Radio-macOS.zip"]]
+    #expect(newestUpdate(releases: [zip], current: ReleaseTag("macos-v1.0.0")!) == nil)
 }
 
 @Test func everyUpdateFailureIsExplained() {

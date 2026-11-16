@@ -295,14 +295,22 @@ private func prefs(lastPlayed: String? = nil, volume: Int = 30) -> Preferences {
 @MainActor @Test func coverLookupsAreCached() {
     let r = Rig.started(), c = r.controller
     playing(c)
+    // Titles 5 seconds apart: closer ones wait (ControllerTitlesTests).
     c.onPlayerTitle("Leonard Cohen - Everybody Knows"); r.net.reply(itunes); r.net.finishDownload()
+    r.scheduler.advance(5)
     c.onPlayerTitle("Dżingiel")                                            // no artist: no lookup, no cover
     #expect(c.coverPath == nil && r.net.urls.count == 1)
+    r.scheduler.advance(5)
     c.onPlayerTitle("Leonard Cohen - Everybody Knows")                     // known song, picture already saved
     #expect(r.net.urls.count == 1 && r.net.downloads.isEmpty && c.coverPath == coverFile(r, bigCover))
+    r.scheduler.advance(5)
     c.onPlayerTitle("Queen - A Kind Of Magic"); r.net.reply(nil)          // failed: asked again next time
+    r.scheduler.advance(5)
     c.onPlayerTitle("Editors - Shadow"); r.net.reply(["results": [Any]()]) // no cover: remembered
-    c.onPlayerTitle("Queen - A Kind Of Magic"); c.onPlayerTitle("Editors - Shadow")
+    r.scheduler.advance(5)
+    c.onPlayerTitle("Queen - A Kind Of Magic")
+    r.scheduler.advance(5)
+    c.onPlayerTitle("Editors - Shadow")
     #expect(r.net.urls.count == 4 && r.net.urls.last?.hasSuffix("Queen%20A%20Kind%20Of%20Magic") == true)
 }
 
@@ -310,8 +318,17 @@ private func prefs(lastPlayed: String? = nil, volume: Int = 30) -> Preferences {
     let r = Rig.started(), c = r.controller
     playing(c)
     c.onPlayerTitle("Leonard Cohen - Everybody Knows")
+    r.scheduler.advance(5)
     c.onPlayerTitle("Queen - A Kind Of Magic")
     r.net.reply(itunes)
+    #expect(r.net.downloads.isEmpty && c.coverPath == nil)
+}
+
+@MainActor @Test func coversComeOnlyFromWebAddresses() {
+    let r = Rig.started(), c = r.controller
+    playing(c)
+    c.onPlayerTitle("Leonard Cohen - Everybody Knows")
+    r.net.reply(["results": [["artistName": "Leonard Cohen", "artworkUrl100": "file:///etc/100x100bb.jpg"]]])
     #expect(r.net.downloads.isEmpty && c.coverPath == nil)
 }
 
@@ -360,4 +377,19 @@ private func prefs(lastPlayed: String? = nil, volume: Int = 30) -> Preferences {
     c.start(autostart: true)
     let left = try FileManager.default.contentsOfDirectory(atPath: covers.path).sorted()
     #expect(left == (5..<205).map { String(format: "%03d.jpg", $0) })
+}
+
+@MainActor @Test func startKeepsThe200NewestLogos() throws {
+    let r = Rig(), c = r.controller
+    let logos = r.paths.logosFolder
+    try FileManager.default.createDirectory(at: logos, withIntermediateDirectories: true)
+    for n in 0..<230 {
+        let file = logos.appendingPathComponent(String(format: "%03d", n))
+        try Data("logo".utf8).write(to: file)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_700_000_000 + Double(n))],
+                                              ofItemAtPath: file.path)
+    }
+    c.start(autostart: true)
+    let left = try FileManager.default.contentsOfDirectory(atPath: logos.path).sorted()
+    #expect(left == (30..<230).map { String(format: "%03d", $0) })
 }

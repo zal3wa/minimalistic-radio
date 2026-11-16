@@ -30,3 +30,15 @@ import Testing
     cache.put("A - B", nil)   // "no cover" is cached; a network failure is simply never put
     #expect(cache.get("A - B") == (true, nil))
 }
+
+@Test func pickCoverNeedsAWebAddress() {
+    for picture in ["file:///etc/100x100bb.jpg", "javascript:alert(1)//100x100bb.jpg", "100x100bb.jpg", "ftp://x/100x100bb.jpg"] {
+        let payload: [String: Any] = ["results": [["artistName": "Leonard Cohen", "artworkUrl100": picture]]]
+        #expect(pickCover(artist: "Leonard Cohen", payload: payload) == nil)
+    }
+    let payload: [String: Any] = ["results": [
+        ["artistName": "Leonard Cohen", "artworkUrl100": "file:///etc/100x100bb.jpg"],
+        ["artistName": "Leonard Cohen", "artworkUrl100": "https://y/100x100bb.jpg"],
+    ]]
+    #expect(pickCover(artist: "Leonard Cohen", payload: payload) == "https://y/600x600bb.jpg")
+}

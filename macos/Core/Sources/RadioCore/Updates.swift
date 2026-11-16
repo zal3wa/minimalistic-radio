@@ -113,6 +113,8 @@ public enum UpdateError: Error, CaseIterable, Equatable, Sendable {
     case signatureMismatch
     /// The new app's release tag isn't the one the release names.
     case wrongVersion
+    /// The disk image's app failed the same checks (signature or release tag), or the image didn't open.
+    case unverified
 }
 
 public enum UpdateFallback: Equatable, Sendable {
@@ -125,7 +127,7 @@ public enum UpdateFallback: Equatable, Sendable {
 
 public func updateFallback(for error: UpdateError) -> UpdateFallback {
     switch error {
-    case .network: return .retryLater
+    case .network, .unverified: return .retryLater
     case .permissionDenied, .unpackFailed: return .downloadDMG
     case .signatureMismatch, .wrongVersion: return .openReleasePage
     }
@@ -142,6 +144,7 @@ public func updateFailureReason(_ error: UpdateError) -> String {
     case .unpackFailed: return L("The update couldn't be unpacked. It opens as a disk image instead.")
     case .signatureMismatch: return L("The update isn't signed like this radio, so it wasn't installed. Its page opens instead.")
     case .wrongVersion: return L("The update file doesn't match its version, so it wasn't installed. Its page opens instead.")
+    case .unverified: return ""
     }
 }
 
