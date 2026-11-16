@@ -200,8 +200,9 @@ internal sealed class RadioStream : Stream
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
     // Some servers answer with Transfer-Encoding: chunked even to HTTP/1.0 requests.
-    private sealed class ChunkedStream : Stream
+    internal sealed class ChunkedStream : Stream
     {
+        private const int LongestLine = 1024;   // a chunk's size line, without its line feed
         private readonly Stream source;
         private int left;
         private bool finished;
@@ -226,12 +227,16 @@ internal sealed class RadioStream : Stream
             return read;
         }
 
+        // A longer line ends the stream with an error, like any broken stream.
         private string ReadLine()
         {
             var line = new StringBuilder();
-            int value;
+            int value, length = 0;
             while ((value = source.ReadByte()) >= 0 && value != '\n')
+            {
+                if (++length > LongestLine) throw new IOException("Zbyt długi wiersz rozmiaru fragmentu.");
                 if (value != '\r') line.Append((char)value);
+            }
             if (value < 0) throw new IOException("Serwer zamknął połączenie.");
             return line.ToString();
         }
@@ -252,4 +257,31 @@ internal sealed class RadioStream : Stream
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
+
+#if SELFTEST
+    // Self-test (--test-menu): chunked transfer, and a chunk's size line of more than 1024 bytes ends the stream with an
+    // error, like any broken stream.
+    internal static void Verify()
+    {
+        void Check(bool ok, string what)
+        {
+            if (!ok) throw new InvalidOperationException("Strumień: " + what);
+        }
+        string Read(string body)
+        {
+            using (var chunked = new ChunkedStream(new MemoryStream(Encoding.ASCII.GetBytes(body))))
+            using (var reader = new StreamReader(chunked, Encoding.ASCII))
+                return reader.ReadToEnd();
+        }
+        Check(Read("4\r\nWiki\r\n5;name=value\r\npedia\r\n0\r\n\r\n") == "Wikipedia", "fragmenty.");
+        Check(Read("4;" + new string('x', 1021) + "\r\nabcd\r\n0\r\n\r\n") == "abcd", "wiersz rozmiaru o długości 1024 bajtów.");
+        foreach (string line in new[] { "4;" + new string('x', 1022) + "\r", new string('0', 100000), new string('\r', 100000) })
+        {
+            bool broken = false;
+            try { Read(line + "\nabcd\r\n0\r\n\r\n"); }
+            catch (IOException) { broken = true; }
+            Check(broken, "przyjęty wiersz rozmiaru o długości " + line.Length + " bajtów.");
+        }
+    }
+#endif
 }

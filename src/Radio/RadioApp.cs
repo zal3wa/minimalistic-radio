@@ -252,6 +252,8 @@ internal sealed partial class Radio
             ShareLink.Verify();    // links to share a station: building, reading, what makes one invalid
             Updater.Verify();      // the updates' signature and the release addresses that are used
             await Pictures.Verify();   // pictures: no local addresses (also after redirects), at most 4096 pixels
+            TitleGate.Verify();    // song titles from a stream: at most one every 5 seconds, never a stale one
+            RadioStream.Verify();  // chunked transfer: a size line of at most 1024 bytes
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -834,6 +836,9 @@ internal sealed partial class Radio
             SetStatus(Connecting);
             bool everPlayed = false, polling = false;
             Task previous = audio;
+            // The stream's song titles: at most one every 5 seconds, the first at once (TitleGate). Only applied titles go
+            // on to the history, the statistics, the covers and the media controls.
+            var titles = new TitleGate(value => UpdateTrack(request, value, playingStation));
             audio = Task.Run(async () =>
             {
                 try { await previous.ConfigureAwait(false); }
@@ -859,7 +864,7 @@ internal sealed partial class Radio
                 };
                 Action<string> titleChanged = value =>
                 {
-                    if (playingStation != 3) UpdateTrack(request, value, playingStation);
+                    if (playingStation != 3) titles.Offer(value);
                 };
                 // Internet radio drops now and then (Wi-Fi, sleep, server restarts): connect again, waiting
                 // a bit longer each time. A station that never started gets only two retries.
@@ -913,6 +918,7 @@ internal sealed partial class Radio
                     if (!(error is StationRefusedException)) lostConnectionAt = DateTime.UtcNow;
                 }
             }
+            finally { titles.Dispose(); }
         }
     }
 

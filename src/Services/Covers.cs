@@ -8,7 +8,10 @@ using System.Web.Script.Serialization;
 
 internal static class Covers
 {
+    // The latest songs' covers (or that there is none); beyond the limit the oldest go first.
+    private const int CacheSize = 200;
     private static readonly Dictionary<string, string> cache = new Dictionary<string, string>();
+    private static readonly Queue<string> cacheOrder = new Queue<string>();
 
     // "Artist – Title" or "Artist - Title" → its parts; without a separator the whole text is the title.
     internal static void Split(string track, out string artist, out string title)
@@ -59,7 +62,12 @@ internal static class Covers
             Debug.WriteLine(error);
             return null; // not cached: maybe it works next time
         }
-        lock (cache) cache[track] = found;
+        lock (cache)
+        {
+            if (!cache.ContainsKey(track)) cacheOrder.Enqueue(track);
+            cache[track] = found;
+            while (cache.Count > CacheSize) cache.Remove(cacheOrder.Dequeue());
+        }
         return found;
     }
 
