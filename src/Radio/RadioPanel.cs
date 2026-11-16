@@ -317,7 +317,7 @@ internal sealed partial class Radio
         Button button = NewButton("LinkButton", content);
         button.Padding = new Thickness(8, 5, 0, 5);   // the arrow ends where the row's controls end
         button.VerticalAlignment = VerticalAlignment.Center;
-        button.Click += (_, _) => OpenWebPage(address);
+        if (address != null) button.Click += (_, _) => OpenWebPage(address);
         return button;
     }
 
@@ -835,7 +835,7 @@ internal sealed partial class Radio
                 searchStatus.Text = L("This station is already on the list.");
                 return;
             }
-            var added = new SavedStation { Name = item.Name.Trim(), Url = address, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null };
+            var added = new SavedStation { Name = Storage.CleanName(item.Name), Url = address, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null };
             if (!ApplyStations(Stations.Concat(new[] { added }).ToList())) return;
             if (station < 0) SelectStation(Stations.IndexOf(added));
             list.SelectedIndex = station;
@@ -844,7 +844,7 @@ internal sealed partial class Radio
 
         save.Click += (_, _) =>
         {
-            string label = name.Text?.Trim();
+            string label = Storage.CleanName(name.Text);
             string address = url.Text?.Trim();
             string logoAddress = logo.Text?.Trim();
             if (ShareLink.TryParse(address, out _))   // a shared station's link typed in: its page, not a stream
@@ -1437,10 +1437,10 @@ internal sealed partial class Radio
                         return;
                     }
                     var fresh = loaded
-                        .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Name) && Storage.IsWebUrl(item.Url) &&
-                            !Stations.Any(known => Storage.SameStream(known.Url, item.Url)))
+                        .Where(item => item != null && Storage.IsWebUrl(item.Url) && !Stations.Any(known => Storage.SameStream(known.Url, item.Url)))
+                        .Select(item => new SavedStation { Name = Storage.CleanName(item.Name), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
+                        .Where(item => item.Name.Length > 0)
                         .GroupBy(item => Storage.StreamKey(item.Url)).Select(same => same.First())
-                        .Select(item => new SavedStation { Name = item.Name.Trim(), Url = item.Url, Logo = Storage.IsWebUrl(item.Logo) ? item.Logo : null })
                         .ToList();
                     if (fresh.Count == 0) Report(L("All stations from this file are already on the list."));
                     else if (ApplyStations(Stations.Concat(fresh).ToList())) Report(L("Stations added: {0}.", fresh.Count));
@@ -1471,7 +1471,13 @@ internal sealed partial class Radio
 
             // Updates
             var updateNote = Note("");
-            updateNote.VerticalAlignment = VerticalAlignment.Center;
+            // An update that couldn't be verified: its release page, under the message that says so.
+            Button releasePage = Link("GitHub", null);
+            releasePage.HorizontalAlignment = HorizontalAlignment.Left;
+            releasePage.Padding = new Thickness(0, 5, 8, 5);
+            releasePage.Click += (_, _) => OpenWebPage(unverifiedPage ?? Updater.Page + "/releases/latest");
+            var updateMessage = Spaced(Orientation.Vertical, 0, updateNote, releasePage);
+            updateMessage.VerticalAlignment = VerticalAlignment.Center;
             var updateDescription = Note("");
             var checkNow = RowButton("");
             checkNow.Margin = new Thickness(8, 0, 0, 0);
@@ -1493,10 +1499,11 @@ internal sealed partial class Radio
                 checkNow.Content = readyUpdate != null ? L("Update") : L("Check now");
                 checkNow.SetResourceReference(FrameworkElement.StyleProperty, readyUpdate != null ? "AccentButton" : (object)typeof(Button));
                 checkNow.IsEnabled = !installing && !checking;
+                releasePage.Visibility = unverifiedPage != null && readyUpdate == null ? Visibility.Visible : Visibility.Collapsed;
             };
             refreshUpdates();
             settings.Children.Add(Group(L("Updates")));
-            var lastCheck = Columns((updateNote, Star), (checkNow, Auto));
+            var lastCheck = Columns((updateMessage, Star), (checkNow, Auto));
             lastCheck.Margin = new Thickness(14, 10, 14, 10);
             settings.Children.Add(SettingsCard(
                 SettingRow(L("Automatic updates"), updateDescription, Toggle(checkUpdates, on => { checkUpdates = on; SavePreferences(); })),
@@ -1891,47 +1898,16 @@ internal sealed partial class Radio
         while (logos.Count > LogoCacheSize) logos.Remove(logoOrder.Dequeue());
     }
 
+    // A picture from outside, through Pictures' checks (no local addresses, at most 1 MB and 4096 pixels); null when it
+    // was refused or didn't load.
     private static async Task<ImageSource> LoadImage(string address)
     {
-        if (!Storage.IsWebUrl(address)) return null;
-        try
-        {
-            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
-            using (HttpResponseMessage response = await metadataClient.GetAsync(address, HttpCompletionOption.ResponseHeadersRead, timeout.Token))
-            {
-                if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType?.StartsWith("image/") != true)
-                    return null;
-                var data = new MemoryStream();
-                using (Stream input = await response.Content.ReadAsStreamAsync())
-                {
-                    var buffer = new byte[8192];
-                    int count;
-                    while ((count = await input.ReadAsync(buffer, 0, buffer.Length, timeout.Token)) > 0)
-                    {
-                        if (data.Length + count > 1024 * 1024) return null;
-                        data.Write(buffer, 0, count);
-                    }
-                }
-                data.Position = 0;
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
+        byte[] data = await Pictures.Download(address);
 #if SELFTEST
-                image.DecodePixelWidth = 144;   // enough for the Shared station page's 72 pt logo in the 2× README pictures
+        return Pictures.Decode(data, 144);   // enough for the Shared station page's 72 pt logo in the 2× README pictures
 #else
-                image.DecodePixelWidth = 120;
+        return Pictures.Decode(data, 120);
 #endif
-                image.StreamSource = data;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-        }
-        catch (Exception error)
-        {
-            Debug.WriteLine(error);
-            return null;
-        }
     }
 
     // The small bubble with a shadow, used by the volume value and by "Copied". It starts hidden; the caller places it.

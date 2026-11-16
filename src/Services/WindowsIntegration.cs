@@ -102,13 +102,17 @@ internal static class StartMenu
 
 // minimalistic-radio:// links (a shared station's "Open in Minimalistic Radio" on its page) start this exe with
 // --open "<link>". Registered for the current user only (no administrator rights needed), at every start, and written
-// again only when it differs (the exe may have moved). The test build doesn't register it.
+// again only when it differs (the exe may have moved). The test build never registers it, however it was started: the
+// links keep opening the radio people use.
 internal static class LinkHandler
 {
     private const string Key = @"Software\Classes\" + ShareLink.Scheme;
 
     internal static void Register(string exe)
     {
+#if SELFTEST
+        return;
+#else
         string name = "URL:" + Radio.AppName, icon = "\"" + exe + "\",0", command = "\"" + exe + "\" --open \"%1\"";
         try
         {
@@ -131,6 +135,7 @@ internal static class LinkHandler
         {
             Debug.WriteLine(error);
         }
+#endif
     }
 }
 

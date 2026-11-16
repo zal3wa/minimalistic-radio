@@ -515,3 +515,8 @@ msgstr "Hinzufügen und abspielen"
 
 msgid "This link doesn't contain a station."
 msgstr "Dieser Link enthält keinen Sender."
+
+msgid "This update could not be verified. Download it from the release page."
+msgstr ""
+"Dieses Update konnte nicht verifiziert werden. Bitte von der Seite mit der "
+"neuen Version herunterladen."

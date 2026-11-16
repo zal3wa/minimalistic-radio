@@ -31,9 +31,7 @@ internal static class Program
         if (chosen >= 0 && chosen + 1 < args.Length) Lang.Setting = args[chosen + 1];
 #endif
         bool updated = args.Contains("--updated");
-        // "--open <link>": a shared station's link (the minimalistic-radio:// handler starts the radio this way).
-        int opening = Array.IndexOf(args, "--open");
-        string link = opening >= 0 && opening + 1 < args.Length ? args[opening + 1] : null;
+        string link = OpenLink(args);
         // Same names as earlier versions, so an old copy and taskbar media players keep working with this one.
         string instanceName = @"Local\RadioNaZywo", panelName = @"Local\MinimalisticRadio.Panel";
 #if SELFTEST
@@ -84,5 +82,15 @@ internal static class Program
             app.Dispatcher.BeginInvoke(new Action(radio.Start));
             app.Run();
         }
+    }
+
+    // "--open <link>": a shared station's link (the minimalistic-radio:// handler starts the radio with --open "%1").
+    // Honoured only as the last two arguments and only for the radio's own scheme, so a link can't bring other
+    // arguments along or open anything else.
+    internal static string OpenLink(string[] args)
+    {
+        if (args.Length < 2 || args[args.Length - 2] != "--open") return null;
+        string link = args[args.Length - 1];
+        return link.StartsWith(ShareLink.Scheme + ":", StringComparison.OrdinalIgnoreCase) ? link : null;
     }
 }

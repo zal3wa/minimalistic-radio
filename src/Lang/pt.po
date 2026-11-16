@@ -511,3 +511,8 @@ msgstr "Adicionar e ouvir"
 
 msgid "This link doesn't contain a station."
 msgstr "Esta ligação não contém nenhuma estação."
+
+msgid "This update could not be verified. Download it from the release page."
+msgstr ""
+"Não foi possível verificar esta atualização. Transfira-a a partir da página "
+"da nova versão."

@@ -3,9 +3,17 @@ name: Build
 on:
   push:
     branches: [main]
-    paths-ignore: ['linux/**', 'docs/superpowers/**', '.github/workflows/linux.yml', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux-tray-screenshot.yml', '.github/scripts/linux-tray-screenshot.py', 'macos/**', '.github/workflows/macos.yml', 'README.md', 'docs/**']
+    paths-ignore: ['linux/**', 'docs/superpowers/**', '.github/workflows/linux.yml', '.github/workflows/linux-aac-gate.yml', '.github/workflows/linux-tray-check.yml', '.github/workflows/linux-tray-screenshot.yml', '.github/scripts/linux-tray-check.py', '.github/scripts/linux-tray-screenshot.py', 'macos/**', '.github/workflows/macos.yml', 'README.md', 'docs/**']
     tags: ['v*']
   pull_request:
+  # A dry run builds, signs and verifies exactly as a release would, then uploads the exe and its .sig as an artifact.
+  # It publishes nothing (no run started by hand does).
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Upload the signed exe and its .sig as an artifact (publishes nothing)
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -29,13 +37,84 @@ jobs:
           name: Minimalistic-Radio
           path: out/Minimalistic Radio.exe
 
-      # A tag like v2.1.0 publishes a release; the radio's update check reads the latest one.
+      # Updates are signed (Updater.Signed): "Minimalistic Radio for Windows <version> <sha256>" with the ECDSA P-256 key in
+      # the UPDATE_SIGNING_KEY secret, published as Minimalistic-Radio.exe.sig. A release and a dry run fail without the
+      # secret, or when its public key isn't .github/update-signing.pub.pem; every push to main signs too, as a check,
+      # whenever the secret is there. Pull requests never use the key.
+      - name: Sign
+        id: sign
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          REQUIRED: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:UPDATE_SIGNING_KEY) {
+            if ($env:REQUIRED -eq 'true') { throw 'The UPDATE_SIGNING_KEY secret is missing: nothing is signed or published.' }
+            Write-Host 'No UPDATE_SIGNING_KEY secret here: signing skipped.'
+            exit 0
+          }
+          # The version the exe reports (src/MinimalisticRadio.csproj); a release's tag has to say the same.
+          Copy-Item -LiteralPath 'out/Minimalistic Radio.exe' -Destination 'Minimalistic-Radio.exe'
+          $built = [System.Reflection.AssemblyName]::GetAssemblyName((Resolve-Path 'Minimalistic-Radio.exe').Path).Version
+          $version = '{0}.{1}.{2}' -f $built.Major, $built.Minor, [Math]::Max(0, $built.Build)
+          if ($env:GITHUB_REF -like 'refs/tags/v*' -and $env:GITHUB_REF_NAME.Substring(1) -cne $version) {
+            throw "The tag $env:GITHUB_REF_NAME doesn't match the exe's version $version."
+          }
+          $key = [System.Security.Cryptography.ECDsa]::Create()
+          try {
+            $key.ImportFromPem($env:UPDATE_SIGNING_KEY)
+            $public = $key.ExportSubjectPublicKeyInfoPem().Replace("`r", '').Trim()
+            $expected = [IO.File]::ReadAllText((Resolve-Path '.github/update-signing.pub.pem').Path).Replace("`r", '').Trim()
+            if ($public -cne $expected) { throw "The secret's public key isn't .github/update-signing.pub.pem." }
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath 'Minimalistic-Radio.exe').Hash.ToLowerInvariant()
+            $message = [System.Text.Encoding]::UTF8.GetBytes("Minimalistic Radio for Windows $version $hash")
+            $signature = $key.SignData($message, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+          }
+          finally { $key.Dispose() }
+          if ($signature.Length -ne 64) { throw "A signature of $($signature.Length) bytes instead of 64." }
+          [IO.File]::WriteAllText("$PWD/Minimalistic-Radio.exe.sig", [Convert]::ToBase64String($signature))
+          "version=$version" >> $env:GITHUB_OUTPUT
+          'signed=true' >> $env:GITHUB_OUTPUT
+          Write-Host "Signed: Minimalistic Radio for Windows $version $hash"
+
+      # The radio's own check, in .NET Framework like the radio: Windows PowerShell loads the exe and calls Updater.Signed
+      # on the exact file that would be published. The same signature must fail for another version.
+      - name: Verify the signature with the radio's own code
+        if: steps.sign.outputs.signed == 'true'
+        shell: powershell
+        env:
+          VERSION: ${{ steps.sign.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = (Resolve-Path 'Minimalistic-Radio.exe').Path
+          $signed = [Reflection.Assembly]::LoadFrom($exe).GetType('Updater', $true).GetMethod('Signed', [Reflection.BindingFlags]'NonPublic, Static')
+          if ($signed -eq $null) { throw 'Updater.Signed is missing from the exe.' }
+          $bytes = [IO.File]::ReadAllBytes($exe)
+          $signature = [IO.File]::ReadAllText((Resolve-Path 'Minimalistic-Radio.exe.sig').Path)
+          function Accepted($version) { [bool]$signed.Invoke($null, [object[]]@($version, $bytes, $signature)) }
+          if (-not (Accepted $env:VERSION)) { throw "The signature doesn't verify with the radio's own code: nothing is published." }
+          if (Accepted '0.0.0') { throw 'The signature was accepted for another version.' }
+          Write-Host "Verified by the radio's own code: version $env:VERSION"
+
+      - name: Upload the signed exe (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run && steps.sign.outputs.signed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: Minimalistic-Radio-signed
+          path: |
+            Minimalistic-Radio.exe
+            Minimalistic-Radio.exe.sig
+
+      # A tag like v2.1.0 publishes a release with the exe and its signature; the radio's update check reads the latest one.
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ steps.sign.outputs.signed }}
         run: |
-          Copy-Item "out/Minimalistic Radio.exe" "Minimalistic-Radio.exe"
+          if ($env:SIGNED -ne 'true') { throw 'The exe is not signed: nothing is published.' }
           $version = $env:GITHUB_REF_NAME.TrimStart('v')
-          gh release create $env:GITHUB_REF_NAME "Minimalistic-Radio.exe" --title "Minimalistic Radio $version" --notes-from-tag
+          gh release create $env:GITHUB_REF_NAME "Minimalistic-Radio.exe" "Minimalistic-Radio.exe.sig" --title "Minimalistic Radio $version" --notes-from-tag

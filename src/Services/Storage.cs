@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -75,6 +76,33 @@ internal static class Storage
         File.WriteAllText(temporary, text);
         File.Copy(temporary, file, true);
         File.Delete(temporary);
+    }
+
+    // Texts from outside (station names from share links, radio-browser, the station form, an imported list and the
+    // saved stations; song titles): without control characters and the bidirectional formatting characters (U+061C,
+    // U+200E, U+200F, U+202A–U+202E, U+2066–U+2069), which could show a text reversed or out of order. Zero-width
+    // joiners and variation selectors stay, so emoji still work.
+    internal static string CleanText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        var clean = new StringBuilder(text.Length);
+        foreach (char letter in text)
+            if (!char.IsControl(letter) && letter != '\u061C' && letter != '\u200E' && letter != '\u200F' &&
+                (letter < '\u202A' || letter > '\u202E') && (letter < '\u2066' || letter > '\u2069'))
+                clean.Append(letter);
+        return clean.ToString();
+    }
+
+    internal const int LongestName = 100;
+
+    // A station's name, from any source: cleaned, trimmed, at most 100 characters (not cutting a character made of two
+    // halves). Empty when nothing is left.
+    internal static string CleanName(string name)
+    {
+        name = CleanText(name).Trim();
+        if (name.Length <= LongestName) return name;
+        int length = char.IsHighSurrogate(name[LongestName - 1]) ? LongestName - 1 : LongestName;
+        return name.Substring(0, length).TrimEnd();
     }
 
     internal static bool IsWebUrl(string value) =>
@@ -297,7 +325,7 @@ internal static class Storage
                             string Text(string key) => item.TryGetValue(key, out object value) ? value as string : null;
                             var entry = new DirectoryStation
                             {
-                                Id = Text("stationuuid"), Name = Text("name"), Country = Text("country"), CountryCode = Text("countrycode"), Url = Text("url"),
+                                Id = Text("stationuuid"), Name = CleanName(Text("name")), Country = Text("country"), CountryCode = Text("countrycode"), Url = Text("url"),
                                 ResolvedUrl = Text("url_resolved"), Logo = Text("favicon"),
                                 Codec = Text("codec"), Tags = Text("tags"),
                                 Bitrate = item.TryGetValue("bitrate", out object bitrate) && bitrate is int rate ? rate : 0,

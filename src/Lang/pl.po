@@ -512,3 +512,8 @@ msgstr "Dodaj i włącz"
 
 msgid "This link doesn't contain a station."
 msgstr "Ten link nie zawiera stacji."
+
+msgid "This update could not be verified. Download it from the release page."
+msgstr ""
+"Nie udało się zweryfikować tej aktualizacji. Pobierz ją ze strony z nową "
+"wersją."

@@ -48,6 +48,8 @@ internal sealed class Statistics
     // Top artists need song titles for at least this part of the listening time.
     private const double EnoughTitlesShare = 0.2;
     private const int TopCount = 5;
+    // At most this many song plays are kept; when there are more, the oldest go first.
+    internal const int MostSongs = 100000;
 
     internal readonly List<ListeningSession> Sessions = new List<ListeningSession>();
     internal readonly List<PlayedSong> Songs = new List<PlayedSong>();
@@ -120,7 +122,13 @@ internal sealed class Statistics
     {
         if (!Collecting) return;
         Songs.Add(new PlayedSong { Station = station, Title = title, Time = now });
+        KeepNewestSongs();
         MarkTitles();
+    }
+
+    private void KeepNewestSongs()
+    {
+        if (Songs.Count > MostSongs) Songs.RemoveRange(0, Songs.Count - MostSongs);
     }
 
     // Everything goes; a station playing now starts counting again from now.
@@ -301,6 +309,7 @@ internal sealed class Statistics
             if (time != null && !string.IsNullOrWhiteSpace(Text(item, "title")))
                 Songs.Add(new PlayedSong { Station = Text(item, "station"), Title = Text(item, "title"), Time = time.Value });
         }
+        KeepNewestSongs();
         return true;
     }
 
@@ -477,6 +486,15 @@ internal sealed class Statistics
             loaded.Sessions[0].Start == saved.Sessions[0].Start && loaded.Sessions[0].Start.Kind == DateTimeKind.Utc && loaded.Sessions[0].End == saved.Sessions[0].End &&
             loaded.Sessions[0].Titles && loaded.Songs[0].Title == saved.Songs[0].Title && loaded.Songs[0].Time == saved.Songs[0].Time, "odczyt zapisanego pliku.");
         Check(!new Statistics().Load("not json") && !new Statistics().Load("[1]"), "odczyt uszkodzonego pliku.");
+
+        // At most 100 000 song plays, the oldest go first; a file with more is read the same way.
+        var many = new Statistics();
+        for (int n = 0; n < MostSongs + 5; n++) many.AddSong("Radio A", "Song " + n, t.AddSeconds(n));
+        Check(many.Songs.Count == MostSongs && many.Songs[0].Title == "Song 5" && many.Songs[MostSongs - 1].Title == "Song " + (MostSongs + 4),
+            "limit utworów: " + many.Songs.Count + ", pierwszy " + many.Songs[0].Title);
+        many.Songs.Insert(0, new PlayedSong { Station = "Radio A", Title = "Older", Time = t.AddDays(-1) });
+        var reloaded = new Statistics();
+        Check(reloaded.Load(many.ToJson()) && reloaded.Songs.Count == MostSongs && reloaded.Songs[0].Title == "Song 5", "limit utworów z pliku.");
     }
 #endif
 }

@@ -14,7 +14,7 @@
     <DebugType>none</DebugType>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-    <Version>2.7.1</Version>
+    <Version>2.7.2</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Minimalistic Radio</Product>
     <Copyright></Copyright>
@@ -56,6 +56,8 @@
     </Reference>
     <Page Remove="Theme\Theme.xaml" />
     <EmbeddedResource Include="../data/banned-stations.json" LogicalName="banned-stations.json" />
+    <!-- The public key that updates are signed with (Updater.Signed); the release job checks its secret key against this file. -->
+    <EmbeddedResource Include="../.github/update-signing.pub.pem" LogicalName="update-signing.pub.pem" />
     <EmbeddedResource Include="Theme\Theme.xaml" LogicalName="Theme.xaml" />
     <EmbeddedResource Include="Assets\Lucide_Icons_license.txt" LogicalName="Lucide_Icons_license.txt" />
   </ItemGroup>

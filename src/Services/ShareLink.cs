@@ -19,7 +19,7 @@ internal static class ShareLink
     internal const string Scheme = "minimalistic-radio";
 
     private const string Host = "minimalistic-radio.github.io";
-    private const int LongestAddress = 2048, LongestName = 100;
+    private const int LongestAddress = 2048;
 
     // The link to send: the page, which opens the radio. The logo goes along only when the other side would keep it.
     internal static string Web(string name, string url, string logo) => Page + "#" + Query(name, url, logo);
@@ -70,21 +70,12 @@ internal static class ShareLink
         values.TryGetValue("n", out string name);
         values.TryGetValue("u", out string url);
         values.TryGetValue("l", out string logo);
-        name = Name(name);
+        name = Storage.CleanName(name);   // like every station name: no control or bidirectional formatting characters, at most 100
         url = url?.Trim();
         // The radio's own rule for a stream address (no user name or password in it either), at most 2048 characters.
         if (name.Length == 0 || url == null || url.Length > LongestAddress || !Storage.IsWebUrl(url)) return true;
         station = new SharedStation { Name = name, Url = url, Logo = Logo(logo) };
         return true;
-    }
-
-    // Trimmed, without control characters, at most 100 characters (not cutting a character made of two halves).
-    private static string Name(string name)
-    {
-        name = new string((name ?? "").Where(letter => !char.IsControl(letter)).ToArray()).Trim();
-        if (name.Length <= LongestName) return name;
-        int length = char.IsHighSurrogate(name[LongestName - 1]) ? LongestName - 1 : LongestName;
-        return name.Substring(0, length).TrimEnd();
     }
 
     // A logo goes along and is kept as an absolute http or https address (the radio's own rule) of at most 2048
@@ -162,6 +153,15 @@ internal static class ShareLink
         Check(Read(Page + "#n=%20%20Radio%09Z%0AE%00T%20&u=https%3A%2F%2Fa.example%2F")?.Name == "RadioZET", "nazwa bez znaków sterujących.");
         Check(Read(Page + "#n=" + new string('a', 150) + "&u=https%3A%2F%2Fa.example%2F")?.Name == new string('a', 100), "nazwa skrócona do 100 znaków.");
         Check(Read(Web(new string('a', 99) + "😀", "https://a.example/", null))?.Name == new string('a', 99), "skracanie nie rozcina emoji.");
+        // The same cleanup for names from every source (Storage.CleanName): no bidirectional formatting characters, which
+        // could show a name reversed or out of order; zero-width joiners and variation selectors stay, so emoji still work.
+        const string bidi = "\u202Eevil\u202C\u200E\u200F\u061C\u202A\u202B\u202D\u2066\u2067\u2068\u2069";
+        Check(Read(Web("Radio " + bidi + "ZET", "https://a.example/", null))?.Name == "Radio evilZET", "nazwa ze znakami kierunku tekstu.");
+        const string family = "\U0001F468\u200D\U0001F469\u200D\U0001F467", heart = "\u2764\uFE0F", joined = "\u0915\u094D\u200C\u0937";
+        Check(Storage.CleanName("  " + family + " Radio " + heart + joined + "\u0007\u0085 ") == family + " Radio " + heart + joined,
+            "emoji z łącznikami i wariantami.");
+        Check(Storage.CleanName(new string('a', 150)) == new string('a', 100) && Storage.CleanName(bidi.Substring(5) + new string('b', 120)) == new string('b', 100) &&
+            Storage.CleanName(null) == "" && Storage.CleanName("\u202E\t \u2066") == "", "nazwa: długość i pusta.");
         // The logo: an absolute http or https address of at most 2048 characters goes along and is kept (the page shows an
         // http one through https); anything else is left out without making the link invalid.
         const string favicon = "http://www.my-radios.com/favicon.ico";

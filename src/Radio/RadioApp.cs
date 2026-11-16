@@ -96,6 +96,7 @@ internal sealed partial class Radio
     private DateTime? lastUpdateCheck;
     private Release readyUpdate;   // downloaded and checked, waiting for a click
     private string readyFile;
+    private string unverifiedPage;   // the release page of an update that couldn't be verified (Settings offers it)
     private bool installing, checking;
     private string updateStatus;
     private int updateVersion;
@@ -249,6 +250,10 @@ internal sealed partial class Radio
             Lang.Verify();   // the catalogs: all there, nothing missing, English for an unknown text
             Statistics.Verify();   // the listening statistics: periods, sessions, top lists, hours, the file
             ShareLink.Verify();    // links to share a station: building, reading, what makes one invalid
+            Updater.Verify();      // the updates' signature and the release addresses that are used
+            await Pictures.Verify();   // pictures: no local addresses (also after redirects), at most 4096 pixels
+            TitleGate.Verify();    // song titles from a stream: at most one every 5 seconds, never a stale one
+            RadioStream.Verify();  // chunked transfer: a size line of at most 1024 bytes
             if (ParseTrack("Sienna Spiro - text=\"Great Expectation\" song_spot=\"M\"", 0) != "Sienna Spiro – Great Expectation" ||
                 ParseTrack("title=\"The Way\",artist=\"ARIANA GRANDE / MAC MILLER\",url=\"song_spot=\\\"F\\\"\"", 0) != "ARIANA GRANDE / MAC MILLER – The Way" ||
                 ParseTrack("title=\"\",artist=\"\",url=\"\"", 0) != null ||
@@ -257,6 +262,19 @@ internal sealed partial class Radio
                 ParseTrack("Promo - text=\"Reklama\" song_spot=\"A\"", 0) != null ||
                 ParseTrack("- text=\"Spot Block End\" amgTrackId=\"9876543\" length=\"00:00:00\"", 0) != null)
                 throw new InvalidOperationException("Błędne metadane.");
+            // Song titles: the names' cleanup (also what HTML entities turn into), and at most 240 characters.
+            if (ParseTrack("Queen\u202E - A Kind Of Magic\u200F\u0007", -1) != "Queen - A Kind Of Magic" ||
+                ParseTrack("Queen &#x202E;- A Kind Of &#8207;Magic", -1) != "Queen - A Kind Of Magic" ||
+                ParseTrack("Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F", -1) != "Queen - \U0001F468\u200D\U0001F469 \u2764\uFE0F" ||
+                ParseTrack(new string('x', 300), -1) != new string('x', 240) + "…")
+                throw new InvalidOperationException("Błędne czyszczenie tytułu utworu.");
+            // "--open <link>": only as the last two arguments, and only the radio's own links.
+            const string shared = "minimalistic-radio://add?n=A&u=https%3A%2F%2Fa.example%2F";
+            if (Program.OpenLink(new[] { "--open", shared }) != shared || Program.OpenLink(new[] { "--autostart", "--open", "MINIMALISTIC-RADIO:add" }) == null ||
+                new[] { new[] { "--open", shared, "--updated" }, new[] { "--open", "https://minimalistic-radio.github.io/#n=A" }, new[] { "--open" }, new string[0],
+                    new[] { "--open", "minimalistic-radio-evil:x" }, new[] { shared }, new[] { "--open", "--test-menu" }, new[] { "--open", "file:///C:/x.exe" },
+                    new[] { "--open", shared, "--open", "javascript:alert(1)" } }.Any(args => Program.OpenLink(args) != null))
+                throw new InvalidOperationException("Błędne zasady argumentu --open.");
             if (iconHandle == IntPtr.Zero || Theme.AppImage(64)?.PixelWidth != 64)
                 throw new InvalidOperationException("Brak ikony w zasobach programu.");
             Covers.Split("Leonard Cohen - Everybody Knows", out string artist, out string song);
@@ -831,6 +849,9 @@ internal sealed partial class Radio
             SetStatus(Connecting);
             bool everPlayed = false, polling = false;
             Task previous = audio;
+            // The stream's song titles: at most one every 5 seconds, the first at once (TitleGate). Only applied titles go
+            // on to the history, the statistics, the covers and the media controls.
+            var titles = new TitleGate(value => UpdateTrack(request, value, playingStation));
             audio = Task.Run(async () =>
             {
                 try { await previous.ConfigureAwait(false); }
@@ -856,7 +877,7 @@ internal sealed partial class Radio
                 };
                 Action<string> titleChanged = value =>
                 {
-                    if (playingStation != 3) UpdateTrack(request, value, playingStation);
+                    if (playingStation != 3) titles.Offer(value);
                 };
                 // Internet radio drops now and then (Wi-Fi, sleep, server restarts): connect again, waiting
                 // a bit longer each time. A station that never started gets only two retries.
@@ -910,6 +931,7 @@ internal sealed partial class Radio
                     if (!(error is StationRefusedException)) lostConnectionAt = DateTime.UtcNow;
                 }
             }
+            finally { titles.Dispose(); }
         }
     }
 
@@ -994,7 +1016,7 @@ internal sealed partial class Radio
     private static string ParseTrack(string raw, int playingStation)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
-        string value = System.Net.WebUtility.HtmlDecode(raw).Trim();
+        string value = Storage.CleanText(System.Net.WebUtility.HtmlDecode(raw)).Trim();   // the names' cleanup
         if (playingStation == 0)
         {
             // iHeart (KIIS) sends songs either as: title="…",artist="…",url="…"
@@ -1150,9 +1172,33 @@ internal sealed partial class Radio
             if (picture != shownThumbnail)
             {
                 shownThumbnail = picture;
-                display.Thumbnail = picture == null ? null
-                    : Windows.Storage.Streams.RandomAccessStreamReference.CreateFromUri(new Uri(picture));
+                display.Thumbnail = null;
+                if (picture != null) ShowThumbnail(picture);
             }
+            display.Update();
+        }
+        catch (Exception error) { Debug.WriteLine(error); }
+    }
+
+    // The media controls' picture is downloaded by the radio, through the same checks as every picture (Pictures), and
+    // handed over as bytes: Windows never fetches an address from a station or a stream itself.
+    private async void ShowThumbnail(string address)
+    {
+        byte[] data = await Pictures.Download(address);
+        if (data == null || address != shownThumbnail || mediaSession == null || !Pictures.Fits(data)) return;
+        try
+        {
+            var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            using (var writer = new Windows.Storage.Streams.DataWriter(stream))
+            {
+                writer.WriteBytes(data);
+                await writer.StoreAsync().AsTask();
+                writer.DetachStream();
+            }
+            stream.Seek(0);
+            if (address != shownThumbnail || mediaSession == null) return;
+            var display = mediaSession.SystemMediaTransportControls.DisplayUpdater;
+            display.Thumbnail = Windows.Storage.Streams.RandomAccessStreamReference.CreateFromStream(stream);
             display.Update();
         }
         catch (Exception error) { Debug.WriteLine(error); }
@@ -1249,8 +1295,9 @@ internal sealed partial class Radio
 
     // ---- Updates ----
     // Like Discord: every few hours the radio looks for a newer release and quietly downloads it
-    // (checked against GitHub's SHA-256). A green arrow in the panel then says "Update Ready!",
-    // and a click swaps the exe and restarts into the new version. No pop-ups.
+    // (checked against GitHub's SHA-256 and the project's signature). A green arrow in the panel then says "Update Ready!",
+    // and a click swaps the exe and restarts into the new version. No pop-ups. An update that can't be verified is never
+    // installed: Settings says so and offers its release page.
 
     private static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(6);
 
@@ -1269,11 +1316,14 @@ internal sealed partial class Radio
         if (manual)
         {
             updateStatus = L("Checking…");
+            unverifiedPage = null;
             updateVersion++;
         }
+        Release latest = null;
         try
         {
-            Release latest = await Updater.Latest(metadataClient);
+            latest = await Updater.Latest(metadataClient);
+            unverifiedPage = null;
             if (latest == null || latest.Version <= Updater.Current)
                 updateStatus = manual ? L("You have the latest version.") : null;
             else if (readyUpdate?.Tag != latest.Tag || !File.Exists(readyFile))
@@ -1294,6 +1344,12 @@ internal sealed partial class Radio
                 updateStatus = null;
             }
             else updateStatus = null;
+        }
+        catch (UpdateNotVerifiedException error)
+        {
+            Debug.WriteLine(error);
+            updateStatus = error.Message;   // also after a check of its own: this one has to be seen
+            unverifiedPage = latest.Page ?? Updater.Page + "/releases/latest";
         }
         catch (Exception error) when (error is HttpRequestException || error is IOException || error is InvalidDataException ||
             error is OperationCanceledException || error is ArgumentException || error is InvalidOperationException ||
@@ -1322,8 +1378,20 @@ internal sealed partial class Radio
         installing = true;
         try
         {
-            Updater.Install(readyFile);   // swaps the exe and starts the new version
+            Updater.Install(release, readyFile);   // verifies it again, swaps the exe and starts the new version
             Shutdown();
+        }
+        catch (UpdateNotVerifiedException error)
+        {
+            // Changed since it was downloaded: not installed. The release page, where it can be downloaded by hand.
+            Debug.WriteLine(error);
+            installing = false;
+            readyUpdate = null;
+            readyFile = null;
+            updateStatus = error.Message;
+            unverifiedPage = release.Page ?? Updater.Page + "/releases/latest";
+            updateVersion++;
+            OpenWebPage(unverifiedPage);
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException ||
             error is System.ComponentModel.Win32Exception || error is ArgumentException)
@@ -1379,8 +1447,11 @@ internal sealed partial class Radio
     {
         var saved = Storage.Read<List<SavedStation>>(Storage.StationFile);
         foreach (var item in saved ?? new List<SavedStation>())
-            if (item != null && !string.IsNullOrWhiteSpace(item.Name) && Storage.IsWebUrl(item.Url))
-                Stations.Add(item);
+        {
+            if (item == null || !Storage.IsWebUrl(item.Url)) continue;
+            item.Name = Storage.CleanName(item.Name);   // like a name from any other source
+            if (item.Name.Length > 0) Stations.Add(item);
+        }
     }
 
     private static int Clamp(int value, int min, int max) => Math.Max(min, Math.Min(max, value));
