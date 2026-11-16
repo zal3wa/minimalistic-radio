@@ -37,12 +37,16 @@ A click on the icon opens the window under the icon; a right click opens the men
 3. **AirPlay.** The AirPlay button lists your HomePod, Apple TV or AirPlay speaker, and the radio plays there.
 4. **Search.** + Station: Recommended and Popular in your country show at once. Search for a station, add it with +; it shows a check mark afterwards. Add by address works with a stream address.
 5. **History and settings.** History (top left) lists the songs with the station's logo, the station and time; ⋯ → Search on Spotify and YouTube open the browser. Settings (the gear): change the language (the window and the menu change at once), Open at login, Export… and Import…, Check now, the GitHub link.
-6. **Statistics.** Settings → Statistics → Show, or Statistics in the history's bar (‹ goes back to where you came from). After listening for a while: the time, the stations and (with stations that send song titles) the artists show for this month; All and Year switch the period. Clear statistics asks first, then empties the page; the song history stays. Settings shows "Collected since" with the day you started. Switch Statistics off: the page says they are off, and listening adds nothing until you switch them on again.
+6. **Statistics.** Settings → Statistics → Show, or Statistics in the history's bar (‹ goes back to where you came from). After listening for a while: the time, the stations and (with stations that send song titles) the artists show for this month; All and Year switch the period. ⋯ (top right) → Clear statistics… asks first: Cancel is the blue button, and Return and Esc both cancel; Clear empties the page, and the song history stays. Settings shows "Collected since" with the day you started. Switch Statistics off: the page says they are off, and listening adds nothing until you switch them on again.
 7. **The station card.** Switch stations with ⏭ or the menu: a card shows the station under the icon for a moment. Settings → Show station changes off: no card.
 8. **Keys.** In the window: Space plays and stops, ⌘F opens the search, ⌘, the settings, ⌘W closes it, ⌘Q quits the radio.
 9. **Updating from the disk image (beta 4 and later, when the next version is out).** Open the radio straight from the DMG (not from Applications) and click **Download update**.
    - Expected: after a moment a Finder window shows the new Minimalistic Radio and the card says to quit and drag it to Applications. Dragging it there works, and the new version opens from Applications.
    - Note if no Finder window opens, or if the card says the update couldn't be verified.
+10. **Sharing a station (beta 5 and later).** ⋯ → Share on a station ("Link copied" shows), then remove that station. Open the link in the browser and press Open in Minimalistic Radio: the window shows "Shared station" with **+ Add** and a checked **Play automatically** under it.
+    - Uncheck it and press Add: the station is added at the end, the list scrolls to it, and whatever was playing keeps playing.
+    - Open the link again: the list shows the station with "Already on your list", and nothing starts.
+    - Remove the station, open the link, check the box and press Add: the station is added and plays. Opening the link again just plays it.
 
 ## Results
 
@@ -57,3 +61,4 @@ A click on the icon opens the window under the icon; a right click opens the men
 | 7 | | |
 | 8 | | |
 | 9 | | |
+| 10 | | |

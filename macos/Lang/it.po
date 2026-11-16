@@ -11,6 +11,15 @@ msgstr "Copiato negli Appunti"
 msgid "Quit"
 msgstr "Esci"
 
+msgid "Clear statistics?"
+msgstr "Cancellare le statistiche?"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+msgid "Clear"
+msgstr "Cancella"
+
 msgid "Add a station first."
 msgstr "Aggiungi prima una stazione."
 
@@ -83,8 +92,20 @@ msgstr "Cerca su YouTube"
 msgid "More"
 msgstr "Altro"
 
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Le statistiche di ascolto verranno eliminate definitivamente. La cronologia dei brani rimarrà invariata."
+
+msgid "This can't be undone."
+msgstr "Questa operazione non può essere annullata."
+
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Sposta Minimalistic Radio in Applicazioni per ricevere gli aggiornamenti."
+
+msgid "Link copied"
+msgstr "Link copiato"
+
+msgid "Already on your list"
+msgstr "Già nel tuo elenco"
 
 msgid "Station"
 msgstr "Stazione"
@@ -104,6 +125,9 @@ msgstr "Indietro"
 msgid "Statistics"
 msgstr "Statistiche"
 
+msgid "Clear statistics…"
+msgstr "Cancella le statistiche…"
+
 msgid "Stations"
 msgstr "Stazioni"
 
@@ -115,9 +139,6 @@ msgstr "Aggiungi da indirizzo"
 
 msgid "Edit"
 msgstr "Modifica"
-
-msgid "Link copied"
-msgstr "Link copiato"
 
 msgid "Type a station name"
 msgstr "Digita il nome di una stazione"
@@ -145,9 +166,6 @@ msgstr "Catalogo non disponibile. Riprova."
 
 msgid "Loading suggestions…"
 msgstr "Caricamento dei suggerimenti…"
-
-msgid "Already on your list"
-msgstr "Già nel tuo elenco"
 
 msgid "This station is already on the list."
 msgstr "Questa stazione è già nell'elenco."
@@ -242,14 +260,14 @@ msgstr "Stazioni aggiunte: {0}."
 msgid "Checking…"
 msgstr "Verifica in corso…"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Aggiungerla alle tue stazioni e ascoltarla ora?"
+msgid "Add it to your stations?"
+msgstr "Aggiungerla alle tue stazioni?"
 
-msgid "Add and play"
-msgstr "Aggiungi e ascolta"
+msgid "Add"
+msgstr "Aggiungi"
 
-msgid "Cancel"
-msgstr "Annulla"
+msgid "Play automatically"
+msgstr "Riproduci automaticamente"
 
 msgid "This link doesn't contain a station."
 msgstr "Questo link non contiene una stazione."
@@ -286,9 +304,6 @@ msgstr "Le statistiche sono disattivate. Non viene registrato nulla di nuovo."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Qui non c'è ancora niente. Ascolta la radio per un po' e poi torna."
-
-msgid "Clear statistics"
-msgstr "Cancella statistiche"
 
 msgid "Listening time"
 msgstr "Tempo di ascolto"
@@ -328,12 +343,6 @@ msgstr "1 ascolto"
 
 msgid "{0} plays"
 msgstr "{0} ascolti"
-
-msgid "Clear statistics?"
-msgstr "Cancellare le statistiche?"
-
-msgid "All listening statistics on this computer will be deleted. The song history stays."
-msgstr "Tutte le statistiche di ascolto su questo computer verranno cancellate. La cronologia brani resta."
 
 msgid "This station uses a format that can't be played."
 msgstr "Questa stazione usa un formato che non può essere riprodotto."

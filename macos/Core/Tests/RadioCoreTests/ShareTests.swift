@@ -147,20 +147,53 @@ func matching(a: String, b: String, same: Bool) {
 
 // MARK: - The controller
 
-@MainActor @Test func knownStationJustPlays() {
+// docs/superpowers/specs/2026-11-16-share-play-and-clear-statistics-design.md: Add plays only with "Play
+// automatically" checked; the choice is saved on Add, and a link to a station on the list follows it.
+
+private let fresh = SharedStation(name: "New", url: "http://new.example/live", logo: "https://new.example/logo.png")
+
+private func notPlaying() -> Preferences {
+    var prefs = Preferences()
+    prefs.playSharedStations = false
+    return prefs
+}
+
+@MainActor @Test func knownStationPlaysWhenTheChoiceIsToPlay() {
     let r = Rig.started(), c = r.controller
     let shared = SharedStation(name: "Whatever", url: B.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/", logo: nil)
-    #expect(c.playIfKnown(shared))
+    #expect(c.openShared(shared) == .playing(1))
     #expect(c.current == 1 && c.status == .connecting && r.player.calls.last == .play(B.url))
     #expect(c.stations == [A, B, C])
-    #expect(!c.playIfKnown(SharedStation(name: "New", url: "http://new.example/live", logo: nil)))
+}
+
+@MainActor @Test func knownStationIsOnlyShownWhenTheChoiceIsNotToPlay() {
+    let r = Rig.started(prefs: notPlaying()), c = r.controller
+    playing(c, 0)
+    let calls = r.player.calls
+    #expect(c.openShared(SharedStation(name: "Whatever", url: B.url + "/", logo: nil)) == .onTheList(1))
+    #expect(c.current == 0 && c.status == .playing && r.player.calls == calls)
+    #expect(c.stations == [A, B, C])
+}
+
+@MainActor @Test func knownStationStartsNothingWhenTheChoiceIsNotToPlay() {
+    let r = Rig.started(prefs: notPlaying()), c = r.controller
+    #expect(c.openShared(SharedStation(name: "Whatever", url: C.url, logo: nil)) == .onTheList(2))
+    #expect(!c.active && c.current == -1 && r.player.calls.allSatisfy { $0 != .play(C.url) })
+}
+
+@MainActor @Test func unknownStationAsksWhateverTheChoice() {
+    for prefs in [Preferences(), notPlaying()] {
+        let r = Rig.started(prefs: prefs), c = r.controller
+        #expect(c.openShared(fresh) == .ask)
+        #expect(c.stations == [A, B, C] && !c.active)
+        #expect(c.prefs.playSharedStations == prefs.playSharedStations)   // only Add saves the choice
+    }
 }
 
 @MainActor @Test func addAndPlayAppendsAndPlays() {
     let r = Rig.started(), c = r.controller
     playing(c, 0)
-    let shared = SharedStation(name: "New", url: "http://new.example/live", logo: "https://new.example/logo.png")
-    #expect(c.addAndPlay(shared))
+    #expect(c.addShared(fresh, play: true) == .added(3))
     #expect(c.stations.last == Station(name: "New", url: "http://new.example/live", logo: "https://new.example/logo.png"))
     #expect(c.current == 3 && c.status == .connecting && r.player.calls.last == .play("http://new.example/live"))
     #expect(r.savedNames == ["Alpha", "Beta", "Gamma", "New"])
@@ -168,13 +201,53 @@ func matching(a: String, b: String, same: Bool) {
 
 @MainActor @Test func addAndPlayWithNothingPlayingStarts() {
     let r = Rig.started(), c = r.controller
-    #expect(c.addAndPlay(SharedStation(name: "New", url: "http://new.example/live", logo: nil)))
+    #expect(c.addShared(fresh, play: true) == .added(3))
     #expect(c.current == 3 && c.status == .connecting && r.player.calls.last == .play("http://new.example/live"))
+}
+
+@MainActor @Test func addWithoutPlayingKeepsWhatIsPlaying() {
+    let r = Rig.started(), c = r.controller
+    playing(c, 0)
+    let calls = r.player.calls
+    #expect(c.addShared(fresh, play: false) == .added(3))
+    #expect(r.savedNames == ["Alpha", "Beta", "Gamma", "New"])
+    #expect(c.current == 0 && c.status == .playing && r.player.calls == calls)
+}
+
+@MainActor @Test func addWithoutPlayingStartsNothing() {
+    let r = Rig.started(), c = r.controller
+    #expect(c.addShared(fresh, play: false) == .added(3))
+    #expect(c.stations.count == 4 && !c.active)
+    #expect(r.player.calls.allSatisfy { $0 != .play(fresh.url) })
+}
+
+@MainActor @Test func addSavesThePlayChoice() {
+    let r = Rig.started(), c = r.controller
+    #expect(c.prefs.playSharedStations)   // checked the first time
+    c.addShared(fresh, play: false)
+    #expect(!c.prefs.playSharedStations && !loadPreferences(r.paths.preferencesFile).playSharedStations)
+    c.addShared(SharedStation(name: "Other", url: "http://other.example/live", logo: nil), play: true)
+    #expect(c.prefs.playSharedStations && loadPreferences(r.paths.preferencesFile).playSharedStations)
 }
 
 @MainActor @Test func addAndPlayOfANearDuplicatePlaysTheOneOnTheList() {
     // https:// instead of http:// is another address for the link, but the same stream for the list.
     let r = Rig.started(), c = r.controller
-    #expect(c.addAndPlay(SharedStation(name: "Alpha again", url: "https://a.example/live", logo: nil)))
+    #expect(c.addShared(SharedStation(name: "Alpha again", url: "https://a.example/live", logo: nil), play: true) == .alreadyOnTheList(0))
     #expect(c.stations.count == 3 && c.current == 0 && r.player.calls.last == .play(A.url))
+}
+
+@MainActor @Test func addWithoutPlayingOfANearDuplicateChangesNothing() {
+    let r = Rig.started(), c = r.controller
+    playing(c, 1)
+    let calls = r.player.calls
+    #expect(c.addShared(SharedStation(name: "Alpha again", url: "https://a.example/live", logo: nil), play: false) == .alreadyOnTheList(0))
+    #expect(c.stations == [A, B, C] && c.current == 1 && c.status == .playing && r.player.calls == calls)
+    #expect(!c.prefs.playSharedStations)
+}
+
+@MainActor @Test func addOfAStationWithoutANameChangesNothing() {
+    let r = Rig.started(), c = r.controller
+    #expect(c.addShared(SharedStation(name: "  ", url: "http://new.example/live", logo: nil), play: true) == .invalid)
+    #expect(c.stations == [A, B, C] && !c.active)
 }

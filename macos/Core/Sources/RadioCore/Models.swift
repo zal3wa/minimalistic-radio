@@ -26,6 +26,8 @@ public struct Preferences: Equatable, Sendable {
     public var updateByDownload = false
     /// Settings › Statistics: off, nothing new goes into statistics.json (what is there stays).
     public var collectStatistics = true
+    /// The shared-station page's "Play automatically": checked the first time, then the choice made with the last Add.
+    public var playSharedStations = true
 
     public init() {}
 }

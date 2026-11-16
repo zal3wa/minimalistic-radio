@@ -2,7 +2,7 @@ import RadioCore
 import SwiftUI
 
 /// The station list: logo, name, the playing mark and a ⋯ menu. A click plays a station; dragging reorders the
-/// list (the Mac list's own drag), and ⌘⌥↑/↓ move the selected station.
+/// list (the Mac list's own drag), and ⌘⌥↑/↓ move the selected station. After a shared station it shows that one.
 struct StationsPage: View {
     @ObservedObject var model: PanelModel
     @State private var selected: String?
@@ -18,25 +18,38 @@ struct StationsPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            List(selection: $selected) {
-                ForEach(Array(controller.stations.enumerated()), id: \.element.url) { index, station in
-                    StationRow(model: model, station: station, index: index) { play(index) }
-                        .tag(station.url)
+            ScrollViewReader { proxy in
+                List(selection: $selected) {
+                    ForEach(Array(controller.stations.enumerated()), id: \.element.url) { index, station in
+                        StationRow(model: model, station: station, index: index) { play(index) }
+                            .tag(station.url)
+                    }
+                    .onMove { from, to in
+                        if let source = from.first { controller.moveStation(from: source, to: to) }
+                    }
                 }
-                .onMove { from, to in
-                    if let source = from.first { controller.moveStation(from: source, to: to) }
+                .listStyle(.inset)
+                .scrollContentBackground(.hidden)
+                .background(alignment: .bottom) {
+                    // ⌘⌥↑/↓: the keyboard way to move the selected station.
+                    HStack {
+                        Button("") { move(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
+                        Button("") { move(1) }.keyboardShortcut(.downArrow, modifiers: [.command, .option])
+                    }
+                    .opacity(0)
                 }
+                .onAppear { scrollToTarget(proxy) }
+                .onChange(of: model.scrollTarget) { _ in scrollToTarget(proxy) }
             }
-            .listStyle(.inset)
-            .scrollContentBackground(.hidden)
-            .background(alignment: .bottom) {
-                // ⌘⌥↑/↓: the keyboard way to move the selected station.
-                HStack {
-                    Button("") { move(-1) }.keyboardShortcut(.upArrow, modifiers: [.command, .option])
-                    Button("") { move(1) }.keyboardShortcut(.downArrow, modifiers: [.command, .option])
-                }
-                .opacity(0)
-            }
+        }
+    }
+
+    /// A shared station, just added or already on the list: scrolled into view once the list is laid out.
+    private func scrollToTarget(_ proxy: ScrollViewProxy) {
+        guard let target = model.scrollTarget else { return }
+        DispatchQueue.main.async {
+            proxy.scrollTo(target)
+            model.scrollTarget = nil
         }
     }
 

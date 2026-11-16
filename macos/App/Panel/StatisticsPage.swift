@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Statistics (Settings › Statistics › Show): listening time, song titles, stations, the longest session, the top
 /// stations and artists, and the hours of the day, for this month, this year or everything. Counted in RadioCore
-/// (summarizeStatistics) from statistics.json, which never leaves this Mac.
+/// (summarizeStatistics) from statistics.json, which never leaves this Mac. Clearing them is in the top bar's ⋯.
 struct StatisticsPage: View {
     @ObservedObject var model: PanelModel
     @State private var period = StatisticsPeriod.month
@@ -31,9 +31,6 @@ struct StatisticsPage: View {
                     topStations(summary)
                     topArtists(summary)
                     hours(summary)
-                    Button(L("Clear statistics"), action: confirmClear)
-                        .buttonStyle(.link)
-                        .padding(.top, 4)
                 }
             }
             .padding(EdgeInsets(top: 16, leading: 20, bottom: 20, trailing: 20))
@@ -250,30 +247,6 @@ struct StatisticsPage: View {
         formatter.dateTemplate = "jm"
         let start = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
         return formatter.string(from: start, to: start.addingTimeInterval(3600))
-    }
-
-    // MARK: - Clearing
-
-    /// "Clear statistics", after a confirmation (a sheet on the panel, so the panel stays open behind it).
-    private func confirmClear() {
-        let alert = NSAlert()
-        alert.messageText = L("Clear statistics?")
-        alert.informativeText = L("All listening statistics on this computer will be deleted. The song history stays.")
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: L("Clear statistics")).hasDestructiveAction = true
-        alert.addButton(withTitle: L("Cancel"))
-        let model = self.model
-        let clear = {
-            if model.sampleStatistics != nil { model.sampleStatistics = StatisticsLog() } else { model.controller.clearStatistics() }
-            model.refresh()
-        }
-        if let window = AppDelegate.shared?.panel?.window {
-            alert.beginSheetModal(for: window) { response in
-                if response == .alertFirstButtonReturn { clear() }
-            }
-        } else if alert.runModal() == .alertFirstButtonReturn {
-            clear()
-        }
     }
 }
 

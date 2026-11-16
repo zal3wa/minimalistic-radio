@@ -76,6 +76,16 @@ import Testing
     #expect(!loadPreferences(f).collectStatistics)
 }
 
+@Test func sharedStationsPlayByDefault() throws {
+    // The shared-station page's "Play automatically": checked the first time, then the last choice.
+    #expect(Preferences().playSharedStations)
+    let f = tempFolder().appendingPathComponent("p.json")
+    try Data(#"{"Volume": 40, "PlaySharedStations": 0}"#.utf8).write(to: f)   // not a JSON boolean: the default
+    #expect(loadPreferences(f).playSharedStations)
+    try Data(#"{"PlaySharedStations": false}"#.utf8).write(to: f)
+    #expect(!loadPreferences(f).playSharedStations)
+}
+
 @Test func preferencesRoundTripAndCorruptFallback() throws {
     let f = tempFolder().appendingPathComponent("p.json")
     var prefs = Preferences()
@@ -86,6 +96,7 @@ import Testing
     prefs.lastUpdateCheck = localDate(2026, 11, 15, 9, 30, 12)
     prefs.updateByDownload = true
     prefs.collectStatistics = false
+    prefs.playSharedStations = false
     try savePreferences(f, prefs)
     #expect(loadPreferences(f) == prefs)
     try Data("{oops".utf8).write(to: f)

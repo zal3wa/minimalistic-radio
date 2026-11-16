@@ -11,6 +11,15 @@ msgstr "Zkopírováno do schránky"
 msgid "Quit"
 msgstr "Ukončit"
 
+msgid "Clear statistics?"
+msgstr "Smazat statistiky?"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Clear"
+msgstr "Smazat"
+
 msgid "Add a station first."
 msgstr "Nejdřív přidejte stanici."
 
@@ -83,8 +92,20 @@ msgstr "Hledat na YouTube"
 msgid "More"
 msgstr "Další"
 
+msgid "Your listening statistics will be permanently deleted. Your song history will remain."
+msgstr "Vaše statistiky poslechu budou trvale smazány. Historie skladeb zůstane zachována."
+
+msgid "This can't be undone."
+msgstr "Tuto akci nelze vrátit zpět."
+
 msgid "Move Minimalistic Radio to Applications to get updates."
 msgstr "Přesuňte Minimalistic Radio do Aplikací, abyste dostávali aktualizace."
+
+msgid "Link copied"
+msgstr "Odkaz zkopírován"
+
+msgid "Already on your list"
+msgstr "Už je ve vašem seznamu"
 
 msgid "Station"
 msgstr "Stanice"
@@ -104,6 +125,9 @@ msgstr "Zpět"
 msgid "Statistics"
 msgstr "Statistiky"
 
+msgid "Clear statistics…"
+msgstr "Smazat statistiky…"
+
 msgid "Stations"
 msgstr "Stanice"
 
@@ -115,9 +139,6 @@ msgstr "Přidat podle adresy"
 
 msgid "Edit"
 msgstr "Upravit"
-
-msgid "Link copied"
-msgstr "Odkaz zkopírován"
 
 msgid "Type a station name"
 msgstr "Zadejte název stanice"
@@ -145,9 +166,6 @@ msgstr "Katalog je dočasně nedostupný. Zkuste to znovu."
 
 msgid "Loading suggestions…"
 msgstr "Načítání návrhů…"
-
-msgid "Already on your list"
-msgstr "Už je ve vašem seznamu"
 
 msgid "This station is already on the list."
 msgstr "Tato stanice už je v seznamu."
@@ -242,14 +260,14 @@ msgstr "Přidáno stanic: {0}."
 msgid "Checking…"
 msgstr "Kontrola…"
 
-msgid "Add it to your stations and play it now?"
-msgstr "Přidat ji mezi vaše stanice a hned pustit?"
+msgid "Add it to your stations?"
+msgstr "Přidat ji mezi vaše stanice?"
 
-msgid "Add and play"
-msgstr "Přidat a pustit"
+msgid "Add"
+msgstr "Přidat"
 
-msgid "Cancel"
-msgstr "Zrušit"
+msgid "Play automatically"
+msgstr "Přehrávat automaticky"
 
 msgid "This link doesn't contain a station."
 msgstr "Tento odkaz neobsahuje stanici."
@@ -286,9 +304,6 @@ msgstr "Statistiky jsou vypnuté. Nic nového se nezaznamenává."
 
 msgid "Nothing here yet. Listen for a while and come back."
 msgstr "Zatím tu nic není. Chvíli poslouchejte a pak se vraťte."
-
-msgid "Clear statistics"
-msgstr "Vymazat statistiky"
 
 msgid "Listening time"
 msgstr "Doba poslechu"
@@ -328,12 +343,6 @@ msgstr "1 přehrání"
 
 msgid "{0} plays"
 msgstr "{0} přehrání"
-
-msgid "Clear statistics?"
-msgstr "Vymazat statistiky?"
-
-msgid "All listening statistics on this computer will be deleted. The song history stays."
-msgstr "Všechny statistiky poslechu v tomto počítači budou smazány. Historie skladeb zůstane."
 
 msgid "This station uses a format that can't be played."
 msgstr "Tato stanice vysílá ve formátu, který nelze přehrát."

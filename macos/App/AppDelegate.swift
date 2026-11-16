@@ -202,7 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let saved = localizer.setting
         localizer.setting = "pl"
         if L("Quit") != "Zakończ" { failures.append("the Polish catalogue didn't load from the app bundle") }
-        for text in ["History", "Statistics", "Clear statistics", "Top artists", "{0} h {1} min", "Share", "Add and play"]
+        for text in ["History", "Statistics", "Clear statistics…", "Clear statistics?", "This can't be undone.", "Clear",
+                     "Top artists", "{0} h {1} min", "Share", "Add it to your stations?", "Add", "Play automatically"]
             where L(text) == text {
             failures.append("\"\(text)\" isn't translated into Polish")
         }
@@ -239,6 +240,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.model.page != .search { failures.append("+ Station doesn't open the search") }
         failures += checkPanelLayout()
         panel.model.page = .stations
+
+        // Statistics › ⋯ › Clear statistics…: the question in two paragraphs, Cancel the default (Return) and Clear
+        // the destructive button.
+        let alert = PanelModel.clearStatisticsAlert()
+        if alert.messageText != L("Clear statistics?") || alert.informativeText.components(separatedBy: "\n\n").count != 2
+            || alert.buttons.map(\.title) != [L("Cancel"), L("Clear")] || alert.buttons.first?.keyEquivalent != "\r"
+            || alert.buttons.last?.hasDestructiveAction != true || alert.buttons.last?.keyEquivalent == "\r" {
+            failures.append("Clear statistics? isn't asked with Cancel as the default and Clear as the destructive button")
+        }
 
         // Statistics: a session from the start of audio, its song, saved on quitting; the page draws them.
         controller.select(0)
@@ -282,7 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// The panel's pages as drawn, as far as AppKit shows them (SwiftUI draws the rest itself): the player only on
-    /// the stations page, and the Statistics page's All / Year / Month switch.
+    /// the stations page, and the Statistics page's All / Year / Month switch and its ⋯ in the top bar.
     private func checkPanelLayout() -> [String] {
         var failures: [String] = []
         for page in [PanelModel.Page.stations, .history, .settings, .statistics] {
@@ -301,6 +311,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 } else if control?.selectedSegment != 2 {
                     failures.append("Statistics doesn't open on Month")
                 }
+                // SwiftUI's menu button is an AppKit pop-up button: the ⋯ is one, in the 44 pt top bar.
+                let menus = allViews(in: view)
+                    .filter { $0 is NSPopUpButton || String(describing: type(of: $0)).contains("Popup") }
+                    .map { view.convert($0.bounds, from: $0) }
+                    .filter { (view.isFlipped ? $0.midY : view.bounds.height - $0.midY) < 44 }
+                if menus.isEmpty { failures.append("Statistics has no ⋯ in the top bar") }
             }
         }
         panel.close()
@@ -308,9 +324,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Share a station, through the app's own doors: a minimalistic-radio:// link opened into the running radio
-    /// (the Shared station page; Cancel changes nothing; Add and play adds and plays; a station already on the list
-    /// just plays; a link without a station says so), a web link pasted into + Station's field, and Share copying
-    /// the link with "Link copied". Starts with the self-test's two stations, nothing playing.
+    /// (the Shared station page; Cancel changes nothing; Add with Play automatically unchecked only adds, and the
+    /// list shows it; a station already on the list is then only shown, with "Already on your list"; Add checked
+    /// adds and plays, and a station already on the list then just plays; a link without a station says so), a web
+    /// link pasted into + Station's field, and Share copying the link with "Link copied". Starts with the
+    /// self-test's two stations, nothing playing.
     private func checkSharing() -> [String] {
         var failures: [String] = []
         let model = panel.model
@@ -325,22 +343,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         open(shareAppLink(hard))
         if model.page != .shared(shared) || !panel.isVisible { failures.append("a share link doesn't open the Shared station page") }
         model.back()
-        if model.page != .stations || controller.stations.count != count || controller.active {
+        if model.page != .stations || controller.stations.count != count || controller.active
+            || !controller.prefs.playSharedStations {
             failures.append("Cancel on a shared station changed something")
         }
 
         open(shareAppLink(hard))
-        if case .shared(let station?) = model.page { model.addShared(station) }
-        if controller.stations.count != count + 1 || controller.stations.last?.url != hard.url
-            || controller.current != count || !controller.active || model.page != .stations {
-            failures.append("Add and play didn't add and play the shared station")
+        if case .shared(let station?) = model.page { model.addShared(station, play: false) }
+        if controller.stations.count != count + 1 || controller.stations.last?.url != hard.url || controller.active
+            || model.page != .stations || model.scrollTarget != hard.url || controller.prefs.playSharedStations
+            || loadPreferences(controller.paths.preferencesFile).playSharedStations {
+            failures.append("Add without Play automatically didn't only add the shared station and save the choice")
+        }
+
+        let known = controller.stations[1]
+        let knownLink = shareAppLink(Station(name: "Another name",
+                                             url: known.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/"))
+        open(knownLink)
+        if model.page != .stations || controller.active || model.pill != .alreadyOnTheList || model.scrollTarget != known.url
+            || controller.stations.count != count + 1 {
+            failures.append("a shared station already on the list isn't only shown with \"Already on your list\" (unchecked)")
+        }
+
+        let classic = Station(name: "RMF Classic", url: "http://31.192.216.8/RMFCLASSIC48")
+        open(shareAppLink(classic))
+        if case .shared(let station?) = model.page { model.addShared(station, play: true) }
+        if controller.stations.count != count + 2 || controller.stations.last?.url != classic.url
+            || controller.current != count + 1 || !controller.active || model.page != .stations
+            || !controller.prefs.playSharedStations {
+            failures.append("Add with Play automatically didn't add and play the shared station")
         }
         controller.stop()
 
-        let known = controller.stations[1]
-        open(shareAppLink(Station(name: "Another name", url: known.url.uppercased().replacingOccurrences(of: "/LIVE", with: "/live") + "/")))
-        if model.page != .stations || controller.current != 1 || !controller.active || controller.stations.count != count + 1 {
-            failures.append("a shared station already on the list doesn't just play")
+        open(knownLink)
+        if model.page != .stations || controller.current != 1 || !controller.active || controller.stations.count != count + 2 {
+            failures.append("a shared station already on the list doesn't just play (checked)")
         }
         controller.stop()
 
@@ -366,5 +403,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func views<T: NSView>(of type: T.Type, in view: NSView) -> [T] {
         ((view as? T).map { [$0] } ?? []) + view.subviews.flatMap { views(of: type, in: $0) }
+    }
+
+    private func allViews(in view: NSView) -> [NSView] {
+        view.subviews + view.subviews.flatMap { allViews(in: $0) }
     }
 }

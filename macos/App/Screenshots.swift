@@ -90,21 +90,22 @@ extension AppDelegate {
         var toEnd = false
         var update = false
         var statisticsOff = false
-        var linkCopied = false
+        var pill: PanelModel.Pill?
     }
 
     /// The station of the Shared station picture, as in the approved pictures.
     static let shotShared = SharedStation(name: shotStations[2].name, url: shotStations[2].url, logo: shotStations[2].logo)
 
     /// The README pictures, plus for review: the ends of Settings and Statistics, the top bar with an update,
-    /// Statistics switched off, "Link copied" and a Shared station.
+    /// Statistics switched off, "Link copied", "Already on your list" and a Shared station.
     private static let shots = [
         Shot(page: .stations, name: "stations"), Shot(page: .search, name: "search"), Shot(page: .history, name: "history"),
         Shot(page: .settings, name: "settings"), Shot(page: .settings, name: "settings-end", toEnd: true),
         Shot(page: .statistics, name: "statistics"), Shot(page: .statistics, name: "statistics-end", toEnd: true),
         Shot(page: .stations, name: "stations-update", update: true),
         Shot(page: .statistics, name: "statistics-off", statisticsOff: true),
-        Shot(page: .stations, name: "stations-copied", linkCopied: true),
+        Shot(page: .stations, name: "stations-copied", pill: .linkCopied),
+        Shot(page: .stations, name: "stations-already", pill: .alreadyOnTheList),
         Shot(page: .shared(shotShared), name: "shared"),
     ]
 
@@ -124,7 +125,7 @@ extension AppDelegate {
                 }
                 model.sampleUpdate = shot.update ? L("Update") : nil
                 controller.setCollectStatistics(!shot.statisticsOff)   // temporary files: nothing of the user's
-                if shot.linkCopied { model.showLinkCopied(for: nil) } else { model.hideLinkCopied() }
+                if let pill = shot.pill { model.showPill(pill, for: nil) } else { model.hidePill() }
                 model.refresh()
                 panel.show(page: page, anchor: nil)
                 await wait(seconds: 20) {
@@ -155,8 +156,11 @@ extension AppDelegate {
                     written += 1
                 }
             }
-            model.hideLinkCopied()
+            model.hidePill()
             if await takeShareMenuPicture(output.appendingPathComponent("macos-share-menu-\(look).png"), dark: look == "dark") {
+                menus += 1
+            }
+            if await takeClearStatisticsPicture(output.appendingPathComponent("macos-clear-statistics-\(look).png")) {
                 menus += 1
             }
             let demo = await takeDemoPictures(into: output, look: look)
@@ -166,8 +170,8 @@ extension AppDelegate {
         model.sampleUpdate = nil
         panel.close()
         writeHotspots(hotspots, to: output.appendingPathComponent("macos-demo-hotspots.json"))
-        // The menus are screen captures (each is a window of its own): reported, but not required.
-        print("wrote \(written) screenshots, \(menus) share menu pictures and \(demos) demo pictures to \(output.path)")
+        // The menus and the question are screen captures (each is a window of its own): reported, but not required.
+        print("wrote \(written) screenshots, \(menus) share menu and Clear statistics? pictures and \(demos) demo pictures to \(output.path)")
         return written == Self.shots.count * 2 ? 0 : 1
     }
 
@@ -186,7 +190,7 @@ extension AppDelegate {
             model.refresh()
             try? await Task.sleep(nanoseconds: 900_000_000)
         }
-        model.hideLinkCopied()
+        model.hidePill()
         model.sampleUpdate = nil
         controller.setCollectStatistics(true)
 
@@ -461,6 +465,30 @@ extension AppDelegate {
         RunLoop.main.add(capture, forMode: .common)
         _ = menu.popUp(positioning: share, at: place, in: content)   // returns when the menu closes
         print("share menu \(dark ? "dark" : "light"): \(written ? "written" : "not written")")
+        return written
+    }
+
+    /// For review: Statistics with its question, Clear statistics?, open over it (Statistics › ⋯ › Clear
+    /// statistics…), taken with screencapture: the sheet is a window of its own, which the panel's picture doesn't
+    /// include. Nothing is cleared.
+    private func takeClearStatisticsPicture(_ file: URL) async -> Bool {
+        panel.show(page: .statistics, anchor: nil)
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        guard let window = panel.window, let screen = window.screen ?? NSScreen.main else { return false }
+        let alert = PanelModel.clearStatisticsAlert()
+        alert.beginSheetModal(for: window) { _ in }
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        let region = window.frame.union(alert.window.frame)
+        let top = screen.frame.maxY
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", "-R", "\(Int(region.minX)),\(Int(top - region.maxY)),\(Int(region.width)),\(Int(region.height))", file.path]
+        try? shot.run()
+        shot.waitUntilExit()
+        window.endSheet(alert.window)
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        let written = shot.terminationStatus == 0 && FileManager.default.fileExists(atPath: file.path)
+        print("clear statistics \(NSApp.appearance?.name.rawValue ?? ""): \(written ? "written" : "not written")")
         return written
     }
 
