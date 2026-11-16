@@ -34,6 +34,9 @@ public struct PlayedSong: Equatable, Sendable {
     }
 }
 
+/// The statistics keep at most this many song plays; the oldest go first.
+public let songsKept = 100_000
+
 /// statistics.json: {"version": 1, "sessions": [...], "songs": [...]}, times in UTC ("2026-11-15T19:02:00Z").
 public struct StatisticsLog: Equatable, Sendable {
     public var sessions: [ListeningSession]
@@ -42,6 +45,11 @@ public struct StatisticsLog: Equatable, Sendable {
     public init(sessions: [ListeningSession] = [], songs: [PlayedSong] = []) {
         self.sessions = sessions
         self.songs = songs
+    }
+
+    /// Drops the oldest song plays beyond `songsKept` (songs are kept in the order they were played).
+    mutating func keepNewestSongs() {
+        if songs.count > songsKept { songs.removeFirst(songs.count - songsKept) }
     }
 
     /// Settings' "Collected since": the start of the first session, nil before any.
@@ -197,9 +205,9 @@ private func utcFormatter() -> ISO8601DateFormatter {
     ISO8601DateFormatter()   // "2026-11-15T19:02:00Z"
 }
 
-private func parseStatisticsTime(_ value: Any?) -> Date? {
+private func parseStatisticsTime(_ value: Any?, _ format: ISO8601DateFormatter) -> Date? {
     guard let text = value as? String else { return nil }
-    return utcFormatter().date(from: text) ?? parseTime(text)
+    return format.date(from: text) ?? parseTime(text)
 }
 
 /// The statistics; empty when the file is missing. A file that can't be read is moved aside (statistics.json.bad),
@@ -218,17 +226,19 @@ public func loadStatistics(_ url: URL) -> StatisticsLog {
         return StatisticsLog()
     }
     var log = StatisticsLog()
+    let format = utcFormatter()   // one for the whole file: up to 100 000 songs
     for case let item as [String: Any] in object["sessions"] as? [Any] ?? [] {
-        guard let station = item["station"] as? String, let start = parseStatisticsTime(item["start"]),
-              let end = parseStatisticsTime(item["end"]), end >= start else { continue }
+        guard let station = item["station"] as? String, let start = parseStatisticsTime(item["start"], format),
+              let end = parseStatisticsTime(item["end"], format), end >= start else { continue }
         let titles = (item["titles"] as? NSNumber).map { isBool($0) && $0.boolValue } ?? false
         log.sessions.append(ListeningSession(station: station, url: item["url"] as? String ?? "", start: start, end: end,
                                              titles: titles))
     }
     for case let item as [String: Any] in object["songs"] as? [Any] ?? [] {
-        guard let title = item["title"] as? String, let time = parseStatisticsTime(item["time"]) else { continue }
+        guard let title = item["title"] as? String, let time = parseStatisticsTime(item["time"], format) else { continue }
         log.songs.append(PlayedSong(station: item["station"] as? String ?? "", title: title, time: time))
     }
+    log.keepNewestSongs()
     return log
 }
 

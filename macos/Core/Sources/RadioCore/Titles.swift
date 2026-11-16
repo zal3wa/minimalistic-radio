@@ -28,7 +28,8 @@ private func group(_ match: NSTextCheckingResult, _ index: Int, in text: String)
 
 public func parseTitle(_ raw: String?, kind: String) -> String? {
     guard let raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-    var value = htmlUnescape(raw).trimmingCharacters(in: .whitespacesAndNewlines)
+    // The same character cleanup as names (control and bidirectional formatting characters), entities included.
+    var value = withoutHiddenCharacters(htmlUnescape(raw)).trimmingCharacters(in: .whitespacesAndNewlines)
     if kind == "iheart" {
         let whole = NSRange(value.startIndex..., in: value)
         if let rich = richPattern.firstMatch(in: value, range: whole) {

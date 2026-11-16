@@ -15,6 +15,8 @@ let networkReturnWindow: TimeInterval = 10 * 60
 let fadeSeconds: Double = 30                            // the sleep timer fades out over its last 30 seconds
 let radio357PollSeconds: Double = 10
 let coversKept = 200                                    // pictures kept in the cover cache
+let logosKept = 200                                     // pictures kept in the logo cache
+let titleInterval: TimeInterval = 5                     // a stream's title changes are applied at most this often
 let volumeBurst: TimeInterval = 1                       // volume changes closer than this are one (a drag, keys)
 let switchSettle: Double = 0.3                          // a media key or menu switch connects once switching pauses
 let sessionRejoin: TimeInterval = 2 * 60                // a reconnect this soon continues the listening session
@@ -136,6 +138,10 @@ public final class RadioController {
     private var pollTimer: AnyObject?
     private var switchTimer: AnyObject?   // set while a switched station waits to connect
     private var polling = false
+    // Stream titles: when the last change was applied (this connection), and the newest one waiting for its turn.
+    private var titleAppliedAt: Date?
+    private var waitingTitle: String?
+    private var titleTimer: AnyObject?
     // Statistics: the last of statistics.sessions is running while audio plays.
     private var listening = false
     private var statisticsTimer: AnyObject?
@@ -192,25 +198,12 @@ public final class RadioController {
         history = loadHistory(paths.historyFile)
         statistics = loadStatistics(paths.statisticsFile)
         volume = prefs.volume
-        pruneCovers()
+        pruneFolder(paths.coversFolder, keep: coversKept)
+        pruneFolder(paths.logosFolder, keep: logosKept)
         current = stations.firstIndex { $0.url == prefs.lastPlayed } ?? -1
         player.setVolume(effectiveVolume)
         emit([.state, .stations, .volume, .history, .preferences])
         if current >= 0 && !autostart { play() }
-    }
-
-    /// Keeps only the newest cover pictures, so the cache doesn't grow with every song.
-    private func pruneCovers() {
-        let files = FileManager.default
-        guard let entries = try? files.contentsOfDirectory(at: paths.coversFolder, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey]) else { return }
-        let dated: [(Date, URL)] = entries.compactMap { url in
-            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
-                  values.isRegularFile == true else { return nil }
-            return (values.contentModificationDate ?? .distantPast, url)
-        }
-        for (_, url) in dated.sorted(by: { $0.0 > $1.0 }).dropFirst(coversKept) {
-            try? files.removeItem(at: url)
-        }
     }
 
     // Saving never stops the radio. Only a station list that couldn't be saved is worth telling (as Windows).
@@ -283,8 +276,17 @@ public final class RadioController {
         pollTimer = nil
         switchTimer = nil
         gaveUpOnNetworkAt = nil
+        forgetTitles()
         track = nil
         coverPath = nil
+    }
+
+    /// A new connection has no title waiting, and its first title is applied at once.
+    private func forgetTitles() {
+        if let timer = titleTimer { scheduler.cancel(timer) }
+        titleTimer = nil
+        waitingTitle = nil
+        titleAppliedAt = nil
     }
 
     private func connect() {
@@ -318,6 +320,7 @@ public final class RadioController {
         attempt += 1
         listeningStopped()
         player.stop()
+        forgetTitles()
         track = nil
         coverPath = nil
         status = .retrying
@@ -369,7 +372,7 @@ public final class RadioController {
 
     public func onPlayerTitle(_ raw: String) {
         // Radio 357 sends a fixed slogan in the stream; its songs come from playing.json.
-        if connected() && kind != "radio357" { showTrack(raw) }
+        if connected() && kind != "radio357" { offerTitle(raw) }
     }
 
     public func onPlayerError(_ kind: ErrorKind, detail: String) {
@@ -383,18 +386,50 @@ public final class RadioController {
 
     // MARK: - Titles, covers, history
 
-    private func showTrack(_ raw: String?) {
+    /// A stream's title changes are applied at most once every 5 seconds: the first one at once, then the newest
+    /// one when the 5 seconds have passed, so a flood of titles can't slow the radio down and the title shown is
+    /// never stale. A repeat of the title shown changes nothing and doesn't wait.
+    private func offerTitle(_ raw: String) {
+        if titleTimer == nil && parseTitle(raw, kind: kind) == track { return }
+        let now = scheduler.now()
+        guard let applied = titleAppliedAt, now.timeIntervalSince(applied) < titleInterval else {
+            applyTitle(raw)
+            return
+        }
+        waitingTitle = raw
+        guard titleTimer == nil else { return }
+        let wanted = session
+        titleTimer = scheduler.callLater(titleInterval - now.timeIntervalSince(applied)) { [weak self] in
+            self?.titleDue(wanted)
+        }
+    }
+
+    private func titleDue(_ wanted: Int) {
+        titleTimer = nil
+        guard wanted == session, connected(), let raw = waitingTitle else { return }
+        waitingTitle = nil
+        applyTitle(raw)
+    }
+
+    private func applyTitle(_ raw: String) {
+        if showTrack(raw) { titleAppliedAt = scheduler.now() }
+    }
+
+    /// True when the title shown changed. History, statistics, covers and Now Playing follow from here.
+    @discardableResult
+    private func showTrack(_ raw: String?) -> Bool {
         let title = parseTitle(raw, kind: kind)
         let artwork = title != nil ? artworkFromRaw(raw) : nil
-        if title == track { return }
+        if title == track { return false }
         track = title
         coverPath = nil
         if title != nil && listening { statistics.sessions[statistics.sessions.count - 1].titles = true }
         var changes: Change = [.track, .cover]
         if let title, addToHistory(title) { changes.insert(.history) }
         emit(changes)
-        guard let title else { return }
+        guard let title else { return true }
         if let artwork { downloadCover(artwork, title) } else { findCover(title) }
+        return true
     }
 
     private func stillShowing(_ wanted: Int, _ title: String) -> Bool {
@@ -418,7 +453,7 @@ public final class RadioController {
     }
 
     private func downloadCover(_ address: String, _ title: String) {
-        guard let source = URL(string: address) else { return }
+        guard isWebURL(address), let source = URL(string: address) else { return }
         let hex = Insecure.SHA1.hash(data: Data(address.utf8)).map { String(format: "%02x", $0) }.joined()
         let file = paths.coversFolder.appendingPathComponent(hex + ".jpg")
         if FileManager.default.fileExists(atPath: file.path) {
@@ -457,6 +492,7 @@ public final class RadioController {
         saveHistoryFile()
         if prefs.collectStatistics {
             statistics.songs.append(PlayedSong(station: station, title: title, time: scheduler.now()))   // saved with the session
+            statistics.keepNewestSongs()
         }
         return true
     }
@@ -645,8 +681,9 @@ public final class RadioController {
 
     // MARK: - Editing the station list
 
+    /// The form, radio-browser and share links all add through here: the name cleaned, the addresses checked.
     private static func cleaned(_ s: Station) -> Station? {
-        let name = s.name.trimmingCharacters(in: .whitespaces)
+        let name = cleanName(s.name)
         let address = s.url.trimmingCharacters(in: .whitespaces)
         let logo = (s.logo ?? "").trimmingCharacters(in: .whitespaces)
         if name.isEmpty || !isWebURL(address) || (!logo.isEmpty && !isWebURL(logo)) { return nil }
@@ -749,14 +786,13 @@ public final class RadioController {
         var known = Set(stations.map { streamKey($0.url) })
         var fresh: [Station] = []
         for case let item as [String: Any] in items {
-            guard let name = item["Name"] as? String, !name.trimmingCharacters(in: .whitespaces).isEmpty,
-                  let address = item["Url"] as? String, isWebURL(address) else { continue }
+            let name = cleanName(item["Name"] as? String)
+            guard !name.isEmpty, let address = item["Url"] as? String, isWebURL(address) else { continue }
             let key = streamKey(address)
             if known.contains(key) { continue }
             known.insert(key)
             let logo = item["Logo"] as? String
-            fresh.append(Station(name: name.trimmingCharacters(in: .whitespaces), url: address,
-                                 logo: isWebURL(logo) ? logo : nil))
+            fresh.append(Station(name: name, url: address, logo: isWebURL(logo) ? logo : nil))
         }
         if !fresh.isEmpty {
             stations.append(contentsOf: fresh)

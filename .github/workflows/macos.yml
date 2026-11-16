@@ -66,6 +66,7 @@ jobs:
           test -d "$APP/Contents/Resources/Metadata.appintents" || { echo "::error::No App Intents metadata (Shortcuts and Siri)"; exit 1; }
           test -f "$APP/Contents/Resources/pl.lproj/AppShortcuts.strings"
           size=$(du -sk "$APP" | cut -f1); echo "app size: ${size} KB"; test "$size" -lt 10240
+          codesign -dv "$APP" 2>&1 | grep -E "^CodeDirectory.*flags=.*runtime" || { echo "::error::No hardened runtime"; codesign -dv "$APP"; exit 1; }
           "$binary" --self-test
 
       # The runner's display is 1×: the pictures taken from the screen (the menus) need a 2× one. A virtual HiDPI
@@ -144,16 +145,17 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" > /dev/null
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           security find-identity -p codesigning "$keychain" | sed 's/[0-9A-F]\{40\}/<hash>/'
-          if ! codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP" 2> sign.log; then
+          if ! codesign --force --deep --options runtime --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP" 2> sign.log; then
             cat sign.log
             echo "Trusting the certificate for code signing in this runner, then signing again."
             security find-certificate -c "$IDENTITY" -p "$keychain" > "$RUNNER_TEMP/cert.pem"
             sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
-            codesign --force --deep --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP"
+            codesign --force --deep --options runtime --sign "$IDENTITY" --keychain "$keychain" --timestamp=none "$APP"
           fi
           codesign --verify --deep --strict "$APP"
           requirement=$(codesign -d -r- "$APP" 2>&1); echo "$requirement"
           echo "$requirement" | grep -q 'certificate leaf = H"' || { echo "::error::Not signed with the project's certificate"; exit 1; }
+          codesign -dv "$APP" 2>&1 | grep -E "^CodeDirectory.*flags=.*runtime" || { echo "::error::Signed without the hardened runtime"; exit 1; }
           "$APP/Contents/MacOS/Minimalistic Radio" --self-test
 
       - name: DMG and update zip
@@ -164,6 +166,38 @@ jobs:
           hdiutil create -volname "Minimalistic Radio" -srcfolder dmg -ov -format UDZO Minimalistic-Radio.dmg
           ditto -c -k --keepParent "$APP" Minimalistic-Radio-macOS.zip
           ls -l Minimalistic-Radio.dmg Minimalistic-Radio-macOS.zip
+
+      # The disk-image update path (Updater.mountVerifiedDMG): the app inside is checked like a zip update (signed
+      # like this app, with the release's tag) before Finder shows it; a DMG that fails is detached and deleted.
+      - name: Check the DMG update path
+        run: |
+          app="$APP"
+          cp Minimalistic-Radio.dmg checked.dmg
+          if ! codesign -d -r- "$APP" 2>&1 | grep -q 'certificate leaf = H"'; then
+            # Signed ad hoc (no certificate): the requirement is the running code's own hash, one per architecture,
+            # which a universal app can't meet for both. The check runs on a copy thinned to this Mac's architecture.
+            mkdir thin
+            cp -R "$APP" thin/
+            app="thin/Minimalistic Radio.app"
+            lipo "$app/Contents/MacOS/Minimalistic Radio" -thin "$(uname -m)" -output thin-binary
+            mv thin-binary "$app/Contents/MacOS/Minimalistic Radio"
+            codesign --force --sign - --options runtime "$app"
+            hdiutil create -volname "Minimalistic Radio" -srcfolder thin -ov -format UDZO checked.dmg > /dev/null
+          fi
+          binary="$app/Contents/MacOS/Minimalistic Radio"
+          tag="${TAG:-dev}"
+          "$binary" --check-update-dmg "$PWD/checked.dmg" "$tag" || { echo "::error::The DMG failed its own check"; exit 1; }
+          test -f checked.dmg
+          if "$binary" --check-update-dmg "$PWD/checked.dmg" macos-v0.0.1; then echo "::error::A DMG with another release tag passed"; exit 1; fi
+          test ! -e checked.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
+          mkdir changed
+          cp -R "$app" changed/
+          echo " " >> "changed/Minimalistic Radio.app/Contents/Resources/banned-stations.json"
+          hdiutil create -volname "Minimalistic Radio" -srcfolder changed -ov -format UDZO changed.dmg > /dev/null
+          if "$binary" --check-update-dmg "$PWD/changed.dmg" "$tag"; then echo "::error::A DMG with a changed app passed"; exit 1; fi
+          test ! -e changed.dmg || { echo "::error::A DMG that failed its check wasn't deleted"; exit 1; }
+          if hdiutil info | grep -q radio-update-; then echo "::error::A checked DMG is still mounted"; hdiutil info; exit 1; fi
+          rm -rf thin changed
 
       - uses: actions/upload-artifact@v7
         with:

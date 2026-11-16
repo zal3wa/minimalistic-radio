@@ -33,6 +33,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             selfTest()
             return
         }
+        // CI: the disk-image update check alone, on a DMG made from this app (Updater.checkDMG).
+        if let index = CommandLine.arguments.firstIndex(of: "--check-update-dmg"), CommandLine.arguments.count > index + 2 {
+            let arguments = CommandLine.arguments
+            exit(Updater.checkDMG(URL(fileURLWithPath: arguments[index + 1]), tag: arguments[index + 2]))
+        }
         if let index = CommandLine.arguments.firstIndex(of: "--menu-picture"), CommandLine.arguments.count > index + 1 {
             let output = URL(fileURLWithPath: CommandLine.arguments[index + 1])
             Task { @MainActor in exit(await self.takeMenuPictures(into: output)) }
@@ -208,6 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                       bytesPerRow: 0, bitsPerPixel: 0)
         let png = pixels?.representation(using: .png, properties: [:]) ?? Data()
         if LogoCache.decode(png)?.size != NSSize(width: 16, height: 16) { failures.append("a PNG logo doesn't decode") }
+        failures += PictureSelfTest.run()
 
         showCard(L("Copied to clipboard"))
         panel.show(anchor: nil)

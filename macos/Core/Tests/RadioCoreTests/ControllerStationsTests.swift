@@ -181,7 +181,10 @@ private let notAList = "This isn't a Minimalistic Radio station list."
     c.onPlayerTitle("Queen - A Kind Of Magic")
     #expect(c.history.map(\.title) == ["Queen - A Kind Of Magic"] && c.history.first?.station == "Alpha")
     #expect(c.history.first?.time == r.scheduler.now())
-    for n in 0..<105 { c.onPlayerTitle("Artist - Song \(n)") }
+    for n in 0..<105 {                                                     // 5 seconds apart, as titles are applied
+        r.scheduler.advance(5)
+        c.onPlayerTitle("Artist - Song \(n)")
+    }
     #expect(c.history.count == 100 && c.history.first?.title == "Artist - Song 104")
     #expect(loadHistory(r.paths.historyFile).map(\.title) == c.history.map(\.title))
     c.clearHistory()

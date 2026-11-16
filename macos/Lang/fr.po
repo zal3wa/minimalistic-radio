@@ -425,6 +425,9 @@ msgstr "La mise à jour n'est pas signée comme cette radio, elle n'a donc pas �
 msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
 msgstr "Le fichier de mise à jour ne correspond pas à sa version, il n'a donc pas été installé. Sa page s'ouvre à la place."
 
+msgid "This update couldn't be verified. Download it from its release page, which opens now."
+msgstr "Impossible de vérifier cette mise à jour. Téléchargez-la depuis sa page, qui s'ouvre à l'instant."
+
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio n'est pas encore prêt. Réessayez."
 

@@ -44,7 +44,7 @@ final class NowPlaying {
         if let artist = info.artist { values[MPMediaItemPropertyArtist] = artist }
         if info.artwork != coverShown {
             coverShown = info.artwork
-            artwork = info.artwork.flatMap { NSImage(contentsOf: $0) }.map { image in
+            artwork = LogoCache.cover(info.artwork).map { image in
                 MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             }
         }

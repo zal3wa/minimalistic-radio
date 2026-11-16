@@ -248,3 +248,30 @@ import Testing
     c.removeStation(1)
     #expect(saved(r).sessions.map(\.url) == [B.url])
 }
+
+// MARK: - At most 100 000 song plays
+
+private func manySongs(_ count: Int) -> [PlayedSong] {
+    let start = localDate(2026, 1, 1, 0, 0)
+    return (0..<count).map { PlayedSong(station: "Old", title: "Artist - Song \($0)", time: start.addingTimeInterval(Double($0))) }
+}
+
+@MainActor @Test func statisticsKeepAtMost100000SongsDroppingTheOldest() throws {
+    #expect(songsKept == 100_000)
+    let r = Rig(), c = r.controller
+    try saveStatistics(r.paths.statisticsFile, StatisticsLog(songs: manySongs(100_000)))
+    c.start(autostart: true)
+    playing(c)
+    c.onPlayerTitle("Queen - A Kind Of Magic")
+    #expect(c.statistics.songs.count == 100_000)
+    #expect(c.statistics.songs.first?.title == "Artist - Song 1")
+    #expect(c.statistics.songs.last?.title == "Queen - A Kind Of Magic")
+}
+
+@Test func loadingKeepsTheNewest100000Songs() throws {
+    let file = tempFolder().appendingPathComponent("statistics.json")
+    try saveStatistics(file, StatisticsLog(songs: manySongs(100_003)))
+    let songs = loadStatistics(file).songs
+    #expect(songs.count == 100_000)
+    #expect(songs.first?.title == "Artist - Song 3" && songs.last?.title == "Artist - Song 100002")
+}

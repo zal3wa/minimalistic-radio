@@ -1,6 +1,5 @@
 import AppKit
 import CryptoKit
-import ImageIO
 import RadioCore
 
 /// Station logos: downloaded once into the cache folder, decoded small off the main thread, kept in memory.
@@ -9,7 +8,8 @@ import RadioCore
 @MainActor
 final class LogoCache {
     static let logoLimit = 2_000_000      // bytes downloaded at most
-    static let logoPixels = 144           // decoded at most this big: shown up to 72 pt (a shared station), sharp at 2×
+    nonisolated static let logoPixels = 144   // decoded at most this big: shown up to 72 pt (a shared station), sharp at 2×
+    nonisolated static let coverPixels = 600  // covers too: iTunes's are 600 × 600, Control Center shows them largest
     static let retrySeconds: TimeInterval = 300
     static let maxDownloads = 4
 
@@ -72,10 +72,14 @@ final class LogoCache {
         Insecure.SHA1.hash(data: Data(url.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
-    /// (image, whether the download worked). The cached file first, then the network.
+    /// (image, whether the download worked). The cached file first, then the network. A cached file that is used
+    /// counts as new again: the controller keeps the 200 newest logos at start, so these are the ones in use.
     nonisolated private static func read(_ url: String, _ file: URL) async -> (NSImage?, Bool) {
-        if let data = try? Data(contentsOf: file), let image = decode(data) { return (image, true) }
-        guard let address = URL(string: url), let data = try? await Network.fetchData(address, limit: logoLimit) else {
+        if let data = try? Data(contentsOf: file), let image = decode(data) {
+            try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: file.path)
+            return (image, true)
+        }
+        guard let address = URL(string: url), let data = try? await Network.fetchPicture(address, limit: logoLimit) else {
             return (nil, false)
         }
         let image = decode(data)
@@ -86,22 +90,16 @@ final class LogoCache {
         return (image, true)
     }
 
-    /// PNG, JPEG, GIF, ICO, WebP… made at most `logoPixels` on the longer side; nil if it isn't a picture.
+    /// PNG, JPEG, GIF, ICO, WebP… made at most `maxPixels` on the longer side; nil if it isn't a picture or its
+    /// header declares more than 4096 pixels either way (decodePicture).
     nonisolated static func decode(_ data: Data, maxPixels: Int = logoPixels) -> NSImage? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(source) > 0 else { return nil }
-        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
-        let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
-        let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
-        let image: CGImage?
-        if width > 0 && height > 0 && max(width, height) <= maxPixels {
-            image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-        } else {
-            let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
-                                            kCGImageSourceThumbnailMaxPixelSize: maxPixels,
-                                            kCGImageSourceCreateThumbnailWithTransform: true]
-            image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
-        }
-        guard let image else { return nil }
+        guard let image = decodePicture(data, maxPixels: maxPixels) else { return nil }
         return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+    }
+
+    /// The song's cover from the cover cache, through the same size-limited decoder as the logos.
+    nonisolated static func cover(_ file: URL?) -> NSImage? {
+        guard let file, let data = try? Data(contentsOf: file) else { return nil }
+        return decode(data, maxPixels: coverPixels)
     }
 }

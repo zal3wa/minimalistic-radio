@@ -50,7 +50,7 @@ targets:
         INFOPLIST_FILE: App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_HARDENED_RUNTIME: YES        # with no entitlements: the app needs none of its exceptions
         ENABLE_APP_SANDBOX: NO
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"

@@ -425,6 +425,9 @@ msgstr "Оновлення підписане не так, як це радіо,
 msgid "The update file doesn't match its version, so it wasn't installed. Its page opens instead."
 msgstr "Файл оновлення не відповідає його версії, тому його не встановлено. Натомість відкриється його сторінка."
 
+msgid "This update couldn't be verified. Download it from its release page, which opens now."
+msgstr "Не вдалося перевірити це оновлення. Завантажте його зі сторінки випуску — вона зараз відкриється."
+
 msgid "Minimalistic Radio isn't ready yet. Try again."
 msgstr "Minimalistic Radio ще не готове. Спробуйте ще раз."
 

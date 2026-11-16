@@ -46,7 +46,7 @@ final class CardController {
         content.station = controller.stationName ?? appName
         content.song = text ?? controller.track ?? statusText(controller)
         content.logo = controller.stations.indices.contains(controller.current) ? controller.stations[controller.current].logo : nil
-        content.cover = controller.coverPath.flatMap { NSImage(contentsOf: $0) }
+        content.cover = LogoCache.cover(controller.coverPath)
     }
 
     private func makeWindow() -> NSPanel {

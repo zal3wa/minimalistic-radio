@@ -132,8 +132,8 @@ public func parseResults(_ items: Any?, limit: Int = 30, bans: BanList = .none) 
     var found: [DirectoryStation] = []
     for case let item as [String: Any] in items as? [Any] ?? [] {
         let resolved = text(item, "url_resolved"), address = isWebURL(resolved) ? resolved : text(item, "url")
-        let name = text(item, "name")
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty, isWebURL(address), !seen.contains(address) else { continue }
+        let name = cleanName(text(item, "name"))
+        guard !name.isEmpty, isWebURL(address), !seen.contains(address) else { continue }
         let favicon = text(item, "favicon")
         let entry = DirectoryStation(
             name: name, country: text(item, "country"), url: address, logo: favicon.isEmpty ? nil : favicon,
@@ -171,7 +171,7 @@ public func subtitle(_ entry: DirectoryStation) -> String {
 }
 
 public func toStation(_ entry: DirectoryStation) -> Station {
-    Station(name: entry.name.trimmingCharacters(in: .whitespaces), url: entry.url,
+    Station(name: cleanName(entry.name), url: entry.url,
             logo: isWebURL(entry.logo) ? entry.logo : nil)
 }
 
