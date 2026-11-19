@@ -5,6 +5,7 @@ panel, its actions and its copy logic are the real ones.
 """
 import time
 import uuid
+from types import SimpleNamespace
 
 import pytest
 
@@ -296,6 +297,19 @@ def test_now_track_opens_panel_and_copies(make, watcher):
         None, lambda clipboard, result: got.setdefault("text", clipboard.read_text_finish(result)))
     assert pump(lambda: "text" in got)
     assert got["text"] == TRACK
+
+
+def test_update_opens_panel_first(make, watcher):
+    """Update in the menu opens the panel before it updates, so the update is never silent: the panel shows a
+    failure, and the new version opens its window with "Updated to version …"."""
+    app, _, tray, _, _ = make()
+    seen = []
+    app.updates = SimpleNamespace(apply=lambda: seen.append(app.window is not None and app.window.get_visible()))
+    tray.update_label = "Update"
+    tray.refresh()
+    event(Client(MENU_PATH, MENU), tray.menu.id_of("update"))
+    assert pump(lambda: seen)
+    assert seen == [True]
 
 
 def test_layout_updated_on_change(make, watcher):
