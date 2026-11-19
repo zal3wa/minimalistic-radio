@@ -406,7 +406,11 @@ class TrayIcon(GObject.Object):
             c.set_sleep_timer(int(value))
         elif key == "now:track":
             self._copy_track()
-        elif key in ("settings", "quit", "update"):
+        elif key == "update":
+            # In the panel, never silently: it shows a failure, and the new version opens its window with "Updated".
+            self._show_panel()
+            self._action(key)
+        elif key in ("settings", "quit"):
             self._action(key)
 
     def _copy_track(self) -> None:

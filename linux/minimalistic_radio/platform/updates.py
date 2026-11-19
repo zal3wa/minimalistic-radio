@@ -128,7 +128,8 @@ class UpdateMonitor:
         """The newest installed version, through the portal; this one quits once it is on its way.
 
         Playing, the new version plays and shows its window. Not playing, it doesn't play, and it starts hidden
-        only if the window is hidden now: the click came from the tray, and a window popping up would surprise."""
+        only if the window is hidden now (closed while the update downloaded): a window popping up would surprise.
+        The tray's Update opens the panel first, so the update never ends without a word."""
         argv = ["minimalistic-radio", "--updated"]
         controller, window = self.app.controller, self.app.window
         if controller is None or not controller.active:
