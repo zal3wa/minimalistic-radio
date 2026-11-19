@@ -304,7 +304,8 @@ def test_update_opens_panel_first(make, watcher):
     failure, and the new version opens its window with "Updated to version …"."""
     app, _, tray, _, _ = make()
     seen = []
-    app.updates = SimpleNamespace(apply=lambda: seen.append(app.window is not None and app.window.get_visible()))
+    app.updates = SimpleNamespace(state="update",
+                                  apply=lambda: seen.append(app.window is not None and app.window.get_visible()))
     tray.update_label = "Update"
     tray.refresh()
     event(Client(MENU_PATH, MENU), tray.menu.id_of("update"))
