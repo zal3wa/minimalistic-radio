@@ -31,7 +31,15 @@ The first upload of a new snap name can be reviewed, which can take a day or two
 
 ## 2. Flathub
 
-Flathub is the main app store for Flatpak (GNOME Software, Discover). Read the [submission guide](https://docs.flathub.org/docs/for-app-authors/submission) first. In short:
+Flathub is the main app store for Flatpak (GNOME Software, Discover). Read the [submission guide](https://docs.flathub.org/docs/for-app-authors/submission) first.
+
+Flathub's [generative AI policy](https://docs.flathub.org/docs/for-app-authors/requirements) (checked 2026-11-19) applies to this app, whose code, translations and packaging were written with Claude:
+
+- the submitter must disclose AI-generated code, documentation and packaging, and reviewers may reject a submission for the extent of it;
+- the Flathub manifest must not contain AI-generated or AI-assisted content, so you write it yourself;
+- AI tools must not open the pull request or write its description, commit messages or replies, so you do those yourself too.
+
+Undisclosed AI-generated material can get a submission rejected, and repeated violations can get you banned. In short:
 
 1. Wait until the `linux` branch is merged into `main`. The screenshots in the app's description are loaded from `main` on GitHub, so they only resolve after the merge. This is why CI allows the linter message `appstream-missing-screenshots` while the screenshots are not on main yet.
 2. Make the first real release (section 3), so there is a tag to point to.
@@ -47,7 +55,7 @@ Flathub is the main app store for Flatpak (GNOME Software, Discover). Read the [
        commit: <the full commit id of that tag>
    ```
 
-   The Meson project is the `linux` folder of the repository, so add `subdir: linux` to the module. Get the commit id with `git rev-parse "linux-v1.0.0^{commit}"`. (Ask Claude to prepare this file.)
+   The Meson project is the `linux` folder of the repository, so add `subdir: linux` to the module. Get the commit id with `git rev-parse "linux-v1.0.0^{commit}"`. Write this file yourself (see the AI policy above).
 6. Open a pull request from your branch to the **`new-pr`** branch of `flathub/flathub` (not `master`). Title: `Add io.github.zal3wa.minimalistic-radio`.
 7. A bot builds the app and writes the result in the pull request; a Flathub reviewer then asks questions or requests changes. Answer on the pull request and push fixes to your branch. This usually takes days to weeks.
 8. When it is approved, Flathub creates the repository `flathub/io.github.zal3wa.minimalistic-radio` and invites you. Accept the invitation (it needs two-factor authentication on your GitHub account). The app is on Flathub within a few hours.

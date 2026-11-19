@@ -50,7 +50,7 @@ def build_tray_menu(c: RadioController, _: Callable[[str], str], update: str | N
         MenuItem("playback", _("Stop") if c.active else _("Play"),
                  enabled=c.active or bool(c.stations),
                  icon="media-playback-stop-symbolic" if c.active else "media-playback-start-symbolic"),
-        MenuItem("stations", _("Station"), icon="audio-input-microphone-symbolic", children=[
+        MenuItem("stations", _("Station"), icon="audio-x-generic-symbolic", children=[
             MenuItem(f"station:{i}", s.name, toggle="radio", checked=i == c.current)
             for i, s in enumerate(c.stations)]),
     ]

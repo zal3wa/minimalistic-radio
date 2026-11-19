@@ -10,6 +10,7 @@
   <project_license>MIT</project_license>
   <description>
     <p>A tiny open-source internet radio that lives in the system tray. Click the icon to pick a station and play it. The panel shows what is playing with its cover, the volume, a sleep timer and the song history. Stations can be searched in the radio-browser.info directory, added by hand, exported and imported. Media keys and the desktop's media controls work, and there is no telemetry.</p>
+    <p>The radio only plays sound and never uses the microphone. If your software center still warns about the microphone, that is because Flatpak grants playing and recording sound as one permission.</p>
   </description>
   <launchable type="desktop-id">io.github.zal3wa.minimalistic-radio.desktop</launchable>
   <screenshots>
@@ -44,6 +45,15 @@
   </categories>
   <releases>
     <release version="1.0.0" date="2026-11-15"/>
+    <release version="1.0.0~beta.10" type="development" date="2026-11-19">
+      <description translate="no">
+        <p>Clearer about the microphone:</p>
+        <ul>
+          <li>The Station item in the tray menu shows a music note instead of a microphone.</li>
+          <li>The description explains why software centers say the radio can use the microphone: Flatpak's permission to play sound also allows recording. The radio never records.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0~beta.9" type="development" date="2026-11-16">
       <description translate="no">
         <p>Sharing and statistics:</p>

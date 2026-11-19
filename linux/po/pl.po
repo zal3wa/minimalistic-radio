@@ -34,6 +34,10 @@ msgstr ""
 "wyeksportować i zaimportować. Działają klawisze multimedialne i sterowanie "
 "multimediami pulpitu, a telemetrii nie ma."
 
+#: data/io.github.zal3wa.minimalistic-radio.metainfo.xml.in
+msgid "The radio only plays sound and never uses the microphone. If your software center still warns about the microphone, that is because Flatpak grants playing and recording sound as one permission."
+msgstr "Radio tylko gra i nigdy nie używa mikrofonu. Jeśli sklep z aplikacjami mimo to ostrzega przed mikrofonem, to dlatego, że Flatpak daje odtwarzanie i nagrywanie dźwięku w jednym uprawnieniu."
+
 #: minimalistic_radio/platform/menu_model.py minimalistic_radio/ui/footer.py
 msgid "Play"
 msgstr "Odtwórz"

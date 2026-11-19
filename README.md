@@ -215,6 +215,8 @@ Nothing else is sent. Like any internet connection, these servers see your IP ad
 
 The Linux version contacts the same servers, except GitHub: the radio itself never checks for updates. Flatpak and your software center get them from the radio's Flatpak repository at `zal3wa.github.io` (hosted by GitHub Pages), and the radio's update arrow comes from asking Flatpak. The `.snap` on the releases page is for testing and does not update itself.
 
+Software centers such as GNOME Software or Bazaar warn that the Flatpak can use the microphone. It never does: the radio only plays sound. Flatpak has no permission for playback alone, so the one the radio needs to play also allows recording. The Snap gets playback only.
+
 The macOS version contacts the same servers as the Windows one, the update check included (Settings → Updates). When you use Siri, Apple processes what you say, as for any app.
 
 Settings, the station list and the history are stored in `%LOCALAPPDATA%\Minimalistic Radio` on Windows, in your user folders on Linux (inside the app's own folder for a Flatpak or a Snap), and in `~/Library/Application Support/Minimalistic Radio` on macOS.
