@@ -45,6 +45,14 @@
   </categories>
   <releases>
     <release version="1.0.0" date="2026-11-15"/>
+    <release version="1.0.0~beta.11" type="development" date="2026-11-19">
+      <description translate="no">
+        <p>Updating from the tray menu shows what happens:</p>
+        <ul>
+          <li>Update in the tray menu opens the radio's window first. If the update fails, the window says so. When it works, the new version opens with "Updated to version …".</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0~beta.10" type="development" date="2026-11-19">
       <description translate="no">
         <p>Clearer about the microphone:</p>
