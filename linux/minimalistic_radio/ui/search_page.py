@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 LOGO_SIZE = 40
 FALLBACK_ICON = "audio-x-generic-symbolic"
+SEARCH_DELAY_MS = 350
 
 
 class ResultRow(Adw.ActionRow):
@@ -67,6 +68,7 @@ class SearchPage(Adw.NavigationPage):
         self._ = _
         self.rows: list[ResultRow] = []
         self._generation = 0                       # a search that is no longer wanted has an old number
+        self._search_timeout = 0
         self._suggested: tuple[list[DirectoryStation], list[DirectoryStation], str | None] | None = None
         self._loading = False
         self._failed = False
@@ -74,7 +76,7 @@ class SearchPage(Adw.NavigationPage):
 
         self.entry = Gtk.SearchEntry(hexpand=True, placeholder_text=_("Search"))
         self.entry.connect("activate", lambda _entry: self.search())
-        self.entry.connect("search-changed", self._text_changed)
+        self.entry.connect("notify::text", self._text_changed)
         self.entry.connect("stop-search", lambda _entry: window.navigation.pop())   # Escape in the box goes back
         self.search_button = Gtk.Button(label=_("Search"))
         self.search_button.connect("clicked", lambda _button: self.search())
@@ -97,16 +99,17 @@ class SearchPage(Adw.NavigationPage):
         toolbar.add_top_bar(subpage_bar(self.get_title(), _))
         self.set_child(toolbar)
         self.connect("showing", self._showing)
+        self.connect("hiding", lambda _page: self._cancel_search())
 
     def release(self) -> None:
         self._released = True
-        self._generation += 1
+        self._cancel_search()
 
     # ---- Entering, typing ----
 
     def _showing(self, _page: Adw.NavigationPage) -> None:
         """Opening the page: an empty box and the suggestions."""
-        self._generation += 1
+        self._cancel_search()
         self.entry.set_text("")
         self.show_suggestions()
         self.entry.grab_focus()
@@ -116,16 +119,17 @@ class SearchPage(Adw.NavigationPage):
         text = self.entry.get_text().strip()
         if not is_share_link(text):
             return False
-        self._generation += 1
         self.entry.set_text("")
         self.window.open_link(text)
         return True
 
-    def _text_changed(self, entry: Gtk.SearchEntry) -> None:
-        if self._open_link():
+    def _text_changed(self, entry: Gtk.SearchEntry, _property: object) -> None:
+        self._cancel_search()
+        if self.window.navigation.get_visible_page() != self:
             return
-        if not entry.get_text().strip():
-            self._generation += 1   # a search on its way is not wanted any more
+        if entry.get_text().strip():
+            self._search_timeout = GLib.timeout_add(SEARCH_DELAY_MS, self._search_after_pause)
+        else:
             self.show_suggestions()
 
     # ---- Rendering ----
@@ -169,13 +173,24 @@ class SearchPage(Adw.NavigationPage):
 
     # ---- Search ----
 
+    def _cancel_search(self) -> None:
+        self._generation += 1
+        if self._search_timeout:
+            GLib.source_remove(self._search_timeout)
+            self._search_timeout = 0
+
+    def _search_after_pause(self) -> bool:
+        self._search_timeout = 0
+        self.search()
+        return GLib.SOURCE_REMOVE
+
     def search(self) -> None:
+        self._cancel_search()
         if self._open_link():
             return
         query = self.entry.get_text().strip()
         if not query:
             return
-        self._generation += 1
         generation = self._generation
         self._clear()
         self._say(self._("Searching…"))

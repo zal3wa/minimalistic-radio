@@ -501,11 +501,12 @@ internal sealed partial class Radio
         DockPanel.SetDock(searchHeader, Dock.Top);
         searchPane.Children.Add(searchHeader);
         searchPane.Children.Add(results);
+        var searchDelay = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         CancellationTokenSource activeSearch = null;
         var loadingSuggestions = new CancellationTokenSource();
         bool loadingNow = false, resetting = false;
         string page = "stations";
-        panel.Closed += (_, _) => { activeSearch?.Cancel(); loadingSuggestions.Cancel(); };
+        panel.Closed += (_, _) => { CancelSearch(); loadingSuggestions.Cancel(); };
 
         // The bar on top. On the stations page: [+ Station] [History], and on the right the update arrow (when one is
         // ready) and Settings. On the other pages: ← and the page's title. There is no hide button: the panel hides when
@@ -710,13 +711,14 @@ internal sealed partial class Radio
             return true;
         }
 
-        async void Search()
+        async void Search(bool debounced = false)
         {
+            searchDelay.Stop();
             string query = searchBox.Text?.Trim();
             if (string.IsNullOrEmpty(query) || !searchButton.IsEnabled) return;
-            if (ShareLink.TryParse(query, out _))   // a shared station's link typed in and searched for
+            if (ShareLink.TryParse(query, out SharedStation shared))
             {
-                OpenShared(query);
+                if (!debounced || shared != null) OpenShared(query);
                 return;
             }
             using (var request = new CancellationTokenSource())
@@ -736,7 +738,8 @@ internal sealed partial class Radio
                 catch (OperationCanceledException) when (searchToken.IsCancellationRequested) { }
                 catch (Exception error) when (error is HttpRequestException || error is OperationCanceledException)
                 {
-                    searchStatus.Text = L("The station directory is unavailable right now. Try again.");
+                    if (!searchToken.IsCancellationRequested)
+                        searchStatus.Text = L("The station directory is unavailable right now. Try again.");
                 }
                 finally
                 {
@@ -806,12 +809,18 @@ internal sealed partial class Radio
             }
         }
 
-        // Leaving the search page: no results kept, no request left running.
-        void ResetSearch()
+        void CancelSearch()
         {
+            searchDelay.Stop();
             activeSearch?.Cancel();
             activeSearch = null;
             searchButton.IsEnabled = true;
+        }
+
+        // Leaving the search page: no results kept, no request left running.
+        void ResetSearch()
+        {
+            CancelSearch();
             results.Items.Clear();
             searchStatus.Text = searchHint;
             resetting = true;   // clearing the box must not start the suggestions again
@@ -904,18 +913,15 @@ internal sealed partial class Radio
         });
         TakeLinks(searchBox);
         TakeLinks(url);
+        searchDelay.Tick += (_, _) => Search(debounced: true);
         searchButton.Click += (_, _) => Search();
         searchBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Search(); };
-        // Clearing the box drops the results (and a running search) and brings the suggestions back.
         searchBox.TextChanged += (_, _) =>
         {
-            if (resetting || page != "search" || !string.IsNullOrWhiteSpace(searchBox.Text)) return;
-            activeSearch?.Cancel();
-            activeSearch = null;
-            searchButton.IsEnabled = true;
-            results.Items.Clear();
-            searchStatus.Text = searchHint;
-            ShowSuggestions();
+            if (resetting || page != "search") return;
+            CancelSearch();
+            if (string.IsNullOrWhiteSpace(searchBox.Text)) ShowSuggestions();
+            else searchDelay.Start();
         };
         manual.Click += (_, _) => Edit(null);
         settingsButton.Click += (_, _) => SetPage("settings");

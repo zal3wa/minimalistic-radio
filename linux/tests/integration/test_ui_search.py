@@ -109,6 +109,70 @@ def test_search_shows_results(make, monkeypatch):
     assert known.button.get_tooltip_text() == "Already on your list"
 
 
+def test_typing_searches_once_after_a_pause(make, monkeypatch):
+    calls = []
+    monkeypatch.setattr(directory, "search", lambda query: calls.append(query) or [entry("Jazz FM")])
+    window, _ = make()
+    page = open_search(window)
+
+    page.entry.set_text("ja")
+    run_loop(100)
+    page.entry.set_text("  jazz  ")
+    run_loop(100)
+    assert calls == []
+    assert wait_for(lambda: row_names(page) == ["Jazz FM"])
+    assert calls == ["jazz"]
+
+
+@pytest.mark.parametrize("action", ["clear", "back", "enter", "button"])
+def test_pending_search_is_cancelled(make, monkeypatch, action):
+    calls = []
+    monkeypatch.setattr(directory, "search", lambda query: calls.append(query) or [])
+    window, _ = make()
+    page = open_search(window)
+
+    page.entry.set_text("jazz")
+    if action == "clear":
+        page.entry.set_text("  ")
+    elif action == "back":
+        window.show_page("stations")
+    elif action == "enter":
+        page.entry.emit("activate")
+    else:
+        page.search_button.emit("clicked")
+
+    submitted = action in ("enter", "button")
+    if submitted:
+        assert page.status.get_label() == "Searching…"
+
+    run_loop(500)
+    assert calls == (["jazz"] if submitted else [])
+
+
+def test_editing_discards_in_flight_results(make, monkeypatch):
+    release = threading.Event()
+    started = threading.Event()
+
+    def lookup(query):
+        if query == "jazz":
+            started.set()
+            if release.wait(3):
+                return [entry("Jazz FM")]
+        return [entry("Rock FM")]
+
+    monkeypatch.setattr(directory, "search", lookup)
+    window, _ = make()
+    page = open_search(window)
+    search_for(page, "jazz")
+    assert started.wait(3)
+
+    page.entry.set_text("rock")
+    release.set()
+    run_loop(100)
+    assert "Jazz FM" not in row_names(page)
+    assert wait_for(lambda: row_names(page) == ["Rock FM"])
+
+
 def test_add_from_results(make, monkeypatch):
     monkeypatch.setattr(directory, "search", lambda query, *a: [entry("Jazz FM")])
     window, controller = make(names=("Alpha",))
