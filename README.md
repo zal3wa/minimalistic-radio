@@ -205,7 +205,7 @@ Some stations are never shown in search or suggestions; the list is in [`data/ba
 The radio collects no personal data: no accounts, no telemetry, no ads. It only connects to:
 - the servers of the stations you listen to,
 - the websites the station logos come from, for your list and for search results,
-  - `radio-browser.info`: opening the station search may send your country code for suggestions, and pausing while typing or submitting a search sends the text in the search box,
+- `radio-browser.info`: your country code when you open the station search, and what you type into its search box,
 - `itunes.apple.com`: the artist and title of the song that's playing, to find its cover art ([Apple's privacy policy](https://www.apple.com/legal/privacy/)),
 - `api.github.com`: to check for updates, every few hours; can be turned off in Settings → Updates ([GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)),
 - `github.com`: to download a new version, only when there is one,
