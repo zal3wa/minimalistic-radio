@@ -45,6 +45,14 @@
   </categories>
   <releases>
     <release version="1.0.0" date="2026-11-15"/>
+    <release version="1.0.0~beta.12" type="development" date="2026-11-25">
+      <description translate="no">
+        <p>The station search runs as you type:</p>
+        <ul>
+          <li>Results appear as soon as you stop typing for a moment. Enter and Search still search at once, and clearing the box brings the suggestions back.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.0.0~beta.11" type="development" date="2026-11-19">
       <description translate="no">
         <p>Updating from the tray menu shows what happens:</p>
