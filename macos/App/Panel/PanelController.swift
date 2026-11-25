@@ -66,6 +66,7 @@ final class PanelController: NSObject, NSWindowDelegate {
         guard let panel, panel.isVisible else { return }
         closedAt = Date()
         panel.orderOut(nil)
+        if model.page == .search { model.page = .stations }
     }
 
     private func makePanel() -> KeyPanel {

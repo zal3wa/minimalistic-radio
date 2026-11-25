@@ -8,6 +8,7 @@ struct SearchPage: View {
     @State private var query = ""
     @State private var results: [DirectoryStation]?
     @State private var message: String?
+    @State private var searchTask: Task<Void, Never>?
     @FocusState private var focused: Bool
 
     private var controller: RadioController { model.controller }
@@ -15,19 +16,11 @@ struct SearchPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                TextField(L("Type a station name"), text: $query)
+                TextField(L("Type a station name"), text: Binding(get: { query }, set: editQuery))
                     .textFieldStyle(.roundedBorder)
                     .focused($focused)
-                    .onSubmit(search)
-                    .onChange(of: query) { text in
-                        if text.trimmingCharacters(in: .whitespaces).isEmpty {
-                            results = nil
-                            message = nil
-                        } else if model.openSharedText(text, complete: false) {
-                            query = ""   // a pasted share link: its Shared station page is open
-                        }
-                    }
-                Button(L("Search"), action: search)
+                    .onSubmit { search() }
+                Button(L("Search")) { search() }
             }
             HStack {
                 Spacer()
@@ -63,7 +56,19 @@ struct SearchPage: View {
             runPending()
         }
         .onChange(of: model.pendingSearch) { _ in runPending() }
+        .onDisappear { searchTask?.cancel() }
         .task { await loadSuggestions() }
+    }
+
+    private func editQuery(_ text: String) {
+        query = text
+        if text.trimmingCharacters(in: .whitespaces).isEmpty {
+            searchTask?.cancel()
+            results = nil
+            message = nil
+        } else {
+            search(debounced: true)
+        }
     }
 
     private func runPending() {
@@ -73,23 +78,31 @@ struct SearchPage: View {
         search()
     }
 
-    private func search() {
+    private func search(debounced: Bool = false) {
+        searchTask?.cancel()
         let text = query.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
-        if model.openSharedText(text, complete: true) {   // a share link isn't a search
-            query = ""
+        if let link = readShareLink(text) {
+            if !debounced || link != .invalid {
+                model.openShared(link)
+                query = ""
+            }
             return
         }
-        message = L("Searching…")
-        results = []
-        Task {
+        searchTask = Task { @MainActor in
             do {
+                if debounced { try await Task.sleep(nanoseconds: 350_000_000) }
+                try Task.checkCancellation()
+                guard model.page == .search else { return }
+                message = L("Searching…")
+                results = []
                 let found = try await RadioCore.search(text, bans: model.bans, fetch: Network.json)
-                guard query.trimmingCharacters(in: .whitespaces) == text else { return }   // typed on meanwhile
+                try Task.checkCancellation()
                 results = found
                 model.lastResults = found
                 message = found.isEmpty ? L("No results.") : nil
             } catch {
+                guard !Task.isCancelled else { return }
                 results = []
                 model.lastResults = []
                 message = L("The station directory is unavailable right now. Try again.")
@@ -100,7 +113,7 @@ struct SearchPage: View {
     /// Once per opening of the panel.
     private func loadSuggestions() async {
         guard model.suggested == nil else { return }
-        message = L("Loading suggestions…")
+        if results == nil { message = L("Loading suggestions…") }
         let country = countryFor(language: localizer.language, systemCountry: Locale.current.region?.identifier)
         do {
             let found = try await suggestions(country: country, bans: model.bans, fetch: Network.json)
